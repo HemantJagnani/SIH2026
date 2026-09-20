@@ -1,0 +1,648 @@
+/* ── APIx Design System v2 ────────────────────────────────────────────────
+   Direction: "chart paper" — aeronautical sectional charts, cockpit type.
+   Light paper, two inks, no cards, no dark mode, no gradients.
+   ─────────────────────────────────────────────────────────────────────── */
+
+@import '@fontsource/b612/400.css';
+@import '@fontsource/b612/700.css';
+@import '@fontsource-variable/newsreader';
+
+/* ── Design tokens (§3.1) ───────────────────────────────────────────────── */
+:root {
+  --vellum:      #F0F2EE;  /* surface */
+  --ink:         #1A2B3C;  /* text and the overall series */
+  --ink-2:       #4A5A68;  /* secondary text, axes (6:1 on vellum) */
+  --contour:     #C9D0CB;  /* gridlines and hairlines, never text */
+  --route-blue:  #2A5FA5;  /* DEL-BOM */
+  --route-mag:   #B0286A;  /* DEL-BLR */
+  --route-teal:  #2F7D6D;  /* BOM-BLR */
+  --hatch:       #A8916A;  /* synthetic-data hatch lines only */
+  --assumed:     #8A5600;  /* the word "assumed" in text (5:1) */
+  --focus:       #B0286A;
+
+  /* Type scale (§3.2) */
+  --t-headline: clamp(28px, 3.4vw, 44px);
+  --t-prose:    18px;
+  --t-reading:  28px;
+  --t-ui:       14px;
+  --t-axis:     12px;
+
+  /* Spacing */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+  --sp-12: 48px;
+
+  /* Layout */
+  --max-w:  1200px;
+  --nav-h:  48px;
+}
+
+/* ── Reset ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+img, svg { display: block; }
+
+/* ── Base ──────────────────────────────────────────────────────────────── */
+html { font-size: 14px; scroll-behavior: smooth; }
+
+body {
+  background: var(--vellum);
+  color: var(--ink);
+  font-family: 'B612', 'Courier New', monospace;
+  font-size: var(--t-ui);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+/* ── Focus visible (§3.3) ───────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* ── Type utilities ─────────────────────────────────────────────────────── */
+.font-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+.text-secondary { color: var(--ink-2); }
+
+/* Newsreader prose wrapper */
+.prose {
+  font-family: 'Newsreader Variable', 'Newsreader', Georgia, serif;
+  font-size: var(--t-prose);
+  line-height: 1.55;
+  max-width: 66ch;
+}
+
+/* Headline sentence */
+.headline {
+  font-family: 'Newsreader Variable', 'Newsreader', Georgia, serif;
+  font-size: var(--t-headline);
+  line-height: 1.15;
+  max-width: 30ch;
+  font-weight: 400;
+}
+
+/* ── Navigation ─────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--nav-h);
+  background: var(--vellum);
+  border-bottom: 1px solid var(--contour);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-8);
+  gap: var(--sp-6);
+}
+
+.site-header__brand {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+.site-header__nav {
+  display: flex;
+  gap: var(--sp-6);
+  list-style: none;
+  flex: 1;
+}
+
+/* Text buttons with underline-active, no pills (§3.3) */
+.nav-btn {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: 'B612', monospace;
+  font-size: var(--t-ui);
+  color: var(--ink-2);
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  padding-bottom: 2px;
+  transition: color 0.1s;
+}
+
+.nav-btn:hover { color: var(--ink); }
+
+.nav-btn[aria-pressed="true"],
+.nav-btn.active {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
+
+.site-header__status {
+  font-size: var(--t-ui);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ── Page layout ─────────────────────────────────────────────────────────── */
+.page {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: var(--sp-8) var(--sp-8);
+}
+
+/* ── Section separators (space + optional rule, never cards) ───────────── */
+.section {
+  margin-top: var(--sp-8);
+}
+
+.section + .section {
+  padding-top: var(--sp-8);
+  border-top: 1px solid var(--contour);
+}
+
+/* ── Headings ────────────────────────────────────────────────────────────── */
+h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: var(--sp-4);
+}
+
+h2 {
+  font-size: var(--t-ui);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: var(--sp-3);
+}
+
+h3 {
+  font-size: var(--t-ui);
+  font-weight: 400;
+  color: var(--ink-2);
+  margin-bottom: var(--sp-2);
+}
+
+/* ── Toggle buttons (§3.3) ──────────────────────────────────────────────── */
+.toggle-group {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: center;
+}
+
+.toggle-btn {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: 'B612', monospace;
+  font-size: var(--t-ui);
+  color: var(--ink-2);
+  cursor: pointer;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.toggle-btn:hover { color: var(--ink); }
+
+.toggle-btn[aria-pressed="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.toggle-sep {
+  color: var(--contour);
+  user-select: none;
+}
+
+/* Reset button */
+.btn-reset {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: 'B612', monospace;
+  font-size: var(--t-ui);
+  color: var(--ink-2);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.btn-reset:hover { color: var(--ink); }
+
+/* ── Chart infrastructure ────────────────────────────────────────────────── */
+.chart-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.chart-wrap svg {
+  display: block;
+  overflow: visible;
+}
+
+.chart-wrap svg text {
+  font-family: 'B612', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+figure.chart-figure {
+  width: 100%;
+}
+
+figure.chart-figure figcaption {
+  font-size: var(--t-axis);
+  color: var(--ink-2);
+  margin-top: var(--sp-2);
+}
+
+/* "Show data as table" details */
+.chart-data-table {
+  margin-top: var(--sp-4);
+  font-size: var(--t-axis);
+}
+
+.chart-data-table summary {
+  cursor: pointer;
+  color: var(--ink-2);
+  user-select: none;
+  font-size: var(--t-axis);
+}
+
+.chart-data-table summary:hover { color: var(--ink); }
+
+.chart-data-table table {
+  margin-top: var(--sp-3);
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.chart-data-table th,
+.chart-data-table td {
+  padding: var(--sp-1) var(--sp-2);
+  text-align: left;
+  border-bottom: 1px solid var(--contour);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-data-table th {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+
+/* ── WeightBar ───────────────────────────────────────────────────────────── */
+.weight-bar-section {
+  margin-top: var(--sp-6);
+}
+
+.weight-bar-label {
+  font-size: var(--t-ui);
+  color: var(--ink);
+  margin-bottom: var(--sp-3);
+  font-weight: 700;
+}
+
+.weight-bar-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+
+.weight-bar-track {
+  position: relative;
+  height: 32px;
+  width: 100%;
+  background: var(--contour);
+  cursor: default;
+  user-select: none;
+}
+
+.weight-bar-segment {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.weight-bar-divider {
+  position: absolute;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--vellum);
+  cursor: col-resize;
+  transform: translateX(-2px);
+  z-index: 2;
+}
+
+.weight-bar-divider:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 0;
+}
+
+.weight-bar-segment-label {
+  font-size: var(--t-axis);
+  color: var(--vellum);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.weight-bar-captions {
+  display: flex;
+  width: 100%;
+  margin-top: var(--sp-2);
+}
+
+.weight-bar-caption-item {
+  font-size: var(--t-axis);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.weight-sensitivity {
+  margin-top: var(--sp-3);
+  font-size: var(--t-ui);
+  color: var(--ink-2);
+}
+
+/* ── Collection record strip (§5.4) ─────────────────────────────────────── */
+.record-strip {
+  margin-top: var(--sp-6);
+}
+
+.record-strip-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.record-strip-ticks {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.record-tick {
+  position: relative;
+  width: 10px;
+  height: 18px;
+  flex-shrink: 0;
+  cursor: default;
+}
+
+.record-tick:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.record-strip-count {
+  font-size: var(--t-ui);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.record-exceptions {
+  margin-top: var(--sp-2);
+  font-size: var(--t-axis);
+  color: var(--ink-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+/* ── Method page ─────────────────────────────────────────────────────────── */
+.method-step {
+  counter-increment: step;
+}
+
+.method-prose h2 {
+  margin-top: var(--sp-8);
+}
+
+.method-prose h2:first-child { margin-top: 0; }
+
+.method-prose ol {
+  margin: var(--sp-3) 0 var(--sp-3) var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.method-prose ol li {
+  font-family: 'Newsreader Variable', 'Newsreader', Georgia, serif;
+  font-size: var(--t-prose);
+  line-height: 1.55;
+}
+
+.method-prose p {
+  font-family: 'Newsreader Variable', 'Newsreader', Georgia, serif;
+  font-size: var(--t-prose);
+  line-height: 1.55;
+  max-width: 66ch;
+  margin-bottom: var(--sp-4);
+}
+
+.method-dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--sp-2) var(--sp-8);
+  margin: var(--sp-4) 0;
+  max-width: 66ch;
+}
+
+.method-dl dt {
+  font-size: var(--t-ui);
+  color: var(--ink-2);
+  font-weight: 400;
+  padding: var(--sp-1) 0;
+  border-bottom: 1px solid var(--contour);
+}
+
+.method-dl dd {
+  font-size: var(--t-ui);
+  padding: var(--sp-1) 0;
+  border-bottom: 1px solid var(--contour);
+  font-variant-numeric: tabular-nums;
+}
+
+.assumed-word {
+  color: var(--assumed);
+}
+
+.method-table {
+  border-collapse: collapse;
+  font-size: var(--t-ui);
+  margin-bottom: var(--sp-4);
+}
+
+.method-table th,
+.method-table td {
+  padding: var(--sp-1) var(--sp-4) var(--sp-1) 0;
+  text-align: left;
+  border-bottom: 1px solid var(--contour);
+  font-variant-numeric: tabular-nums;
+}
+
+.method-table th {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+
+.method-footnote {
+  font-size: var(--t-axis);
+  color: var(--ink-2);
+  max-width: 66ch;
+  margin-top: var(--sp-2);
+  line-height: 1.5;
+}
+
+/* Worked example box */
+.worked-example {
+  margin: var(--sp-6) 0;
+  padding: var(--sp-4) 0;
+  border-top: 1px solid var(--contour);
+  border-bottom: 1px solid var(--contour);
+}
+
+.worked-example h3 {
+  font-size: var(--t-ui);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: var(--sp-3);
+}
+
+.worked-example-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  font-size: var(--t-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.worked-row {
+  display: grid;
+  grid-template-columns: 18ch 10ch 1fr;
+  gap: var(--sp-4);
+  color: var(--ink);
+  border-bottom: 1px solid var(--contour);
+  padding-bottom: var(--sp-1);
+}
+
+.worked-row-label { color: var(--ink-2); }
+
+/* Run log details */
+.run-log-details summary {
+  font-size: var(--t-ui);
+  cursor: pointer;
+  color: var(--ink-2);
+  user-select: none;
+  margin-top: var(--sp-6);
+}
+
+.run-log-details summary:hover { color: var(--ink); }
+
+.run-log-table {
+  margin-top: var(--sp-4);
+  border-collapse: collapse;
+  font-size: var(--t-ui);
+  width: 100%;
+}
+
+.run-log-table th,
+.run-log-table td {
+  padding: var(--sp-1) var(--sp-3) var(--sp-1) 0;
+  text-align: left;
+  border-bottom: 1px solid var(--contour);
+  font-variant-numeric: tabular-nums;
+}
+
+.run-log-table th {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+
+/* ── Booking curves ──────────────────────────────────────────────────────── */
+.booking-panels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-6);
+  margin-top: var(--sp-6);
+}
+
+.booking-panel-title {
+  font-size: var(--t-ui);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: var(--sp-3);
+}
+
+/* ── Loading / empty states ─────────────────────────────────────────────── */
+.loading {
+  padding: var(--sp-12) var(--sp-8);
+  text-align: center;
+  color: var(--ink-2);
+  font-family: 'Newsreader Variable', 'Newsreader', Georgia, serif;
+  font-size: var(--t-prose);
+}
+
+.empty-state {
+  padding: var(--sp-12) 0;
+  color: var(--ink-2);
+  font-family: 'Newsreader Variable', 'Newsreader', Georgia, serif;
+  font-size: var(--t-prose);
+  max-width: 50ch;
+}
+
+/* ── Error state ─────────────────────────────────────────────────────────── */
+.error-state {
+  padding: var(--sp-6) 0;
+  color: var(--ink);
+  font-size: var(--t-ui);
+  max-width: 66ch;
+}
+
+/* ── Draw-in animation (§9) ──────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .line-draw {
+    stroke-dasharray: var(--line-len, 20000);
+    stroke-dashoffset: var(--line-len, 20000);
+    animation: drawIn var(--draw-dur, 900ms) ease-out var(--draw-delay, 0ms) forwards;
+  }
+
+  @keyframes drawIn {
+    to { stroke-dashoffset: 0; }
+  }
+}
+
+/* ── Responsive (390px floor) ────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .site-header { padding: 0 var(--sp-4); gap: var(--sp-3); }
+  .site-header__nav { gap: var(--sp-3); }
+  .site-header__status { display: none; }
+
+  .page { padding: var(--sp-4); }
+
+  .booking-panels { grid-template-columns: 1fr; }
+
+  .method-dl { grid-template-columns: 1fr; }
+
+  .worked-row { grid-template-columns: 1fr 1fr; }
+  .worked-row-label { grid-column: 1 / -1; }
+}

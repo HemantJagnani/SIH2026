@@ -1,0 +1,147 @@
+[
+  {
+    "route": "DEL-BOM",
+    "origin": "DEL",
+    "destination": "BOM",
+    "travel_date": "2026-10-01",
+    "quotes": [
+      {
+        "carrier": "IndiGo",
+        "flight_no": "6E-101",
+        "dep_time": "06:30",
+        "stops": 0,
+        "fare_class": "economy",
+        "base_fare": 4200,
+        "taxes": 800,
+        "total_fare": 5000,
+        "sold_out": false
+      },
+      {
+        "carrier": "Air India",
+        "flight_no": "AI-611",
+        "dep_time": "09:15",
+        "stops": 0,
+        "fare_class": "economy",
+        "base_fare": 4600,
+        "taxes": 900,
+        "total_fare": 5500,
+        "sold_out": false
+      },
+      {
+        "carrier": "SpiceJet",
+        "flight_no": "SG-112",
+        "dep_time": "14:45",
+        "stops": 0,
+        "fare_class": "economy",
+        "base_fare": 3900,
+        "taxes": 750,
+        "total_fare": 4650,
+        "sold_out": false
+      },
+      {
+        "carrier": "Vistara",
+        "flight_no": "UK-835",
+        "dep_time": "19:00",
+        "stops": 0,
+        "fare_class": "economy",
+        "base_fare": 5100,
+        "taxes": 950,
+        "total_fare": 6050,
+        "sold_out": false
+      }
+    ]
+  },
+  {
+    "route": "DEL-BLR",
+    "origin": "DEL",
+    "destination": "BLR",
+    "travel_date": "2026-10-01",
+    "quotes": [
+      {
+        "carrier": "IndiGo",
+        "flight_no": "6E-501",
+        "dep_time": "07:00",
+        "stops": 0,
+        "fare_class": "economy",
+        "base_fare": 4800,
+        "taxes": 900,
+        "total_fare": 5700,
+        "sold_out": false
+      },
+      {
+        "carrier": "Air India",
+        "flight_no": "AI-815",
+        "dep_time": "11:30",
+        "stops": 0,
+        "fare_class": "economy",
+        "base_fare": 5200,
+        "taxes": 1000,
+        "total_fare": 6200,
+        "sold_out": false
+      },
+      {
+        "carrier": "GoAir",
+        "flight_no": "G8-308",
+        "dep_time": "20:15",
+        "stops": 0,
+        "fare_class": "economy",
+        "base_fare": 4400,
+        "taxes": 820,
+        "total_fare": 5220,
+        "sold_out": false
+      }
+    ]
+  },
+  {
+    "route": "BOM-BLR",
+    "origin": "BOM",
+    "destination": "BLR",
+    "travel_date": "2026-10-01",
+    "quotes": [
+      {
+        "carrier": "IndiGo",
+        "flight_no": "6E-401",
+        "dep_time": "08:00",
+        "stops": 0,
+        "fare_class": "economy",
+        "base_fare": 3200,
+        "taxes": 600,
+        "total_fare": 3800,
+        "sold_out": false
+      },
+      {
+        "carrier": "SpiceJet",
+        "flight_no": "SG-224",
+        "dep_time": "13:20",
+        "stops": 0,
+        "fare_class": "economy",
+        "base_fare": 2900,
+        "taxes": 550,
+        "total_fare": 3450,
+        "sold_out": false
+      },
+      {
+        "carrier": "Air India",
+        "flight_no": "AI-925",
+        "dep_time": "18:45",
+        "stops": 0,
+        "fare_class": "economy",
+        "base_fare": 3500,
+        "taxes": 650,
+        "total_fare": 4150,
+        "sold_out": false
+      },
+      {
+        "carrier": "Akasa Air",
+        "flight_no": "QP-1201",
+        "dep_time": "21:00",
+        "stops": 0,
+        "fare_class": "economy",
+        "base_fare": null,
+        "taxes": null,
+        "total_fare": 3650,
+        "sold_out": false
+      }
+    ]
+  }
+]
