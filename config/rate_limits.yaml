@@ -1,0 +1,15 @@
+rate_limits:
+  default:
+    max_concurrency: 2
+    requests_per_minute: 30
+    delay_between_requests: 2.0
+    retry_limit: 3
+    backoff: exponential
+
+  indigo:
+    max_concurrency: 5
+    requests_per_minute: 60
+
+  cleartrip:
+    max_concurrency: 5
+    requests_per_minute: 60

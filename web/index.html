@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>India Airfare Price Index — Live Dashboard</title>
+  <meta name="description" content="Real-time India Airfare Price Index tracking fares across airlines and routes from DEL, BOM, BLR and more." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <!-- Navigation -->
+  <header class="nav" id="main-nav">
+    <div class="nav-inner">
+      <div class="nav-brand">
+        <span class="nav-icon">✈</span>
+        <span class="nav-title">AirFare <span class="accent">Index</span></span>
+        <span class="nav-badge">LIVE</span>
+      </div>
+      <nav class="nav-tabs" role="tablist">
+        <button class="nav-tab active" id="tab-fares" role="tab" aria-selected="true" onclick="switchTab('fares')">Live Fares</button>
+        <button class="nav-tab" id="tab-routes" role="tab" aria-selected="false" onclick="switchTab('routes')">Routes</button>
+        <button class="nav-tab" id="tab-sources" role="tab" aria-selected="false" onclick="switchTab('sources')">Sources</button>
+        <button class="nav-tab" id="tab-quality" role="tab" aria-selected="false" onclick="switchTab('quality')">Quality Monitor</button>
+      </nav>
+      <div class="nav-right">
+        <span class="last-updated" id="last-updated-display">Last updated: just now</span>
+        <button class="refresh-btn" id="refresh-btn" onclick="refreshData()">⟳ Refresh</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- ── LIVE FARES TAB ── -->
+    <section class="tab-panel active" id="panel-fares">
+      <div class="panel-layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">Routes</h3>
+            <div class="route-cards" id="route-cards">
+              <!-- filled by JS -->
+            </div>
+          </div>
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">Filters</h3>
+            <label class="filter-label" for="cabin-filter">Cabin</label>
+            <select class="filter-select" id="cabin-filter" onchange="applyFilters()">
+              <option value="">All Cabins</option>
+              <option value="ECONOMY">Economy</option>
+              <option value="BUSINESS">Business</option>
+              <option value="PREMIUM_ECONOMY">Premium Economy</option>
+              <option value="FIRST">First</option>
+            </select>
+            <label class="filter-label" for="lead-filter">Lead Days</label>
+            <select class="filter-select" id="lead-filter" onchange="applyFilters()">
+              <option value="">All</option>
+              <option value="1">T+1</option>
+              <option value="7">T+7</option>
+              <option value="15">T+15</option>
+              <option value="30">T+30</option>
+              <option value="45">T+45</option>
+            </select>
+            <label class="filter-label" for="airline-filter">Airline</label>
+            <select class="filter-select" id="airline-filter" onchange="applyFilters()">
+              <option value="">All Airlines</option>
+              <option value="IndiGo">IndiGo</option>
+              <option value="Air India">Air India</option>
+              <option value="SpiceJet">SpiceJet</option>
+              <option value="Vistara">Vistara</option>
+              <option value="Akasa Air">Akasa Air</option>
+            </select>
+          </div>
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">Source Health</h3>
+            <div class="health-list" id="health-list">
+              <!-- filled by JS -->
+            </div>
+          </div>
+        </aside>
+
+        <!-- Content Area -->
+        <div class="content-area">
+
+          <!-- Stats Row -->
+          <div class="stats-row" id="stats-row">
+            <!-- filled by JS -->
+          </div>
+
+          <!-- Trend Chart -->
+          <div class="chart-card glass-card">
+            <div class="chart-header">
+              <div>
+                <h2 class="chart-title" id="chart-title">Fare Trend</h2>
+                <p class="chart-subtitle" id="chart-subtitle">Economy · 1 Passenger</p>
+              </div>
+              <div class="chart-legend" id="chart-legend"></div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="fare-trend-chart" aria-label="Fare trend chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Fare Table -->
+          <div class="table-card glass-card">
+            <div class="table-header">
+              <h2 class="table-title">Live Observations</h2>
+              <div class="table-controls">
+                <input class="search-input" id="search-input" type="text" placeholder="Search route, airline..." oninput="applyFilters()" />
+                <span class="observation-count" id="observation-count">0 records</span>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="fare-table" id="fare-table" aria-label="Fare observations table">
+                <thead>
+                  <tr>
+                    <th onclick="sortTable('route')">Route <span class="sort-icon">↕</span></th>
+                    <th onclick="sortTable('airline')">Airline <span class="sort-icon">↕</span></th>
+                    <th onclick="sortTable('cabin')">Cabin <span class="sort-icon">↕</span></th>
+                    <th onclick="sortTable('travel_date')">Travel Date <span class="sort-icon">↕</span></th>
+                    <th>Times (Dep-Arr)</th>
+                    <th onclick="sortTable('lead_days')">Lead Days <span class="sort-icon">↕</span></th>
+                    <th onclick="sortTable('total_fare')" class="fare-col">Total Fare (INR) <span class="sort-icon">↕</span></th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Collected At</th>
+                  </tr>
+                </thead>
+                <tbody id="fare-table-body">
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ROUTES TAB ── -->
+    <section class="tab-panel" id="panel-routes">
+      <div class="routes-grid" id="routes-grid">
+        <!-- filled by JS -->
+      </div>
+    </section>
+
+    <!-- ── SOURCES TAB ── -->
+    <section class="tab-panel" id="panel-sources">
+      <div class="sources-grid" id="sources-grid">
+        <!-- filled by JS -->
+      </div>
+    </section>
+
+    <!-- ── QUALITY MONITOR TAB ── -->
+    <section class="tab-panel" id="panel-quality">
+      <div class="quality-layout">
+        <div class="quality-chart-card glass-card">
+          <h2 class="chart-title">Quality Gate Results</h2>
+          <canvas id="quality-chart" height="260" aria-label="Quality gate chart"></canvas>
+        </div>
+        <div class="quality-chart-card glass-card">
+          <h2 class="chart-title">Validation Failure Breakdown</h2>
+          <canvas id="validation-chart" height="260" aria-label="Validation breakdown chart"></canvas>
+        </div>
+        <div class="quality-table-card glass-card">
+          <h2 class="chart-title">Flagged Observations</h2>
+          <table class="fare-table" id="flagged-table" aria-label="Flagged observations">
+            <thead><tr><th>Route</th><th>Airline</th><th>Fare (INR)</th><th>Flag Reason</th><th>Decision</th></tr></thead>
+            <tbody id="flagged-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

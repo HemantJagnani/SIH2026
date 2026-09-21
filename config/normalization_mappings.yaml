@@ -1,0 +1,111 @@
+# Deterministic entity mappings for Airports and Airlines.
+# This file is used to bootstrap the 'entity_mappings' database table.
+# Changes here are loaded into PostgreSQL by scripts/load_mappings.py
+
+mappings:
+  # AIRPORTS
+  - entity_type: "AIRPORT"
+    source: "GLOBAL"
+    raw_value: "delhi"
+    canonical_value: "DEL"
+    
+  - entity_type: "AIRPORT"
+    source: "GLOBAL"
+    raw_value: "delhi airport"
+    canonical_value: "DEL"
+    
+  - entity_type: "AIRPORT"
+    source: "GLOBAL"
+    raw_value: "indira gandhi international"
+    canonical_value: "DEL"
+
+  - entity_type: "AIRPORT"
+    source: "GLOBAL"
+    raw_value: "new delhi"
+    canonical_value: "DEL"
+
+  - entity_type: "AIRPORT"
+    source: "GLOBAL"
+    raw_value: "mumbai"
+    canonical_value: "BOM"
+
+  - entity_type: "AIRPORT"
+    source: "GLOBAL"
+    raw_value: "chhatrapati shivaji maharaj"
+    canonical_value: "BOM"
+    
+  - entity_type: "AIRPORT"
+    source: "GLOBAL"
+    raw_value: "bombay"
+    canonical_value: "BOM"
+
+  - entity_type: "AIRPORT"
+    source: "GLOBAL"
+    raw_value: "bengaluru"
+    canonical_value: "BLR"
+    
+  - entity_type: "AIRPORT"
+    source: "GLOBAL"
+    raw_value: "bangalore"
+    canonical_value: "BLR"
+
+  - entity_type: "AIRPORT"
+    source: "GLOBAL"
+    raw_value: "kempegowda"
+    canonical_value: "BLR"
+
+  # AIRLINES
+  - entity_type: "AIRLINE"
+    source: "GLOBAL"
+    raw_value: "indigo"
+    canonical_value: "IndiGo"
+    
+  - entity_type: "AIRLINE"
+    source: "GLOBAL"
+    raw_value: "6e"
+    canonical_value: "IndiGo"
+
+  - entity_type: "AIRLINE"
+    source: "GLOBAL"
+    raw_value: "air india"
+    canonical_value: "Air India"
+    
+  - entity_type: "AIRLINE"
+    source: "GLOBAL"
+    raw_value: "ai"
+    canonical_value: "Air India"
+
+  - entity_type: "AIRLINE"
+    source: "GLOBAL"
+    raw_value: "air india express"
+    canonical_value: "Air India Express"
+
+  - entity_type: "AIRLINE"
+    source: "GLOBAL"
+    raw_value: "ix"
+    canonical_value: "Air India Express"
+
+  - entity_type: "AIRLINE"
+    source: "GLOBAL"
+    raw_value: "akasa air"
+    canonical_value: "Akasa Air"
+
+  - entity_type: "AIRLINE"
+    source: "GLOBAL"
+    raw_value: "akasa"
+    canonical_value: "Akasa Air"
+
+  - entity_type: "AIRLINE"
+    source: "GLOBAL"
+    raw_value: "qp"
+    canonical_value: "Akasa Air"
+
+  - entity_type: "AIRLINE"
+    source: "GLOBAL"
+    raw_value: "spicejet"
+    canonical_value: "SpiceJet"
+
+  - entity_type: "AIRLINE"
+    source: "GLOBAL"
+    raw_value: "sg"
+    canonical_value: "SpiceJet"

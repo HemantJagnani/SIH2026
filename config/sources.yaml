@@ -1,0 +1,25 @@
+sources:
+  - name: ignav
+    permitted_method: api # Ignav live REST API
+  - name: indigo
+    permitted_method: api # preferred, requires authorization
+  - name: airindia
+    permitted_method: api # preferred, requires eligibility/authorization
+  - name: cleartrip
+    permitted_method: api # flight API
+  - name: yatra
+    permitted_method: api # partner Air API
+  - name: makemytrip
+    permitted_method: web # until partner fare API is granted
+  - name: goibibo
+    permitted_method: web # until partner fare API is granted
+  - name: easemytrip
+    permitted_method: web # until partner API is granted
+  - name: ixigo
+    permitted_method: web # until partner API is granted
+  - name: akasa
+    permitted_method: web # only if authorized
+  - name: spicejet
+    permitted_method: web # only if authorized
+  - name: airindia_express
+    permitted_method: web # only if authorized

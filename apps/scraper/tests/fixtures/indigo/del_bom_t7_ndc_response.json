@@ -1,0 +1,111 @@
+{
+  "_comment": "Sanitized IndiGo NDC-style API response fixture. Real credentials removed. Used for deterministic parser testing.",
+  "AirShoppingRS": {
+    "ShoppingResponseID": {
+      "Owner": "6E",
+      "ResponseID": {
+        "value": "fixture-6e-001"
+      }
+    },
+    "OffersGroup": {
+      "AirlineOffers": [
+        {
+          "Offer": {
+            "OfferID": {
+              "Owner": "6E",
+              "value": "6E-OFFER-001"
+            },
+            "OfferItem": [
+              {
+                "OfferItemID": {
+                  "value": "6E-ITEM-001"
+                },
+                "Service": {
+                  "ServiceID": { "value": "6E-SVC-001" },
+                  "FlightRefs": {
+                    "FlightRef": [{ "value": "FL-001" }]
+                  }
+                },
+                "FareDetail": {
+                  "Price": {
+                    "TotalAmount": {
+                      "SimpleCurrencyPrice": {
+                        "value": 4850,
+                        "Code": "INR"
+                      }
+                    },
+                    "BaseAmount": {
+                      "value": 3980,
+                      "Code": "INR"
+                    },
+                    "Taxes": {
+                      "Total": {
+                        "value": 870,
+                        "Code": "INR"
+                      }
+                    }
+                  },
+                  "FareComponent": {
+                    "FareBasis": {
+                      "CabinType": {
+                        "CabinTypeCode": { "value": "Y" },
+                        "CabinTypeName": "ECONOMY"
+                      },
+                      "FareBasisCode": { "Code": "SAVEME" }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "DataLists": {
+      "FlightList": {
+        "Flight": [
+          {
+            "FlightKey": "FL-001",
+            "Journey": {
+              "Time": "PT2H15M"
+            },
+            "SegmentReferences": {
+              "value": "SEG-001"
+            }
+          }
+        ]
+      },
+      "FlightSegmentList": {
+        "FlightSegment": [
+          {
+            "SegmentKey": "SEG-001",
+            "Departure": {
+              "AirportCode": { "value": "DEL" },
+              "Date": "2026-10-08",
+              "Time": "10:00"
+            },
+            "Arrival": {
+              "AirportCode": { "value": "BOM" },
+              "Date": "2026-10-08",
+              "Time": "12:15"
+            },
+            "MarketingCarrier": {
+              "AirlineID": { "value": "6E" },
+              "Name": "IndiGo",
+              "FlightNumber": { "value": "456" }
+            },
+            "ClassOfService": {
+              "Code": { "SeatsLeft": 8, "value": "Q" }
+            },
+            "StopQuantity": 0
+          }
+        ]
+      }
+    },
+    "_metadata": {
+      "collectedAt": "2026-10-01T04:00:00Z",
+      "leadDays": 7,
+      "route": "DEL-BOM"
+    }
+  }
+}

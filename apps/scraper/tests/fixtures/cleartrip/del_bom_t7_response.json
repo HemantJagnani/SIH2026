@@ -1,0 +1,93 @@
+{
+  "_comment": "Sanitized Cleartrip API response fixture. Real PII and credentials removed. Used for deterministic parser testing.",
+  "status": 200,
+  "data": {
+    "searchId": "fixture-search-001",
+    "results": [
+      {
+        "id": "6E-123-fixture",
+        "airline": "IndiGo",
+        "airlineCode": "6E",
+        "flightNumber": "6E 123",
+        "origin": "DEL",
+        "destination": "BOM",
+        "departureTime": "2026-10-08T06:00:00+05:30",
+        "arrivalTime": "2026-10-08T08:15:00+05:30",
+        "stops": 0,
+        "fareFamily": "SAVER",
+        "fareClass": "Q",
+        "cabin": "ECONOMY",
+        "tripType": "ONE_WAY",
+        "passengers": 1,
+        "pricing": {
+          "baseFare": 3500.00,
+          "taxes": 870.00,
+          "fees": 0.00,
+          "discount": 0.00,
+          "totalFare": 4370.00,
+          "currency": "INR"
+        },
+        "availability": "AVAILABLE",
+        "seatsLeft": 9
+      },
+      {
+        "id": "AI-401-fixture",
+        "airline": "Air India",
+        "airlineCode": "AI",
+        "flightNumber": "AI 401",
+        "origin": "DEL",
+        "destination": "BOM",
+        "departureTime": "2026-10-08T07:30:00+05:30",
+        "arrivalTime": "2026-10-08T09:50:00+05:30",
+        "stops": 0,
+        "fareFamily": "FLEX",
+        "fareClass": "Y",
+        "cabin": "ECONOMY",
+        "tripType": "ONE_WAY",
+        "passengers": 1,
+        "pricing": {
+          "baseFare": 4200.00,
+          "taxes": 1050.00,
+          "fees": 0.00,
+          "discount": 200.00,
+          "totalFare": 5050.00,
+          "currency": "INR"
+        },
+        "availability": "AVAILABLE",
+        "seatsLeft": 4
+      },
+      {
+        "id": "SG-101-fixture",
+        "airline": "SpiceJet",
+        "airlineCode": "SG",
+        "flightNumber": "SG 101",
+        "origin": "DEL",
+        "destination": "BOM",
+        "departureTime": "2026-10-08T09:00:00+05:30",
+        "arrivalTime": "2026-10-08T11:20:00+05:30",
+        "stops": 0,
+        "fareFamily": "SAVER",
+        "fareClass": "Q",
+        "cabin": "ECONOMY",
+        "tripType": "ONE_WAY",
+        "passengers": 1,
+        "pricing": {
+          "baseFare": 2800.00,
+          "taxes": 750.00,
+          "fees": 0.00,
+          "discount": 0.00,
+          "totalFare": 3550.00,
+          "currency": "INR"
+        },
+        "availability": "AVAILABLE",
+        "seatsLeft": 6
+      }
+    ],
+    "totalResults": 3,
+    "searchMetadata": {
+      "collectedAt": "2026-10-01T03:30:00Z",
+      "leadDays": 7,
+      "route": "DEL-BOM"
+    }
+  }
+}
