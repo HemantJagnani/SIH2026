@@ -67,6 +67,12 @@ class FareObservation(BaseModel):
         default=None,
         description="Ignav itinerary ID or equivalent, as source metadata.",
     )
+    # The URL of the page/endpoint where the fare was sourced. Stored for
+    # auditability and to detect URL changes (schema_change detection).
+    source_url: str | None = Field(
+        default=None,
+        description="URL of the source page or API endpoint at collection time.",
+    )
 
     # -----------------------------------------------------------------------
     # Collection timing
@@ -75,6 +81,12 @@ class FareObservation(BaseModel):
     collected_at: datetime = Field(
         ...,
         description="UTC datetime when this fare was collected from the source.",
+    )
+    # search_timestamp records when the search was initiated, which can
+    # differ from collected_at if extraction takes time (e.g. slow JS render).
+    search_timestamp: datetime | None = Field(
+        default=None,
+        description="UTC datetime when the search was initiated (may differ from collected_at).",
     )
 
     # -----------------------------------------------------------------------
@@ -208,6 +220,19 @@ class FareObservation(BaseModel):
         default=None,
         ge=0,
         description="Total fees/surcharges component.",
+    )] = None
+    # airport_charges and convenience_fee are separated per Phase 9 spec
+    # to support sources (like OTAs) that expose these as distinct line items.
+    # Do not manufacture these from a total fare - leave null if not provided.
+    airport_charges: Annotated[Decimal | None, Field(
+        default=None,
+        ge=0,
+        description="Airport statutory charges, if exposed separately by source.",
+    )] = None
+    convenience_fee: Annotated[Decimal | None, Field(
+        default=None,
+        ge=0,
+        description="OTA or booking convenience fee, if exposed separately by source.",
     )] = None
     discount: Annotated[Decimal | None, Field(
         default=None,

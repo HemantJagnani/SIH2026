@@ -84,3 +84,26 @@ class EntityMapper:
 
 # Global singleton instance for use by parsers
 entity_mapper = EntityMapper()
+
+
+import re
+
+def normalize_flight_number(raw: str, field_name: str = "flight_number") -> NormalizationResult[str]:
+    """
+    Normalize a flight number string. E.g. "6E 123" → "6E-123".
+    """
+    if not raw or not raw.strip():
+        raise NormalizationException(field_name, raw, "Empty flight number string")
+        
+    normalized = re.sub(r"([A-Z0-9]{2})\s+([0-9]+)", r"\1-\2", raw.strip().upper())
+    
+    if not normalized:
+        raise NormalizationException(field_name, raw, "Could not normalize flight number")
+        
+    return NormalizationResult(
+        raw_value=raw,
+        normalized_value=normalized,
+        is_success=True,
+        confidence=1.0,
+    )
+

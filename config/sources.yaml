@@ -1,25 +1,241 @@
+# sources.yaml — Phase 9 format
+#
+# Each source entry specifies:
+#   - acquisition.mode: "api" | "webpage"
+#   - browser.required: true | false
+#   - robots.respect: always true — never disable this
+#   - rate_limit: per-source pacing (start conservative, adjust after testing)
+#   - blocked_policy: what the orchestrator does on each failure type
+#
+# Do NOT set rate_limit.min_interval_seconds below 3s without a documented reason.
+# Do NOT set blocked_policy.captcha or blocked_policy.http_403 to anything other than
+# "stop_source". These blocks must never be bypassed or retried.
+
 sources:
-  - name: ignav
-    permitted_method: api # Ignav live REST API
-  - name: indigo
-    permitted_method: api # preferred, requires authorization
-  - name: airindia
-    permitted_method: api # preferred, requires eligibility/authorization
-  - name: cleartrip
-    permitted_method: api # flight API
-  - name: yatra
-    permitted_method: api # partner Air API
-  - name: makemytrip
-    permitted_method: web # until partner fare API is granted
-  - name: goibibo
-    permitted_method: web # until partner fare API is granted
-  - name: easemytrip
-    permitted_method: web # until partner API is granted
-  - name: ixigo
-    permitted_method: web # until partner API is granted
-  - name: akasa
-    permitted_method: web # only if authorized
-  - name: spicejet
-    permitted_method: web # only if authorized
-  - name: airindia_express
-    permitted_method: web # only if authorized
+
+  # ---------------------------------------------------------------------------
+  # API sources (no browser needed)
+  # ---------------------------------------------------------------------------
+
+  ignav:
+    enabled: true
+    acquisition:
+      mode: api
+    browser:
+      required: false
+    robots:
+      respect: true
+    rate_limit:
+      min_interval_seconds: 2
+      max_concurrency: 1
+    blocked_policy:
+      http_403: stop_source
+      http_429: backoff
+      http_5xx: retry
+
+  # ---------------------------------------------------------------------------
+  # Airline websites (browser required)
+  # ---------------------------------------------------------------------------
+
+  indigo:
+    enabled: true
+    acquisition:
+      mode: webpage
+    browser:
+      required: true
+    robots:
+      respect: true
+    rate_limit:
+      # Start at 5s — conservative. Adjust only after observing real behavior.
+      min_interval_seconds: 5
+      max_concurrency: 1
+    blocked_policy:
+      captcha: stop_source          # Never solve — detect and halt
+      http_403: stop_source         # Hard block — do not rotate or retry
+      http_429: backoff             # Honor Retry-After if present; otherwise backoff
+      http_5xx: retry               # Bounded retry (max 2)
+      login_wall: stop_source       # AUTH_REQUIRED — do not bypass
+
+  airindia:
+    enabled: true
+    acquisition:
+      mode: webpage
+    browser:
+      required: true
+    robots:
+      respect: true
+    rate_limit:
+      min_interval_seconds: 5
+      max_concurrency: 1
+    blocked_policy:
+      captcha: stop_source
+      http_403: stop_source
+      http_429: backoff
+      http_5xx: retry
+      login_wall: stop_source
+
+  airindia_express:
+    enabled: false   # Enable after Air India is stable
+    acquisition:
+      mode: webpage
+    browser:
+      required: true
+    robots:
+      respect: true
+    rate_limit:
+      min_interval_seconds: 5
+      max_concurrency: 1
+    blocked_policy:
+      captcha: stop_source
+      http_403: stop_source
+      http_429: backoff
+      http_5xx: retry
+      login_wall: stop_source
+
+  akasa:
+    enabled: false   # Enable after IndiGo is stable
+    acquisition:
+      mode: webpage
+    browser:
+      required: true
+    robots:
+      respect: true
+    rate_limit:
+      min_interval_seconds: 5
+      max_concurrency: 1
+    blocked_policy:
+      captcha: stop_source
+      http_403: stop_source
+      http_429: backoff
+      http_5xx: retry
+      login_wall: stop_source
+
+  spicejet:
+    enabled: false
+    acquisition:
+      mode: webpage
+    browser:
+      required: true
+    robots:
+      respect: true
+    rate_limit:
+      min_interval_seconds: 5
+      max_concurrency: 1
+    blocked_policy:
+      captcha: stop_source
+      http_403: stop_source
+      http_429: backoff
+      http_5xx: retry
+      login_wall: stop_source
+
+  # ---------------------------------------------------------------------------
+  # OTA websites (browser required, tend to be more aggressive on bot detection)
+  # ---------------------------------------------------------------------------
+
+  ixigo:
+    enabled: false
+    acquisition:
+      mode: webpage
+    browser:
+      required: true
+    robots:
+      respect: true
+    rate_limit:
+      min_interval_seconds: 7     # OTAs typically have stricter bot detection
+      max_concurrency: 1
+    blocked_policy:
+      captcha: stop_source
+      http_403: stop_source
+      http_429: backoff
+      http_5xx: retry
+      login_wall: stop_source
+
+  easemytrip:
+    enabled: false
+    acquisition:
+      mode: webpage
+    browser:
+      required: true
+    robots:
+      respect: true
+    rate_limit:
+      min_interval_seconds: 7
+      max_concurrency: 1
+    blocked_policy:
+      captcha: stop_source
+      http_403: stop_source
+      http_429: backoff
+      http_5xx: retry
+      login_wall: stop_source
+
+  makemytrip:
+    enabled: false
+    acquisition:
+      mode: webpage
+    browser:
+      required: true
+    robots:
+      respect: true
+    rate_limit:
+      min_interval_seconds: 10    # MMT is known to have aggressive bot protection
+      max_concurrency: 1
+    blocked_policy:
+      captcha: stop_source
+      http_403: stop_source
+      http_429: backoff
+      http_5xx: retry
+      login_wall: stop_source
+
+  yatra:
+    enabled: false
+    acquisition:
+      mode: webpage
+    browser:
+      required: true
+    robots:
+      respect: true
+    rate_limit:
+      min_interval_seconds: 7
+      max_concurrency: 1
+    blocked_policy:
+      captcha: stop_source
+      http_403: stop_source
+      http_429: backoff
+      http_5xx: retry
+      login_wall: stop_source
+
+  goibibo:
+    enabled: false
+    acquisition:
+      mode: webpage
+    browser:
+      required: true
+    robots:
+      respect: true
+    rate_limit:
+      min_interval_seconds: 7
+      max_concurrency: 1
+    blocked_policy:
+      captcha: stop_source
+      http_403: stop_source
+      http_429: backoff
+      http_5xx: retry
+      login_wall: stop_source
+
+  cleartrip:
+    enabled: false
+    acquisition:
+      mode: webpage
+    browser:
+      required: true
+    robots:
+      respect: true
+    rate_limit:
+      min_interval_seconds: 7
+      max_concurrency: 1
+    blocked_policy:
+      captcha: stop_source
+      http_403: stop_source
+      http_429: backoff
+      http_5xx: retry
+      login_wall: stop_source

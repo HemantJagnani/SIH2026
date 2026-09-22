@@ -1,0 +1,31 @@
+# Mock robots.txt fixture for Milestone 1 unit tests.
+#
+# This file simulates a real-world robots.txt that:
+# - Allows normal public-facing pages
+# - Disallows admin and internal paths
+# - Disallows automated booking/search paths specifically
+#
+# Used by: apps/scraper/tests/core/test_policy_gate.py
+# The RobotsPolicyGate is initialized with fixture_path pointing here,
+# so tests run fully offline without any real HTTP requests.
+
+User-agent: *
+Allow: /
+Allow: /flights/search
+Allow: /about
+Allow: /contact
+
+Disallow: /admin/
+Disallow: /internal/
+Disallow: /api/v1/automated/
+Disallow: /booking/automated/
+Disallow: /.env
+
+# Stricter rules for our research bot
+User-agent: AirfareIndexBot/1.0
+Allow: /
+Allow: /flights/search
+Disallow: /admin/
+Disallow: /internal/
+Disallow: /api/v1/automated/
+Disallow: /booking/automated/

@@ -46,7 +46,7 @@ let validationChart = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const res = await fetch('http://localhost:8000/api/observations');
+    const res = await fetch('http://localhost:8001/api/observations');
     if (res.ok) {
       API_OBSERVATIONS = await res.json();
       state.observations = [...API_OBSERVATIONS];
@@ -67,14 +67,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       
       // Compute dynamic sources
-      const sources = [...new Set(API_OBSERVATIONS.map(o => o.source))];
-      SOURCE_HEALTH = sources.map(s => ({
-        name: s,
-        type: 'API',
-        success_rate: 100, // mock success rate for now since we only store successes
-        obs_yield: 100,
-        last_ok: 'just now'
-      }));
+      const sourceMap = new Map();
+      API_OBSERVATIONS.forEach(o => {
+        const mode = o.collection_mode || 'API';
+        const key = `${o.source}-${mode}`;
+        if (!sourceMap.has(key)) {
+          sourceMap.set(key, { name: o.source, type: mode, success_rate: 100, obs_yield: 100, last_ok: 'just now' });
+        }
+      });
+      SOURCE_HEALTH = Array.from(sourceMap.values());
       
       FLAGGED_OBS = []; // No flagged obs yet
     } else {
@@ -146,7 +147,7 @@ function renderHealthList() {
     const label = s.success_rate >= 90 ? 'LIVE' : s.success_rate >= 75 ? 'FAIR' : 'ISSUES';
     return `
       <div class="health-item">
-        <span class="health-name">${s.name}</span>
+        <span class="health-name">${s.name} <span style="font-size:10px;color:var(--text-muted);border:1px solid var(--border-color);padding:2px 4px;border-radius:4px;margin-left:4px">${s.type}</span></span>
         <span class="health-badge ${level}">${s.success_rate}% ${label}</span>
       </div>`;
   }).join('');
@@ -301,7 +302,7 @@ function renderTable() {
 
   const tbody = document.getElementById('fare-table-body');
   if (sorted.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:48px">No observations match your filters</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:48px">No observations match your filters</td></tr>`;
     document.getElementById('observation-count').textContent = '0 records';
     return;
   }
@@ -332,6 +333,7 @@ function renderTable() {
         <td style="font-family:var(--mono);font-size:12px;color:var(--text-muted)">${flightTimes}</td>
         <td style="font-family:var(--mono)">T+${o.lead_days}</td>
         <td class="fare-cell">₹${o.total_fare.toLocaleString('en-IN')}</td>
+        <td><span style="font-size:10px;color:var(--text-muted);border:1px solid var(--border-color);padding:2px 4px;border-radius:4px;background:var(--card-bg)">${o.collection_mode || 'API'}</span></td>
         <td style="font-size:12px;color:var(--text-muted)">${o.source}</td>
         <td><span class="status-badge ${o.availability}">${o.availability.replace('_',' ')}</span></td>
         <td style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">${timeStr}</td>

@@ -76,3 +76,62 @@ def normalize_timestamp(
         )
     except ValueError:
         raise NormalizationException(field_name, raw_timestamp, "Failed to parse timestamp")
+
+
+import re
+
+_TIME_RE = re.compile(r"(\d{1,2}):(\d{2})\s*(AM|PM)?", re.IGNORECASE)
+
+def normalize_time_local(
+    time_str: str, 
+    travel_date: date,
+    field_name: str = "time_local",
+) -> NormalizationResult[datetime]:
+    """
+    Parses a flight time string (e.g. "06:30", "6:30 AM") into a datetime
+    in the local IST timezone, combined with the given travel_date.
+    """
+    if not time_str or not time_str.strip():
+        raise NormalizationException(field_name, time_str, "Empty time string")
+
+    time_str = time_str.strip()
+    match = _TIME_RE.search(time_str)
+    if not match:
+        raise NormalizationException(field_name, time_str, "Could not parse time string format")
+
+    hour, minute = int(match.group(1)), int(match.group(2))
+    ampm = (match.group(3) or "").upper()
+
+    if ampm == "PM" and hour != 12:
+        hour += 12
+    elif ampm == "AM" and hour == 12:
+        hour = 0
+
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        raise NormalizationException(field_name, time_str, f"Time out of range h={hour} m={minute}")
+
+    try:
+        dt = datetime(
+            travel_date.year, travel_date.month, travel_date.day,
+            hour, minute, 0,
+            tzinfo=IST_TZ,
+        )
+        return NormalizationResult(
+            raw_value=time_str,
+            normalized_value=dt,
+            is_success=True,
+            confidence=1.0,
+        )
+    except ValueError as exc:
+        raise NormalizationException(field_name, time_str, f"Datetime construction failed: {exc}")
+
+
+def to_utc(local_dt: datetime) -> datetime:
+    """
+    Convert a timezone-aware local datetime to UTC.
+    If local_dt has no tzinfo, assumes IST.
+    """
+    if local_dt.tzinfo is None:
+        local_dt = local_dt.replace(tzinfo=IST_TZ)
+    return local_dt.astimezone(timezone.utc)
+

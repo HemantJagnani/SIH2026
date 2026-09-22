@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 # Ensure we can import from apps.scraper.src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'scraper', 'src')))
 
-from storage.models import FareObservationRecord
+from storage.models import FareObservationRecord, RawObservationRecord
 
 load_dotenv()
 
@@ -36,10 +36,15 @@ async def get_observations():
     Fetch all recent fare observations from the database to populate the dashboard.
     """
     async with async_session() as session:
-        # Fetch the latest 500 observations sorted by travel date
-        stmt = select(FareObservationRecord).order_by(FareObservationRecord.travel_date).limit(500)
+        # Fetch the latest 500 observations sorted by travel date with collection method
+        stmt = (
+            select(FareObservationRecord, RawObservationRecord.collection_method)
+            .outerjoin(RawObservationRecord, FareObservationRecord.collection_run_id == RawObservationRecord.collection_run_id)
+            .order_by(FareObservationRecord.travel_date)
+            .limit(500)
+        )
         result = await session.execute(stmt)
-        observations = result.scalars().all()
+        rows = result.all()
         
         # Convert SQLAlchemy models to dicts
         return [
@@ -64,7 +69,8 @@ async def get_observations():
                 "price_status": obs.price_status,
                 "requires_self_transfer": obs.requires_self_transfer,
                 "departure_time_local": obs.departure_time_local.isoformat() if obs.departure_time_local else None,
-                "arrival_time_local": obs.arrival_time_local.isoformat() if obs.arrival_time_local else None
+                "arrival_time_local": obs.arrival_time_local.isoformat() if obs.arrival_time_local else None,
+                "collection_mode": col_method if col_method else "API"
             }
-            for obs in observations
+            for obs, col_method in rows
         ]

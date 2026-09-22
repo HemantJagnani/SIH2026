@@ -13,6 +13,8 @@ from pydantic import BaseModel, ConfigDict
 
 T = TypeVar("T")
 
+PIPELINE_VERSION = "2.0.0"
+
 
 class NormalizationResult(BaseModel, Generic[T]):
     """
