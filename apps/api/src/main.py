@@ -1,16 +1,9 @@
 import os
 import sys
+import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
-
-# Ensure we can import from apps.scraper.src
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'scraper', 'src')))
-
-from storage.models import FareObservationRecord, RawObservationRecord
 
 load_dotenv()
 
@@ -25,52 +18,49 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Setup Database Connection
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:15432/airfare_index")
-engine = create_async_engine(DATABASE_URL, echo=False)
-async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
 @app.get("/api/observations")
 async def get_observations():
     """
-    Fetch all recent fare observations from the database to populate the dashboard.
+    Fetch all recent fare observations from the local JSON file to populate the dashboard.
+    (Modified to skip Docker/PostgreSQL so you can instantly see data on the frontend!)
     """
-    async with async_session() as session:
-        # Fetch the latest 500 observations sorted by travel date with collection method
-        stmt = (
-            select(FareObservationRecord, RawObservationRecord.collection_method)
-            .outerjoin(RawObservationRecord, FareObservationRecord.collection_run_id == RawObservationRecord.collection_run_id)
-            .order_by(FareObservationRecord.travel_date)
-            .limit(500)
-        )
-        result = await session.execute(stmt)
-        rows = result.all()
-        
-        # Convert SQLAlchemy models to dicts
-        return [
-            {
-                "route": f"{obs.origin}→{obs.destination}",
-                "origin": obs.origin,
-                "destination": obs.destination,
-                "airline": obs.airline,
-                "airline_code": obs.airline_code,
-                "flight_number": obs.flight_number,
-                "cabin": obs.cabin if obs.cabin else "ECONOMY",
-                "travel_date": obs.travel_date.isoformat() if obs.travel_date else None,
-                "lead_days": obs.lead_days,
-                "total_fare": float(obs.total_fare) if obs.total_fare else 0,
-                "base_fare": float(obs.base_fare) if obs.base_fare else 0,
-                "taxes": float(obs.taxes) if obs.taxes else 0,
-                "source": obs.source,
-                "availability": obs.availability if obs.availability else "AVAILABLE",
-                "collected_at": obs.collected_at.isoformat() if obs.collected_at else None,
-                "fare_family": obs.fare_family,
-                "stops": obs.stops,
-                "price_status": obs.price_status,
-                "requires_self_transfer": obs.requires_self_transfer,
-                "departure_time_local": obs.departure_time_local.isoformat() if obs.departure_time_local else None,
-                "arrival_time_local": obs.arrival_time_local.isoformat() if obs.arrival_time_local else None,
-                "collection_mode": col_method if col_method else "API"
-            }
-            for obs, col_method in rows
-        ]
+    json_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'easemytrip_parsed_data.json')
+    
+    if not os.path.exists(json_path):
+        return []
+
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            raw_data = json.load(f)
+            
+        # Format the data exactly as the frontend expects it
+        formatted_data = []
+        for obs in raw_data[:500]:  # Limit to 500 for performance
+            formatted_data.append({
+                "route": f"{obs.get('origin', '')}→{obs.get('destination', '')}",
+                "origin": obs.get("origin"),
+                "destination": obs.get("destination"),
+                "airline": obs.get("airline"),
+                "airline_code": obs.get("airline_code"),
+                "flight_number": obs.get("flight_number"),
+                "cabin": obs.get("cabin", "ECONOMY"),
+                "travel_date": obs.get("travel_date"),
+                "lead_days": obs.get("lead_days"),
+                "total_fare": float(obs.get("total_fare", 0) or 0),
+                "base_fare": float(obs.get("base_fare", 0) or 0),
+                "taxes": float(obs.get("taxes", 0) or 0),
+                "source": obs.get("source"),
+                "availability": obs.get("availability", "AVAILABLE"),
+                "collected_at": obs.get("collected_at"),
+                "fare_family": obs.get("fare_family"),
+                "stops": obs.get("stops", 0),
+                "price_status": obs.get("price_status", "OK"),
+                "requires_self_transfer": obs.get("requires_self_transfer", False),
+                "departure_time_local": obs.get("departure_time_local"),
+                "arrival_time_local": obs.get("arrival_time_local"),
+                "collection_mode": "JSON Backup"
+            })
+        return formatted_data
+    except Exception as e:
+        print(f"Error reading JSON: {e}")
+        return []
