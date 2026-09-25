@@ -3,6 +3,7 @@ import { api, type Run } from './api';
 import IndexView from './views/IndexView';
 import BookingCurvesView from './views/BookingCurvesView';
 import MethodView from './views/MethodView';
+import LandingPage from './views/LandingPage';
 
 type Tab = 'index' | 'curves' | 'method';
 
@@ -35,6 +36,26 @@ const TAB_LABELS: Record<Tab, string> = {
 };
 
 export default function App() {
+  // Auth gate — persists across page reloads within the session
+  const [authed, setAuthed] = useState<boolean>(() => {
+    try { return sessionStorage.getItem('apix_authed') === '1'; } catch { return false; }
+  });
+
+  const handleAuthenticated = useCallback(() => {
+    try { sessionStorage.setItem('apix_authed', '1'); } catch {}
+    setAuthed(true);
+  }, []);
+
+  // Show landing until authenticated
+  if (!authed) {
+    return <LandingPage onAuthenticated={handleAuthenticated} />;
+  }
+
+  return <Dashboard />;
+}
+
+/* ── Dashboard (shown after auth) ───────────────────────────────────────── */
+function Dashboard() {
   const [tab, setTab] = useState<Tab>('index');
   const [runs, setRuns] = useState<Run[]>([]);
   const [lastRunDate, setLastRunDate] = useState<string | null>(null);

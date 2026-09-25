@@ -2,7 +2,7 @@ timezone: Asia/Kolkata
 schedule: { hour: 5, minute: 0 }
 
 source:
-  name: fixture            # fixture | live | synthetic
+  name: easemytrip         # fixture | live | synthetic | easemytrip
   user_agent: "APIx-Prototype/0.1 (research prototype; contact: CHANGE_ME)"
   min_delay_s: 8
   max_delay_s: 15

@@ -78,7 +78,7 @@ export default function WeightBar({
   const dragRef = useRef<{
     divIdx: number;
     startX: number;
-    startWeights: (string | number)[];
+    startWeights: number[];   // FIXED: snapshot of actual weight values at pointer-down
     trackW: number;
   } | null>(null);
 
@@ -92,29 +92,26 @@ export default function WeightBar({
     dragRef.current = {
       divIdx,
       startX: e.clientX,
-      startWeights: keys,
+      startWeights: keys.map(k => weights[k] ?? 0),  // snapshot values, not keys
       trackW: trackRef.current?.getBoundingClientRect().width ?? 800,
     };
-  }, [keys]);
+  }, [keys, weights]);
 
   useEffect(() => {
     function onMove(e: PointerEvent) {
       if (!dragRef.current) return;
-      const { divIdx, startX, trackW } = dragRef.current;
+      const { divIdx, startX, startWeights, trackW } = dragRef.current;
       const dx = e.clientX - startX;
+      // delta relative to the SNAPSHOT at drag-start — no drift accumulation
       const delta = snap(clamp(dx / trackW, -0.99, 0.99));
 
-      const arr = getWeightsArr();
-      const left = arr[divIdx];
-      const right = arr[divIdx + 1];
+      const left0 = startWeights[divIdx];
+      const right0 = startWeights[divIdx + 1];
+      const move = clamp(delta, -left0 + 0.01, right0 - 0.01);
 
-      // Move weight from right to left (or vice versa)
-      const maxMove = delta > 0 ? right - 0.01 : left - 0.01;
-      const move = clamp(delta, -left + 0.01, right - 0.01);
-
-      const next = [...arr];
-      next[divIdx] = snap(clamp(left + move, 0.01, 0.99));
-      next[divIdx + 1] = snap(clamp(right - move, 0.01, 0.99));
+      const next = [...startWeights];
+      next[divIdx]     = snap(clamp(left0  + move, 0.01, 0.99));
+      next[divIdx + 1] = snap(clamp(right0 - move, 0.01, 0.99));
 
       const newWeights: Record<string | number, number> = {};
       keys.forEach((k, i) => { newWeights[k] = next[i]; });

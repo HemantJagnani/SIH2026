@@ -66,6 +66,15 @@ def _get_source(cfg: AppConfig, run_id: int) -> FareSource:
             compliance_gate=gate,
             user_agent=cfg.source.user_agent,
         )
+    if name == "easemytrip":
+        from apix.compliance import ComplianceGate
+        from apix.sources.easemytrip import EaseMyTripSource
+        gate = ComplianceGate(user_agent=cfg.source.user_agent)
+        return EaseMyTripSource(
+            run_id=run_id,
+            compliance_gate=gate,
+            user_agent=cfg.source.user_agent,
+        )
     raise ValueError(f"Unknown source: {name!r}")
 
 
