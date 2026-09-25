@@ -1,50 +1,107 @@
-# India Airfare Price Index
+# India Airfare Price Index (SIH 2026)
 
-Welcome to the India Airfare Price Index! This repository contains the production data-acquisition pipeline for tracking, normalizing, and validating Indian domestic airfares.
+Welcome to the **India Airfare Price Index**! This repository contains a production-grade data-acquisition pipeline and visualization dashboard for tracking, normalizing, and analyzing Indian domestic airfares.
 
-## Features
+---
 
-- **Live Data Collection:** Integrates with the Ignav API to fetch real-time airfare data across multiple Indian domestic routes (e.g., DEL→BOM, DEL→BLR).
-- **Robust Pipeline:** Employs a strict validation and normalization engine to ensure all incoming data conforms to a standard schema before it hits the database.
-- **Relational Storage:** Backed by PostgreSQL using SQLAlchemy (async) with a clean schema for tracking Collection Runs, Jobs, and individual Fare Observations.
-- **Real-time Dashboard:** A FastAPI backend paired with a vanilla JS/HTML dashboard to instantly visualize fare trends, pipeline health, and data quality metrics.
+## 🏗️ System Architecture & Pipeline Overview
 
-## Project Structure
+The project is built as a complete end-to-end data pipeline, consisting of four primary components:
 
-- `apps/scraper/src/adapters/`: API Adapters (currently Ignav)
-- `apps/scraper/src/scripts/`: Orchestration scripts (e.g., `run_ignav.py`)
-- `apps/scraper/src/storage/`: Database models and SQLAlchemy config
-- `apps/scraper/src/validation/`: Data normalization and quality gating
-- `apps/api/src/`: FastAPI backend serving the observations
-- `web/`: Frontend dashboard (HTML/CSS/JS)
-- `docker-compose.yml`: Local infrastructure (PostgreSQL & Redis)
+### 1. Data Collection & Scraping Engine (`apps/scraper/`)
+The scraper engine is responsible for fetching real flight data. It is designed to be highly modular and resilient, supporting multiple source adapters:
+- **Ignav API Adapter:** Integrates directly with the Ignav API to pull pristine fare data.
+- **EaseMyTrip Browser Adapter:** Employs a robust DOM parsing approach to extract flight data directly from EaseMyTrip search result pages using raw DOM node structures, bypassing blocks.
+- **Validation Pipeline:** Every single flight observation passes through `AirfareValidationPipeline`. It normalizes currencies, standardizes timestamps, ensures base/tax sums match the total fare, and flags anomalies.
 
-## Quick Start
+### 2. Relational Storage System (`apps/scraper/src/storage/`)
+- Backed by **PostgreSQL** and **Redis** (managed locally via Docker Compose).
+- Utilizes asynchronous **SQLAlchemy** models to track scraping jobs, batch runs, and raw observations.
+- Data structures allow for complex indexing on attributes like `route`, `lead_days`, `fare_family`, and `collection_mode` (API vs. BROWSER).
 
-1. **Start the infrastructure:**
-   ```bash
-   docker-compose up -d
+### 3. FastAPI Backend (`apps/api/`)
+- A fast, async Python backend built on **FastAPI**.
+- Exposes API endpoints (e.g., `/api/observations`) to the frontend.
+- Currently processes a local static JSON dump of EaseMyTrip parsing (`easemytrip_parsed_data.json`) to bypass active database constraints for development speed, formatting it cleanly for consumption by the React dashboard.
+
+### 4. React Frontend Dashboard (`web/`)
+- A modern Single Page Application (SPA) built with **React**, **TypeScript**, and **Vite**.
+- Fetches live/indexed data from the FastAPI backend and provides dynamic insights into fare structures.
+- Visualizes key metrics including Total Fare, Lead Days, Price Status, and the Path/Source of the scrape.
+
+---
+
+## 📂 Project Structure
+
+```text
+SIH2026/
+├── apps/
+│   ├── api/                  # FastAPI backend server
+│   │   └── src/main.py       # API endpoints and CORS config
+│   └── scraper/              # Data collection pipeline
+│       └── src/
+│           ├── adapters/     # Source adapters (Ignav, EaseMyTrip)
+│           ├── scripts/      # Execution scripts (run_ignav.py, etc.)
+│           ├── storage/      # SQLAlchemy DB models and sessions
+│           └── validation/   # Normalization and quality gates
+├── web/                      # React Frontend application
+│   ├── src/                  # React components and views
+│   ├── package.json          # Node.js dependencies
+│   └── vite.config.ts        # Vite configuration
+├── docker-compose.yml        # PostgreSQL & Redis infrastructure
+└── easemytrip_parsed_data.json # Local dump of captured DOM data
+```
+
+---
+
+## 🚀 How to Run the Project Locally
+
+### 1. Database Infrastructure (Docker)
+Ensure Docker Desktop is running, then start the database services:
+```bash
+docker-compose up -d
+```
+
+### 2. Start the Backend API (FastAPI)
+The FastAPI backend serves the flight data to the dashboard. 
+*Note: Make sure port 8000 on your machine is not hijacked by other background services. If it is, kill the hijacking process or change the port below to 8001.*
+
+Open a PowerShell terminal at the root of the project:
+```powershell
+# Set the Python path to include the scraper modules
+$env:PYTHONPATH="apps/scraper/src"
+
+# Run the backend on port 8000
+uvicorn apps.api.src.main:app --host 0.0.0.0 --port 8000
+```
+*The API will be available at `http://localhost:8000/api/observations`.*
+
+### 3. Start the Frontend Dashboard (React + Vite)
+Open a *new* terminal window, navigate to the `web` directory, and start the development server:
+```powershell
+cd web
+npm install
+npm run dev
+```
+*The dashboard will be available in your browser at `http://localhost:5173/`.*
+
+---
+
+## 🛠️ Modifying the API Port
+If you encounter **CORS** or **Authentication Failed** errors on the frontend, it usually means your local port `8000` is hijacked by another hidden application.
+
+**To fix this:**
+1. Start your backend on port `8001` instead:
+   ```powershell
+   uvicorn apps.api.src.main:app --host 0.0.0.0 --port 8001
    ```
-
-2. **Run the data collection scraper:**
-   ```bash
-   # Set your IGNAV_API_KEY in .env first
-   $env:PYTHONPATH="apps/scraper/src"
-   python apps/scraper/src/scripts/run_ignav.py
+2. Open `web/src/api.ts` and change the `BASE` constant to point to `8001`:
+   ```typescript
+   const BASE = 'http://localhost:8001/api';
    ```
+3. Vite will hot-reload automatically, and your frontend will connect successfully!
 
-3. **Start the API & Dashboard:**
-   ```bash
-   # Terminal 1: API Server
-   $env:PYTHONPATH="apps/scraper/src"
-   python -m uvicorn apps.api.src.main:app --port 8000
-   
-   # Terminal 2: Web Server
-   python -m http.server 8080
-   ```
+---
 
-Navigate to `http://localhost:8080/index.html` to see the live data dashboard!
-
-## Branch: Prototype 2
-
-This branch (`prototype2`) introduces the full end-to-end integration with the Ignav API, replacing mock data and fragile web scrapers with a reliable data feed. It includes full database persistence, validation gates, and a dynamic frontend showcasing real flight times and fare structures.
+## 📊 Pipeline Status
+Currently, the `main` branch includes the full transition to the **React frontend** and the successful extraction logic for **EaseMyTrip**. The frontend correctly identifies records scraped via DOM navigation (`BROWSER`) vs clean endpoints (`API`).
