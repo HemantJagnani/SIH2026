@@ -254,6 +254,30 @@ class SourceHealthSnapshot(BaseModel):
     avg_response_time_ms: float | None = None
     median_response_time_ms: float | None = None
 
+    # Phase 21 Source Health fields
+    consecutive_failures: int = 0
+    blocked: bool = False
+    block_reason: str | None = None
+    parse_rate: float = 0.0
+    enrichment_rate: float = 0.0
+
     # Timestamps
     last_success_at: datetime | None = None
     last_failure_at: datetime | None = None
+
+
+class SourceHealthRecord(BaseModel):
+    """
+    Source health record per Phase 21.
+    source, last_success, last_failure, consecutive_failures, blocked,
+    block_reason, success_rate, parse_rate, enrichment_rate.
+    """
+    source: str
+    last_success: datetime | None = None
+    last_failure: datetime | None = None
+    consecutive_failures: int = 0
+    blocked: bool = False
+    block_reason: str | None = None
+    success_rate: float = 0.0
+    parse_rate: float = 0.0
+    enrichment_rate: float = 0.0

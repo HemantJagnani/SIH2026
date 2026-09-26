@@ -239,3 +239,21 @@ sources:
       http_429: backoff
       http_5xx: retry
       login_wall: stop_source
+
+  google_flights:
+    enabled: true
+    acquisition:
+      mode: webpage
+    browser:
+      required: true
+    robots:
+      respect: true
+    rate_limit:
+      min_interval_seconds: 5
+      max_concurrency: 1
+    blocked_policy:
+      captcha: stop_source
+      http_403: stop_source
+      http_429: backoff
+      http_5xx: retry
+      login_wall: stop_source

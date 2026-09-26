@@ -5,3 +5,17 @@ routes:
     destination: BLR
   - origin: BOM
     destination: BLR
+  - origin: DEL
+    destination: CCU
+  - origin: BLR
+    destination: HYD
+  - origin: DEL
+    destination: HYD
+  - origin: BOM
+    destination: GOI
+  - origin: DEL
+    destination: MAA
+  - origin: BOM
+    destination: CCU
+  - origin: BLR
+    destination: CCU

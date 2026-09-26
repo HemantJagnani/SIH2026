@@ -73,9 +73,16 @@ class JobGenerator:
 
         jobs = []
 
-        for source in sources:
-            source_name = source["name"]
-            permitted_method = source.get("permitted_method", "web")
+        # Check if sources is a list or dict
+        if isinstance(sources, dict):
+            # Parse dict format
+            source_items = [(k, v) for k, v in sources.items() if getattr(v, "get", lambda x, y: y)("enabled", True)]
+        else:
+            # Legacy list format
+            source_items = [(s["name"], s) for s in sources]
+
+        for source_name, source_config in source_items:
+            permitted_method = source_config.get("acquisition", {}).get("mode", "webpage") if isinstance(source_config, dict) else source_config.get("permitted_method", "web")
             
             # Map configuration method to CollectionMode enum value
             mode = CollectionMode.API if permitted_method == "api" else CollectionMode.BROWSER

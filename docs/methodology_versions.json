@@ -1,0 +1,63 @@
+{
+  "active_version": "1.0.0-PROD",
+  "methodology_versions": [
+    {
+      "version": "1.0.0-PROD",
+      "release_date": "2026-09-27",
+      "methodology_name": "APIx CPI Airfare Index Methodology (Phase 28 Production Standard)",
+      "target_product": {
+        "market": "DOMESTIC_INDIA",
+        "trip_type": "ONE_WAY",
+        "passengers": 1,
+        "passenger_type": "ADULT",
+        "cabin_class": "ECONOMY",
+        "currency": "INR",
+        "price_concept": "MANDATORY_PAYABLE_TOTAL",
+        "lead_time_classes": ["T+1", "T+7", "T+15", "T+21", "T+30", "T+45"]
+      },
+      "fare_family_strategy": {
+        "primary_strategy": "STRATEGY_A_AND_B_HYBRID",
+        "headline_rule": "LOWEST_MANDATORY_QUALIFYING_BASELINE (Saver/Value/Standard Lowest)",
+        "sub_strata": [
+          {
+            "stratum_id": "STANDARD_SAVER",
+            "description": "Standard economy entry fare; 7kg cabin, 15kg check-in, non-refundable/strict fee",
+            "qualifying_fare_families": ["Saver", "Value", "SpiceSaver", "Standard"]
+          },
+          {
+            "stratum_id": "FLEXIBLE_ECONOMY",
+            "description": "Flexible economy; complimentary meal/standard seat, reduced change fees",
+            "qualifying_fare_families": ["Flex", "FlexiPlus", "Classic", "SpiceFlex"]
+          },
+          {
+            "stratum_id": "OTA_EXCLUSIVE",
+            "description": "Aggregator-exclusive retail fare; reduced cancellation fee (₹999), free date change",
+            "qualifying_fare_families": ["EMTEXCLUSIVE", "Retail"]
+          },
+          {
+            "stratum_id": "PREMIUM_UPFRONT",
+            "description": "Premium economy/front row seat, complimentary meal, 20kg checkin baggage",
+            "qualifying_fare_families": ["IndigoUpFront", "SpiceMax"]
+          }
+        ],
+        "mixing_policy": "NO_UNSTRATIFIED_MIXING"
+      },
+      "discount_semantics": {
+        "treatment": "METADATA_ONLY",
+        "subtraction_from_total_fare": false,
+        "rule": "Promotional coupon codes and bank-gated offers are recorded as metadata and never deducted from displayed mandatory payable price."
+      },
+      "stream_stabilization": {
+        "algorithm": "CONSECUTIVE_UNCHANGED_COUNT_POLLING",
+        "default_interval_seconds": 2.0,
+        "default_required_stable_checks": 3,
+        "default_max_wait_seconds": 30.0
+      },
+      "missingness_policy": {
+        "zero_fabrication": true,
+        "unbundled_taxes_listing_page": "SOURCE_TOTAL_ONLY",
+        "unobserved_fields": "NULL"
+      }
+    }
+  ]
+}

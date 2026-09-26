@@ -1,0 +1,231 @@
+{
+  "meta": {
+    "route": "DEL-BOM",
+    "base_price_inr": 6632.67,
+    "base_period": "2026-09-26",
+    "base_method": "Option B — first production run weighted representative price",
+    "base_price_source": "Newly created from Phase 28 run (2026-09-26) — index = 100.00",
+    "collection_date": "2026-09-26",
+    "generated_at": "2026-09-26T21:41:48.018357+00:00",
+    "total_observations": 70,
+    "sources": [
+      "google_flights",
+      "easemytrip"
+    ],
+    "lead_times_covered": [
+      1,
+      7,
+      15,
+      21,
+      30,
+      45
+    ],
+    "methodology": "APIx v1.0 — Weighted Arithmetic (Laspeyres-type)",
+    "formula": "RouteIndex(r,t) = [Σ w_L × Median(fares_{r,L,t})] / BasePrice(r) × 100",
+    "disclaimer": "Illustrative POC methodology — subject to validation against MoSPI, DGCA and international price-index standards."
+  },
+  "headline": {
+    "weighted_representative_price_inr": 6632.67,
+    "route_index": 100.0,
+    "interpretation": "DEL-BOM fares are at 100.0% of the base-period price (2026-09-26)",
+    "base_price_inr": 6632.67
+  },
+  "lead_time_breakdown": {
+    "T+1": {
+      "lead_days": 1,
+      "weight": 0.166667,
+      "median_fare_inr": 6529.5,
+      "geometric_mean_fare_inr": 6597.53,
+      "n_itineraries": 10,
+      "min_fare_inr": 6314.0,
+      "max_fare_inr": 7197.0,
+      "contribution_inr": 1088.25
+    },
+    "T+7": {
+      "lead_days": 7,
+      "weight": 0.166667,
+      "median_fare_inr": 6090.0,
+      "geometric_mean_fare_inr": 6191.9,
+      "n_itineraries": 10,
+      "min_fare_inr": 6083.0,
+      "max_fare_inr": 6474.0,
+      "contribution_inr": 1015.0
+    },
+    "T+15": {
+      "lead_days": 15,
+      "weight": 0.166667,
+      "median_fare_inr": 6478.0,
+      "geometric_mean_fare_inr": 6521.4,
+      "n_itineraries": 10,
+      "min_fare_inr": 6425.0,
+      "max_fare_inr": 6880.0,
+      "contribution_inr": 1079.67
+    },
+    "T+21": {
+      "lead_days": 21,
+      "weight": 0.166667,
+      "median_fare_inr": 6560.0,
+      "geometric_mean_fare_inr": 6562.7,
+      "n_itineraries": 10,
+      "min_fare_inr": 6244.0,
+      "max_fare_inr": 6913.0,
+      "contribution_inr": 1093.33
+    },
+    "T+30": {
+      "lead_days": 30,
+      "weight": 0.166667,
+      "median_fare_inr": 6790.0,
+      "geometric_mean_fare_inr": 6673.12,
+      "n_itineraries": 10,
+      "min_fare_inr": 6244.0,
+      "max_fare_inr": 7079.0,
+      "contribution_inr": 1131.67
+    },
+    "T+45": {
+      "lead_days": 45,
+      "weight": 0.166667,
+      "median_fare_inr": 7348.5,
+      "geometric_mean_fare_inr": 7463.57,
+      "n_itineraries": 10,
+      "min_fare_inr": 7129.0,
+      "max_fare_inr": 8567.0,
+      "contribution_inr": 1224.75
+    }
+  },
+  "stratum_sub_indices": {
+    "STANDARD_SAVER": {
+      "weighted_price": 6627.5,
+      "index_value": 99.9221,
+      "lead_breakdown": {
+        "T+1": {
+          "median_fare": 6529.5,
+          "n_obs": 10,
+          "weight": 0.1667
+        },
+        "T+7": {
+          "median_fare": 6090.0,
+          "n_obs": 12,
+          "weight": 0.1667
+        },
+        "T+15": {
+          "median_fare": 6478.0,
+          "n_obs": 10,
+          "weight": 0.1667
+        },
+        "T+21": {
+          "median_fare": 6529.0,
+          "n_obs": 12,
+          "weight": 0.1667
+        },
+        "T+30": {
+          "median_fare": 6790.0,
+          "n_obs": 10,
+          "weight": 0.1667
+        },
+        "T+45": {
+          "median_fare": 7348.5,
+          "n_obs": 10,
+          "weight": 0.1667
+        }
+      }
+    },
+    "OTA_EXCLUSIVE": {
+      "weighted_price": 6416.0,
+      "index_value": 96.7333,
+      "lead_breakdown": {
+        "T+7": {
+          "median_fare": 6339.0,
+          "n_obs": 1,
+          "weight": 0.5
+        },
+        "T+21": {
+          "median_fare": 6493.0,
+          "n_obs": 1,
+          "weight": 0.5
+        }
+      }
+    },
+    "FLEXIBLE_ECONOMY": {
+      "weighted_price": 6663.0,
+      "index_value": 100.4573,
+      "lead_breakdown": {
+        "T+7": {
+          "median_fare": 6565.0,
+          "n_obs": 1,
+          "weight": 0.5
+        },
+        "T+21": {
+          "median_fare": 6761.0,
+          "n_obs": 1,
+          "weight": 0.5
+        }
+      }
+    },
+    "PREMIUM_UPFRONT": {
+      "weighted_price": 8446.5,
+      "index_value": 127.347,
+      "lead_breakdown": {
+        "T+7": {
+          "median_fare": 9240.0,
+          "n_obs": 1,
+          "weight": 0.5
+        },
+        "T+21": {
+          "median_fare": 7653.0,
+          "n_obs": 1,
+          "weight": 0.5
+        }
+      }
+    }
+  },
+  "source_comparison": {
+    "google_flights": {
+      "weighted_price": 6704.33,
+      "index_value": 101.0805,
+      "total_obs": 30
+    },
+    "easemytrip": {
+      "weighted_price": 6596.5,
+      "index_value": 99.4547,
+      "total_obs": 40
+    }
+  },
+  "airline_breakdown": {
+    "SpiceJet": {
+      "n_obs": 21,
+      "median_fare": 6591.0,
+      "min_fare": 6244.0,
+      "max_fare": 7653.0
+    },
+    "IndiGo": {
+      "n_obs": 19,
+      "median_fare": 6339.0,
+      "min_fare": 6083.0,
+      "max_fare": 9240.0
+    },
+    "Air India Express": {
+      "n_obs": 15,
+      "median_fare": 6529.0,
+      "min_fare": 6388.0,
+      "max_fare": 7318.0
+    },
+    "Air India": {
+      "n_obs": 6,
+      "median_fare": 6425.0,
+      "min_fare": 6314.0,
+      "max_fare": 6913.0
+    },
+    "DEL": {
+      "n_obs": 5,
+      "median_fare": 6425.0,
+      "min_fare": 6425.0,
+      "max_fare": 6880.0
+    },
+    "Akasa Air": {
+      "n_obs": 4,
+      "median_fare": 6979.5,
+      "min_fare": 6880.0,
+      "max_fare": 8567.0
+    }
+  }
+}

@@ -3,8 +3,10 @@ import { api, type Run } from './api';
 import IndexView from './views/IndexView';
 import BookingCurvesView from './views/BookingCurvesView';
 import MethodView from './views/MethodView';
+import DataView from './views/DataView';
+import Phase28View from './views/Phase28View';
 
-type Tab = 'index' | 'curves' | 'method';
+type Tab = 'index' | 'curves' | 'method' | 'data' | 'realdata';
 
 /** Read/write the selected date from the URL search params. */
 function getDateFromUrl(): string | null {
@@ -32,6 +34,8 @@ const TAB_LABELS: Record<Tab, string> = {
   index: 'Index',
   curves: 'Booking curves',
   method: 'Method',
+  data: 'Data',
+  realdata: 'Real Data → DEL-BOM',
 };
 
 export default function App() {
@@ -60,7 +64,7 @@ export default function App() {
         </a>
         <nav aria-label="Main navigation">
           <ul className="site-header__nav" role="tablist">
-            {(['index', 'curves', 'method'] as Tab[]).map(t => (
+            {(['index', 'curves', 'method', 'data', 'realdata'] as Tab[]).map(t => (
               <li key={t} role="none">
                 <button
                   id={`tab-${t}`}
@@ -117,6 +121,22 @@ export default function App() {
           hidden={tab !== 'method'}
         >
           {tab === 'method' && <MethodView runs={runs} />}
+        </div>
+        <div
+          id="panel-data"
+          role="tabpanel"
+          aria-labelledby="tab-data"
+          hidden={tab !== 'data'}
+        >
+          {tab === 'data' && <DataView />}
+        </div>
+        <div
+          id="panel-realdata"
+          role="tabpanel"
+          aria-labelledby="tab-realdata"
+          hidden={tab !== 'realdata'}
+        >
+          {tab === 'realdata' && <Phase28View />}
         </div>
       </main>
     </>

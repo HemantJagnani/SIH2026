@@ -69,9 +69,9 @@ def compute_itinerary_fingerprint(
 
 def compute_offer_fingerprint(
     itinerary_fingerprint: str,
-    fare_family: Optional[str] = "STANDARD",
+    fare_family: Optional[str] = None,
     cabin: Optional[str] = "ECONOMY",
-    baggage: Optional[str] = "STANDARD",
+    baggage: Optional[str] = None,
     refundability: Optional[str] = "UNKNOWN",
     changeability: Optional[str] = "UNKNOWN",
 ) -> str:
@@ -84,9 +84,9 @@ def compute_offer_fingerprint(
     )
     """
     norm_itin = normalize_string(itinerary_fingerprint)
-    norm_fare_fam = normalize_string(fare_family) or "STANDARD"
+    norm_fare_fam = normalize_string(fare_family) or "UNKNOWN"
     norm_cabin = normalize_string(cabin) or "ECONOMY"
-    norm_baggage = normalize_string(baggage) or "STANDARD"
+    norm_baggage = normalize_string(baggage) or "UNKNOWN"
     norm_ref = normalize_string(refundability) or "UNKNOWN"
     norm_chg = normalize_string(changeability) or "UNKNOWN"
 

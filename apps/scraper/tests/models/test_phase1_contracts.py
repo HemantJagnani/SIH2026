@@ -32,6 +32,7 @@ from models import (
     CollectionStatus,
     FareObservation,
     FareSearchRequest,
+    FlightSegment,
     JobLifecycleStatus,
     PassengerCount,
     RawObservation,
@@ -269,6 +270,42 @@ class TestFareObservation:
         assert obs.origin == "DEL"
         assert obs.destination == "BOM"
         assert obs.airline == "IndiGo"
+
+    def test_fare_observation_default_unseen_fields_are_null(self):
+        """Phase A remediation: optional fields must remain NULL if not set."""
+        obs = make_observation()
+        assert obs.fare_family is None
+        assert obs.cabin_baggage_kg is None
+        assert obs.checkin_baggage_kg is None
+        assert obs.cancellation_fee is None
+        assert obs.change_fee is None
+        assert obs.refund_status is None
+        assert obs.airport_charges is None
+        assert obs.security_fee is None
+        assert obs.gst is None
+        assert obs.inventory_status is None
+        assert obs.seats_remaining_displayed is None
+        
+    def test_fare_observation_flight_segments(self):
+        """Phase A remediation: flight segments validate correctly and independently."""
+        seg = FlightSegment(
+            segment_number=1,
+            origin="DEL",
+            destination="BOM",
+            flight_number="6E-123",
+            operating_carrier="IndiGo",
+            departure_time=datetime(2026, 9, 28, 10, 0, tzinfo=timezone.utc),
+            arrival_time=datetime(2026, 9, 28, 12, 0, tzinfo=timezone.utc),
+            duration=120
+        )
+        obs = make_observation(flight_segments=[seg])
+        assert len(obs.flight_segments) == 1
+        assert obs.flight_segments[0].segment_number == 1
+        assert obs.flight_segments[0].origin == "DEL"
+        
+        # Test independent lists
+        obs2 = make_observation()
+        assert len(obs2.flight_segments) == 0
 
     def test_observation_id_auto_generated(self):
         o1 = make_observation()

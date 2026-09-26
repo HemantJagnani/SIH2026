@@ -198,9 +198,10 @@ class CollectionOrchestrator:
 
             # Load saved session state (cookies/localStorage) into the context.
             saved_state = self._session_manager.load(self.source_id)
-            if saved_state:
+            b_ctx = getattr(context, "browser_context", None) or getattr(page, "context", None)
+            if saved_state and b_ctx:
                 try:
-                    await context.browser_context.add_cookies(
+                    await b_ctx.add_cookies(
                         saved_state.get("cookies", [])
                     )
                     logger.debug("Orchestrator: loaded %d cookies.", len(saved_state.get("cookies", [])))
@@ -263,8 +264,10 @@ class CollectionOrchestrator:
             elif terminal_state == WorkflowState.DONE:
                 # Save updated session state for next run.
                 try:
-                    new_state = await context.browser_context.storage_state()
-                    self._session_manager.save(self.source_id, new_state)
+                    b_ctx = getattr(context, "browser_context", None) or getattr(page, "context", None)
+                    if b_ctx:
+                        new_state = await b_ctx.storage_state()
+                        self._session_manager.save(self.source_id, new_state)
                 except Exception as exc:
                     logger.warning("Orchestrator: could not save session state — %s", exc)
 
@@ -272,7 +275,9 @@ class CollectionOrchestrator:
         # 4. Run the crawler
         # ----------------------------------------------------------------
         try:
-            await crawler.run([self.source_url])
+            from crawlee import Request
+            req_item = Request.from_url(self.source_url, unique_key=f"{self.source_url}#{run_id}")
+            await crawler.run([req_item])
         except Exception as exc:
             logger.error("Orchestrator: crawler raised an exception — %s", exc)
             # The handler may have already set a terminal_state.

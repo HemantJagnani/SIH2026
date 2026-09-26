@@ -15,7 +15,7 @@ from .enums import (
     JobLifecycleStatus,
     TripType,
 )
-from .observation import FareObservation
+from .observation import FareObservation, FlightSegment
 from .raw_observation import RawObservation
 from .request import FareSearchRequest, PassengerCount
 from .result import CollectionResult
@@ -35,6 +35,26 @@ from .fingerprint import (
     compute_offer_fingerprint,
 )
 
+from .provenance import (
+    FieldStatus,
+    MissingReason,
+    ExtractionMode,
+    FieldProvenance,
+)
+from .itinerary import (
+    Itinerary,
+    FlightSegment,
+    FareOffer,
+    PriceStatus,
+)
+from .enrichment import (
+    EnrichmentType,
+    EnrichmentStatus,
+    EnrichmentTask,
+    EnrichmentPolicy,
+    MAX_ENRICHMENT_ATTEMPTS,
+)
+
 __all__ = [
     # Enums
     "AvailabilityStatus",
@@ -43,8 +63,20 @@ __all__ = [
     "CollectionStatus",
     "JobLifecycleStatus",
     "TripType",
+    "FieldStatus",
+    "MissingReason",
+    "ExtractionMode",
+    "PriceStatus",
+    "EnrichmentType",
+    "EnrichmentStatus",
     # Models
     "FareObservation",
+    "FlightSegment",
+    "Itinerary",
+    "FareOffer",
+    "FieldProvenance",
+    "EnrichmentTask",
+    "EnrichmentPolicy",
     "RawObservation",
     "RawFareObservation",
     "NormalizedFareObservation",
@@ -61,5 +93,6 @@ __all__ = [
     "classify_stop_category",
     # Constants
     "SCHEMA_VERSION",
+    "MAX_ENRICHMENT_ATTEMPTS",
 ]
 

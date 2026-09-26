@@ -16,12 +16,26 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field, UUID4, field_validator, model_validator
 
 from .enums import AvailabilityStatus, CabinClass, TripType
 from .version import SCHEMA_VERSION
+
+
+class FlightSegment(BaseModel):
+    """
+    Represents a single leg/segment of a flight itinerary.
+    """
+    segment_number: int = Field(..., ge=1, description="Sequential order of the segment.")
+    origin: str = Field(..., min_length=3, max_length=3, description="Departure airport IATA code.")
+    destination: str = Field(..., min_length=3, max_length=3, description="Arrival airport IATA code.")
+    flight_number: str = Field(..., description="Flight number for this segment.")
+    operating_carrier: str = Field(..., description="Airline operating this segment.")
+    departure_time: datetime = Field(..., description="Scheduled departure time.")
+    arrival_time: datetime = Field(..., description="Scheduled arrival time.")
+    duration: int | None = Field(default=None, ge=0, description="Duration in minutes.")
 
 
 class FareObservation(BaseModel):
@@ -66,6 +80,18 @@ class FareObservation(BaseModel):
     source_itinerary_id: str | None = Field(
         default=None,
         description="Ignav itinerary ID or equivalent, as source metadata.",
+    )
+    display_source: str | None = Field(
+        default=None,
+        description="The meta-search layer displaying the fare (e.g. 'google_flights').",
+    )
+    booking_source: str | None = Field(
+        default=None,
+        description="The actual airline or OTA fulfilling the booking.",
+    )
+    price_raw_text: str | None = Field(
+        default=None,
+        description="The raw price text extracted from the DOM before normalization.",
     )
     # The URL of the page/endpoint where the fare was sourced. Stored for
     # auditability and to detect URL changes (schema_change detection).
@@ -180,6 +206,10 @@ class FareObservation(BaseModel):
         ge=0,
         description="Number of stops (0 = non-stop).",
     )
+    flight_segments: list[FlightSegment] = Field(
+        default_factory=list,
+        description="Ordered list of flight segments for this itinerary.",
+    )
 
     # -----------------------------------------------------------------------
     # Fare classification
@@ -196,6 +226,30 @@ class FareObservation(BaseModel):
     requires_self_transfer: bool | None = Field(
         default=None,
         description="True if the itinerary requires a self-transfer.",
+    )
+    cabin_baggage_kg: int | None = Field(
+        default=None,
+        ge=0,
+        description="Cabin baggage allowance in kg.",
+    )
+    checkin_baggage_kg: int | None = Field(
+        default=None,
+        ge=0,
+        description="Check-in baggage allowance in kg.",
+    )
+    cancellation_fee: Decimal | None = Field(
+        default=None,
+        ge=0,
+        description="Cancellation fee if known.",
+    )
+    change_fee: Decimal | None = Field(
+        default=None,
+        ge=0,
+        description="Change fee if known.",
+    )
+    refund_status: str | None = Field(
+        default=None,
+        description="Refundability status (e.g. REFUNDABLE, NON_REFUNDABLE, UNKNOWN).",
     )
 
     # -----------------------------------------------------------------------
@@ -228,6 +282,16 @@ class FareObservation(BaseModel):
         default=None,
         ge=0,
         description="Airport statutory charges, if exposed separately by source.",
+    )] = None
+    security_fee: Annotated[Decimal | None, Field(
+        default=None,
+        ge=0,
+        description="Security fee, if exposed separately by source.",
+    )] = None
+    gst: Annotated[Decimal | None, Field(
+        default=None,
+        ge=0,
+        description="GST or tax equivalent, if exposed separately by source.",
     )] = None
     convenience_fee: Annotated[Decimal | None, Field(
         default=None,
@@ -265,6 +329,15 @@ class FareObservation(BaseModel):
         ...,
         description="Availability of this fare offer. SOLD_OUT is never zero price.",
     )
+    inventory_status: str | None = Field(
+        default=None,
+        description="Inventory scarcity status (e.g. 'few_seats_left').",
+    )
+    seats_remaining_displayed: int | None = Field(
+        default=None,
+        ge=0,
+        description="Number of seats explicitly displayed as remaining.",
+    )
 
     # -----------------------------------------------------------------------
     # Raw value preservation — spec §15
@@ -287,6 +360,33 @@ class FareObservation(BaseModel):
             "Matches the raw_evidence_uri on the corresponding RawObservation."
         ),
     )
+    google_result_category: str | None = Field(
+        default=None,
+        description="Metadata: Google Flights category (BEST, OTHER, CHEAPEST) if exposed.",
+    )
+    google_result_rank: int | None = Field(
+        default=None,
+        ge=1,
+        description="Metadata: Rank order in Google Flights results.",
+    )
+    field_provenance: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Field provenance tracking status and missing reasons.",
+    )
+
+    def record_field_provenance(
+        self,
+        field_name: str,
+        status: str,
+        source: str | None = None,
+        missing_reason: str | None = None,
+    ) -> None:
+        """Record provenance metadata for a field."""
+        self.field_provenance[field_name] = {
+            "status": status,
+            "source": source,
+            "missing_reason": missing_reason,
+        }
 
     # -----------------------------------------------------------------------
     # Versioning — spec §44 Phase 1
@@ -297,6 +397,14 @@ class FareObservation(BaseModel):
     adapter_version: str = Field(
         ...,
         description="Semver of the adapter that collected and mapped this observation.",
+    )
+    navigation_version: str | None = Field(
+        default=None,
+        description="Semver of the navigation/playwright module used for scraping.",
+    )
+    parser_version: str | None = Field(
+        default=None,
+        description="Semver of the parser module used for parsing.",
     )
     normalizer_version: str = Field(
         ...,

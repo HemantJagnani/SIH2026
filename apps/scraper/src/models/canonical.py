@@ -100,19 +100,22 @@ class ProductStratum(BaseModel):
     travel_day_type: str = "WEEKDAY"
     departure_time_band: str = "MORNING"
     cabin: str = "ECONOMY"
-    fare_family_group: str = "STANDARD"
-    baggage_group: str = "STANDARD"
+    fare_family_group: str | None = None
+    baggage_group: str | None = None
     stop_category: str = "NONSTOP"
     passenger_type: str = "ADULT"
     lead_time_class: str = "T+7"
 
     @property
     def stratum_id(self) -> str:
+        ffg = self.fare_family_group.upper() if self.fare_family_group else "UNKNOWN"
+        bg = self.baggage_group.upper() if self.baggage_group else "UNKNOWN"
+        
         canonical_str = (
             f"{self.origin.upper()}|{self.destination.upper()}|"
             f"{self.travel_day_type.upper()}|{self.departure_time_band.upper()}|"
-            f"{self.cabin.upper()}|{self.fare_family_group.upper()}|"
-            f"{self.baggage_group.upper()}|{self.stop_category.upper()}|"
+            f"{self.cabin.upper()}|{ffg}|"
+            f"{bg}|{self.stop_category.upper()}|"
             f"{self.passenger_type.upper()}|{self.lead_time_class.upper()}"
         )
         return hashlib.sha256(canonical_str.encode("utf-8")).hexdigest()
@@ -137,10 +140,10 @@ class ProductStratum(BaseModel):
             cabin = cabin.value
             
         # Fare family
-        fare_fam = getattr(obs, "fare_family", None) or "STANDARD"
+        fare_fam = getattr(obs, "fare_family", None)
         
         # Baggage group
-        baggage = getattr(obs, "baggage_allowance", None) or "STANDARD"
+        baggage = getattr(obs, "cabin_baggage_kg", None)
         
         # Stops
         stops = getattr(obs, "stops", 0)
@@ -156,8 +159,8 @@ class ProductStratum(BaseModel):
             travel_day_type=day_type,
             departure_time_band=dep_band,
             cabin=str(cabin).upper(),
-            fare_family_group=str(fare_fam).upper(),
-            baggage_group=str(baggage).upper(),
+            fare_family_group=str(fare_fam).upper() if fare_fam else None,
+            baggage_group=str(baggage).upper() if baggage else None,
             stop_category=stop_cat,
             passenger_type="ADULT",
             lead_time_class=lead_class,
@@ -250,10 +253,10 @@ class NormalizedFareObservation(BaseModel):
     
     # Product quality dimensions
     cabin: str = "ECONOMY"
-    fare_family: Optional[str] = "STANDARD"
-    fare_family_group: str = "STANDARD"
-    baggage_allowance: Optional[str] = "STANDARD"
-    baggage_group: str = "STANDARD"
+    fare_family: Optional[str] = None
+    fare_family_group: Optional[str] = None
+    baggage_allowance: Optional[str] = None
+    baggage_group: Optional[str] = None
     refundability: Optional[str] = "UNKNOWN"
     changeability: Optional[str] = "UNKNOWN"
     passenger_type: str = "ADULT"
@@ -383,8 +386,8 @@ class NormalizedFareObservation(BaseModel):
                 travel_day_type=values["travel_day_type"],
                 departure_time_band=values["departure_time_band"],
                 cabin=str(values.get("cabin", "ECONOMY")).upper(),
-                fare_family_group=str(values.get("fare_family_group", "STANDARD")).upper(),
-                baggage_group=str(values.get("baggage_group", "STANDARD")).upper(),
+                fare_family_group=str(values.get("fare_family_group")).upper() if values.get("fare_family_group") else None,
+                baggage_group=str(values.get("baggage_group")).upper() if values.get("baggage_group") else None,
                 stop_category=values["stop_category"],
                 passenger_type="ADULT",
                 lead_time_class=values["lead_time_class"],
