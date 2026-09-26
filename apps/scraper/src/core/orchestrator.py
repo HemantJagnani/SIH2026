@@ -200,7 +200,7 @@ class CollectionOrchestrator:
             saved_state = self._session_manager.load(self.source_id)
             if saved_state:
                 try:
-                    await context.browser_context.add_cookies(
+                    await page.context.add_cookies(
                         saved_state.get("cookies", [])
                     )
                     logger.debug("Orchestrator: loaded %d cookies.", len(saved_state.get("cookies", [])))
@@ -263,7 +263,7 @@ class CollectionOrchestrator:
             elif terminal_state == WorkflowState.DONE:
                 # Save updated session state for next run.
                 try:
-                    new_state = await context.browser_context.storage_state()
+                    new_state = await page.context.storage_state()
                     self._session_manager.save(self.source_id, new_state)
                 except Exception as exc:
                     logger.warning("Orchestrator: could not save session state — %s", exc)

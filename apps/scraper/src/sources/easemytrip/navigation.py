@@ -26,6 +26,34 @@ class NavigationState(Enum):
     SEARCH_ERROR = "SEARCH_ERROR"
     TIMEOUT = "TIMEOUT"
 
+AIRPORT_CITIES = {
+    "DEL": ("Delhi", "India"),
+    "BOM": ("Mumbai", "India"),
+    "BLR": ("Bangalore", "India"),
+    "HYD": ("Hyderabad", "India"),
+    "MAA": ("Chennai", "India"),
+    "CCU": ("Kolkata", "India"),
+    "GOI": ("Goa", "India"),
+    "GOX": ("Goa", "India"),
+    "AMD": ("Ahmedabad", "India"),
+    "PNQ": ("Pune", "India"),
+    "COK": ("Kochi", "India"),
+    "JAI": ("Jaipur", "India"),
+    "LKO": ("Lucknow", "India"),
+    "PAT": ("Patna", "India"),
+    "GAU": ("Guwahati", "India"),
+    "BBI": ("Bhubaneswar", "India"),
+    "SXR": ("Srinagar", "India"),
+    "IXC": ("Chandigarh", "India"),
+    "TRV": ("Thiruvananthapuram", "India"),
+    "IXB": ("Bagdogra", "India"),
+    "VNS": ("Varanasi", "India"),
+    "ATQ": ("Amritsar", "India"),
+    "IXR": ("Ranchi", "India"),
+    "BDQ": ("Vadodara", "India"),
+    "IDR": ("Indore", "India"),
+}
+
 class SearchResultContext:
     def __init__(self):
         self.terminal_state: Optional[NavigationState] = None
@@ -49,9 +77,11 @@ class EaseMyTripNavigation:
                 
                 elif self.state == NavigationState.LOAD_SEARCH_PAGE:
                     logger.info("EaseMyTripNavigation: Loading search results page directly...")
-                    # Format: https://flight.easemytrip.com/FlightList/Index?srch=DEL-Delhi-India|BOM-Mumbai-India|29/09/2026&px=1-0-0&cbn=0&CCode=IN&crn=INR
                     travel_date_str = self.request.travel_date.strftime("%d/%m/%Y")
-                    url = f"https://flight.easemytrip.com/FlightList/Index?srch={self.request.origin}-City|{self.request.destination}-City|{travel_date_str}&px=1-0-0&cbn=0&CCode=IN&crn=INR"
+                    orig_city, orig_country = AIRPORT_CITIES.get(self.request.origin.upper(), (self.request.origin, "India"))
+                    dest_city, dest_country = AIRPORT_CITIES.get(self.request.destination.upper(), (self.request.destination, "India"))
+                    srch_param = f"{self.request.origin}-{orig_city}-{orig_country}|{self.request.destination}-{dest_city}-{dest_country}|{travel_date_str}"
+                    url = f"https://flight.easemytrip.com/FlightList/Index?srch={srch_param}&px=1-0-0&cbn=0&CCode=IN&crn=INR"
                     logger.info(f"Navigating to {url}")
                     await self.page.goto(url)
                     self.state = NavigationState.PAGE_READY
@@ -81,10 +111,8 @@ class EaseMyTripNavigation:
                     self.page.on("response", handle_response)
                     
                     try:
-                        # Add a small buffer for bot protection redirects before checking DOM
-                        await asyncio.sleep(5)
-                        # Wait for either flight cards or no-flights message
-                        await self.page.wait_for_selector(".flt-res-card, .row.top-srh, .main-card, #row0", timeout=60000)
+                        # Wait for live Angular cards (.fltResult) or fixture cards (.nw_listing_bx)
+                        await self.page.wait_for_selector(".fltResult, .nw_listing_bx, .main-card", timeout=60000)
                         self.context.rendered_dom = await self.page.content()
                         self.state = NavigationState.RESULTS_DETECTED
                     except Exception as e:

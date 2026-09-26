@@ -5,38 +5,56 @@ async def main():
     async with async_playwright() as p:
         # Use mrscraper proxy!
         browser = await p.chromium.launch(
-            headless=False,
+            headless=True,
             proxy={
                 "server": "http://proxy.mrscraper.com:10000",
                 "username": "hjagnani64gmailcom",
                 "password": "b5gGb0GFHiv11"
             }
         )
-        page = await browser.new_page()
+        context = await browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+            viewport={"width": 1366, "height": 768},
+            locale="en-IN",
+            timezone_id="Asia/Kolkata",
+        )
+        page = await context.new_page()
         
-        url = "https://flight.easemytrip.com/FlightList/Index?srch=DEL-City|BOM-City|29/09/2026&px=1-0-0&cbn=0&CCode=IN&crn=INR"
+        # Test route: DEL to BOM with full city-country format
+        url = "https://flight.easemytrip.com/FlightList/Index?srch=DEL-Delhi-India|BOM-Mumbai-India|10/10/2026&px=1-0-0&cbn=0&CCode=IN&crn=INR"
         print(f"Navigating to {url}")
         
-        await page.goto(url)
-        
-        print("Waiting up to 60 seconds for flight cards to load...")
+        page.on("response", lambda r: print(f"[NET {r.status}] {r.url[:80]}") if "flight" in r.url.lower() or "search" in r.url.lower() or "api" in r.url.lower() else None)
+
         try:
-            await page.wait_for_selector(".flt-res-card, .row.top-srh, .main-card, #row0", timeout=60000)
-            print("Flights loaded successfully!")
-            
-            # Print first 5 flights
-            cards = await page.query_selector_all(".flt-res-card, .row.top-srh, .main-card")
-            print(f"Found {len(cards)} flight cards.")
-            
-            for i, card in enumerate(cards[:5]):
-                text = await card.inner_text()
-                print(f"--- Flight {i+1} ---")
-                print(text.replace("\n", " ")[:100])
-                
+            await page.goto(url, timeout=60000)
+            print(f"Page loaded: {await page.title()}")
         except Exception as e:
-            print(f"Timeout waiting for flights: {e}")
+            print(f"Goto error: {e}")
+        
+        print("Waiting up to 60 seconds for .fltResult flight cards...")
+        try:
+            await page.wait_for_selector(".fltResult", timeout=60000)
+            print("Flight cards selector .fltResult detected!")
             
-        # Try to extract data if loaded, otherwise just take screenshot
+            cards = await page.query_selector_all(".fltResult")
+            print(f"Found {len(cards)} flight cards.")
+            for i, card in enumerate(cards[:5]):
+                fn = await card.get_attribute("fn")
+                airline = await card.get_attribute("aircode")
+                price = await card.get_attribute("price")
+                deptm = await card.get_attribute("deptm")
+                arrtm = await card.get_attribute("arrtm")
+                stops = await card.get_attribute("stop")
+                print(f"--- Flight {i+1}: {airline} {fn} | Rs.{price} | {deptm} -> {arrtm} | {stops} stop(s) ---")
+        except Exception as e:
+            print(f"Timeout/Error waiting for flights: {e}")
+            
+        dom = await page.content()
+        with open("test_easemytrip_dom.html", "w", encoding="utf-8") as f:
+            f.write(dom)
+        print(f"Saved DOM ({len(dom)} bytes) to test_easemytrip_dom.html")
+
         await page.screenshot(path="test_easemytrip.png")
         print("Saved screenshot to test_easemytrip.png")
         

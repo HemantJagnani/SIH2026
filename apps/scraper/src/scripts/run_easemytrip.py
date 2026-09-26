@@ -46,20 +46,6 @@ async def main():
     policy_gate = RobotsPolicyGate()
     adapter = EaseMyTripAdapter()
     
-    # Configure MrScraper proxy for Playwright
-    # http://hjagnani64gmailcom:b5gGb0GFHiv11@proxy.mrscraper.com:10000
-    from crawlee.proxy_configuration import ProxyConfiguration
-    
-    proxy_config = ProxyConfiguration(
-        proxy_urls=["http://hjagnani64gmailcom:b5gGb0GFHiv11@proxy.mrscraper.com:10000"]
-    )
-    
-    # Invert headed flag for crawler which expects headless=True by default
-    crawler = build_crawler(
-        headless=not args.headed,
-        proxy_configuration=proxy_config
-    )
-
     logger.info("run_easemytrip: Starting orchestrator...")
     orchestrator = CollectionOrchestrator(
         source_id="easemytrip",

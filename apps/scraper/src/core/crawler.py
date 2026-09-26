@@ -42,6 +42,7 @@ def build_crawler(
     browser_type: str = "chromium",
     max_request_retries: int = 2,
     navigation_timeout_secs: int = 60,
+    request_handler_timeout_secs: int = 120,
 ) -> PlaywrightCrawler:
     """
     Factory function that constructs a Phase 9-compliant PlaywrightCrawler.
@@ -116,6 +117,7 @@ def build_crawler(
 
         # --- Timeouts ---
         navigation_timeout=timedelta(seconds=navigation_timeout_secs),
+        request_handler_timeout=timedelta(seconds=request_handler_timeout_secs),
     )
 
     proxy_urls_env = os.getenv("APPROVED_PROXY_URLS")

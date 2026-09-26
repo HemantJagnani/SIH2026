@@ -25,11 +25,93 @@ def parse_dom(html: str, request: FareSearchRequest, run_id: UUID, source_id: st
     
     soup = BeautifulSoup(html, "html.parser")
     
-    # 1. Extract the 145 main flight cards through .nw_listing_bx
+    # 1. Try modern live Angular layout (.fltResult)
+    flt_cards = soup.select(".fltResult")
+    if flt_cards:
+        logger.info(f"EaseMyTripParser: Found {len(flt_cards)} live cards matching .fltResult")
+        from datetime import timedelta
+        airline_map = {
+            "6E": "IndiGo",
+            "AI": "Air India",
+            "IX": "Air India Express",
+            "SG": "SpiceJet",
+            "QP": "AkasaAir",
+            "UK": "Vistara",
+            "I5": "AirAsia India",
+        }
+        for card in flt_cards:
+            try:
+                aircode = card.get("aircode", "").strip()
+                airline = airline_map.get(aircode, aircode or "UNKNOWN")
+                fn = card.get("fn", "").strip()
+                flight_num = f"{aircode}-{fn}" if aircode and fn else fn or "UNKNOWN"
+                
+                price_str = card.get("price", "").replace(",", "").strip()
+                if not price_str:
+                    continue
+                try:
+                    total_fare = float(price_str)
+                except ValueError:
+                    continue
+                
+                dep_str = card.get("deptm", "").strip()
+                arr_str = card.get("arrtm", "").strip()
+                
+                dep_dt_local = None
+                arr_dt_local = None
+                if dep_str and ":" in dep_str:
+                    dh, dm = map(int, dep_str.split(":")[:2])
+                    dep_dt_local = datetime.combine(request.travel_date, datetime.min.time()).replace(
+                        hour=dh, minute=dm, tzinfo=timezone.utc
+                    )
+                if arr_str and ":" in arr_str:
+                    ah, am = map(int, arr_str.split(":")[:2])
+                    arr_dt_local = datetime.combine(request.travel_date, datetime.min.time()).replace(
+                        hour=ah, minute=am, tzinfo=timezone.utc
+                    )
+                    if dep_dt_local and arr_dt_local < dep_dt_local:
+                        arr_dt_local += timedelta(days=1)
+                
+                stop_str = card.get("stop", "").strip()
+                stops = int(stop_str) if stop_str.isdigit() else None
+                
+                obs = FareObservation(
+                    collection_run_id=run_id,
+                    source=source_id,
+                    origin=request.origin,
+                    destination=request.destination,
+                    travel_date=request.travel_date,
+                    lead_days=request.lead_days,
+                    collected_at=datetime.now(timezone.utc),
+                    search_timestamp=datetime.now(timezone.utc),
+                    airline=airline,
+                    airline_code=aircode or None,
+                    flight_number=flight_num,
+                    departure_time_local=dep_dt_local,
+                    arrival_time_local=arr_dt_local,
+                    trip_type=request.trip_type,
+                    cabin=request.cabin,
+                    passenger_count=1,
+                    stops=stops,
+                    source_offer_id=f"emt-{flight_num}-{int(total_fare)}",
+                    availability=AvailabilityStatus.AVAILABLE,
+                    adapter_version="1.0.0",
+                    normalizer_version="1.0.0",
+                    total_fare=total_fare,
+                    currency="INR"
+                )
+                observations.append(obs)
+            except Exception as e:
+                logger.warning(f"EaseMyTripParser: Error parsing live card: {e}")
+                
+        logger.info(f"EaseMyTripParser: Found {len(observations)} observations in live DOM.")
+        return observations
+
+    # 2. Fall back to offline/fixture layout (.nw_listing_bx)
     cards = soup.select(".nw_listing_bx")
     
     if not cards:
-        logger.warning("EaseMyTripParser: No flight cards found in DOM using .nw_listing_bx.")
+        logger.warning("EaseMyTripParser: No flight cards found in DOM using .fltResult or .nw_listing_bx.")
         return observations
         
     for card in cards:

@@ -1,6 +1,6 @@
 import pytest
 from uuid import uuid4
-from datetime import date
+from datetime import date, timedelta
 from models.request import FareSearchRequest
 from models.observation import FareObservation
 from sources.easemytrip.adapter import EaseMyTripAdapter
@@ -8,13 +8,14 @@ from sources.easemytrip.navigation import NavigationState
 
 @pytest.fixture
 def dummy_request():
+    lead = 7
     return FareSearchRequest(
         source="easemytrip",
         collection_mode="BROWSER",
         origin="DEL",
         destination="BOM",
-        travel_date=date(2026, 9, 29),
-        lead_days=7,
+        travel_date=date.today() + timedelta(days=lead),
+        lead_days=lead,
         passenger_count={"adults": 1, "children": 0, "infants": 0},
         cabin="ECONOMY",
         trip_type="ONE_WAY",

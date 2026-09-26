@@ -7,5 +7,7 @@ class EaseMyTripSelectors:
     SEARCH_BUTTON = ".srchBtnSe"
     
     # Results page selectors
-    FLIGHT_RESULT_CARD = ".flight-list-item"
-    FARE_AMOUNT = ".price-text"
+    FLIGHT_RESULT_CARDS = ".fltResult, .nw_listing_bx"
+    FARE_AMOUNT = "h4[id^='spnPrice'], [price]"
+    ORIGIN_FILTER = "[og]"
+    DESTINATION_FILTER = "[ds]"

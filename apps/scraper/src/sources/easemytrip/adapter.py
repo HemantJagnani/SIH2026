@@ -9,7 +9,7 @@ from models.request import FareSearchRequest
 from models.observation import FareObservation
 from models.enums import WorkflowState
 from sources.easemytrip.navigation import EaseMyTripNavigation, NavigationState, SearchResultContext
-from sources.easemytrip.parser import parse_network_response, parse_dom
+from sources.easemytrip import parser as emt_parser
 from validation.pipeline import validate_observation
 
 logger = logging.getLogger(__name__)
@@ -49,16 +49,22 @@ class EaseMyTripAdapter:
         observations = []
         if context.network_response:
             logger.info("EaseMyTripAdapter: Found structured network response, using network parser.")
-            raw_fares = parse_network_response(context.network_response, request, run_id, self.source_id)
+            raw_fares = emt_parser.parse_network_response(context.network_response, request, run_id, self.source_id)
         elif context.rendered_dom:
             logger.info("EaseMyTripAdapter: No network response found, falling back to DOM parser.")
-            raw_fares = parse_dom(context.rendered_dom, request, run_id, self.source_id)
+            raw_fares = emt_parser.parse_dom(context.rendered_dom, request, run_id, self.source_id)
         else:
             logger.error("EaseMyTripAdapter: No parseable context available despite RESULTS_DETECTED state.")
             return [], WorkflowState.SEARCH_ERROR
 
         # Validate and build final observations
         for fare in raw_fares:
+            if isinstance(fare, dict):
+                try:
+                    fare = FareObservation(**fare)
+                except Exception as exc:
+                    logger.debug("EaseMyTripAdapter: Failed to instantiate FareObservation from dict: %s", exc)
+                    continue
             validated_fare, validation_result = validate_observation(fare)
             if validation_result.is_valid and validated_fare:
                 observations.append(validated_fare)
