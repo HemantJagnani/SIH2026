@@ -53,8 +53,41 @@ def parse_dom(html: str, request: FareSearchRequest, run_id: UUID, source_id: st
             except ValueError:
                 continue
                 
-            # Stops from .tmln_rc (could be "Non Stop" or "1 Stop")
+            # Timing extraction from .tm_lc
+            dep_time_el = card.select_one(".tm_lc.texrgt h4")
+            arr_time_el = card.select_one(".tm_lc:not(.texrgt) h4")
+            
+            dep_dt_local = None
+            arr_dt_local = None
+            if dep_time_el:
+                dep_str = dep_time_el.get_text(strip=True)
+                if ":" in dep_str:
+                    try:
+                        dh, dm = map(int, dep_str.split(":")[:2])
+                        dep_dt_local = datetime.combine(request.travel_date, datetime.min.time()).replace(
+                            hour=dh, minute=dm, tzinfo=timezone.utc
+                        )
+                    except Exception:
+                        pass
+                        
+            if arr_time_el:
+                arr_str = arr_time_el.get_text(strip=True)
+                if ":" in arr_str:
+                    try:
+                        ah, am = map(int, arr_str.split(":")[:2])
+                        arr_dt_local = datetime.combine(request.travel_date, datetime.min.time()).replace(
+                            hour=ah, minute=am, tzinfo=timezone.utc
+                        )
+                        # If arrival time is earlier than departure time, flight arrives next day
+                        if dep_dt_local and arr_dt_local < dep_dt_local:
+                            from datetime import timedelta
+                            arr_dt_local += timedelta(days=1)
+                    except Exception:
+                        pass
+
+            # Stops and duration from .tmln_rc (could be "05h 20m 1 Stop" or "Non Stop")
             stops = None
+            duration_minutes = None
             duration_el = card.select_one(".tmln_rc")
             if duration_el:
                 dur_text = duration_el.get_text(strip=True).lower()
@@ -65,6 +98,15 @@ def parse_dom(html: str, request: FareSearchRequest, run_id: UUID, source_id: st
                     match = re.search(r'(\d+)\s*stop', dur_text)
                     if match:
                         stops = int(match.group(1))
+                        
+                # Extract duration e.g. "02h 15m" or "5h 20m"
+                import re
+                dur_match = re.search(r'(?:(\d+)\s*h)?\s*(?:(\d+)\s*m)?', dur_text)
+                if dur_match:
+                    hours = int(dur_match.group(1)) if dur_match.group(1) else 0
+                    mins = int(dur_match.group(2)) if dur_match.group(2) else 0
+                    if hours > 0 or mins > 0:
+                        duration_minutes = hours * 60 + mins
                         
             # Note: We do not treat Lock Price, seat count, discount text, or More Fare modal prices as primary fare.
             # Preserve unknown base/tax/fee components as null (they are absent in FareObservation creation, default to None)
@@ -80,6 +122,8 @@ def parse_dom(html: str, request: FareSearchRequest, run_id: UUID, source_id: st
                 search_timestamp=datetime.now(timezone.utc),
                 airline=airline,
                 flight_number=flight_num,
+                departure_time_local=dep_dt_local,
+                arrival_time_local=arr_dt_local,
                 trip_type=request.trip_type,
                 cabin=request.cabin,
                 passenger_count=1,

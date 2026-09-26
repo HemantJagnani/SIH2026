@@ -56,7 +56,7 @@ def main():
     print("-" * 50)
     for obs in observations[:10]:
         stops_str = str(obs.stops) if obs.stops is not None else "Unknown"
-        print(f"{obs.airline:<15} | {obs.flight_number:<10} | ₹{obs.total_fare:<7.2f} | {stops_str:<5}")
+        print(f"{obs.airline:<15} | {obs.flight_number:<10} | Rs.{obs.total_fare:<7.2f} | {stops_str:<5}")
         
 if __name__ == "__main__":
     main()

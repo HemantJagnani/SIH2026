@@ -1,0 +1,19 @@
+{
+  "index_name": "India Airfare Price Index",
+  "frequency": "monthly",
+  "period": "2026-09",
+  "reference_period": "2024",
+  "base_value": "100.00",
+  "index_value": "100.0000",
+  "mom_percent": null,
+  "yoy_percent": null,
+  "route_indices": {
+    "DEL-BOM": "100.0000"
+  },
+  "lead_time_indices": {
+    "DEL-BOM_T+7": "100.0000"
+  },
+  "methodology_version": "APIx v1.0",
+  "weight_version": "2026.09",
+  "published_at": "2026-09-25T18:27:20.776182"
+}

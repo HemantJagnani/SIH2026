@@ -17,8 +17,17 @@ from .models import (
     SourceHealth,
     ValidationErrorRecord,
 )
-from .object_store import ObjectStoreClient, S3ObjectStoreClient
-from .postgres import DatabaseClient
+try:
+    from .object_store import ObjectStoreClient, S3ObjectStoreClient
+except ImportError:
+    ObjectStoreClient = None
+    S3ObjectStoreClient = None
+
+try:
+    from .postgres import DatabaseClient
+except ImportError:
+    DatabaseClient = None
+
 
 __all__ = [
     # Core

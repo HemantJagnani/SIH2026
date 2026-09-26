@@ -214,6 +214,14 @@ class FareObservationRecord(Base):
     raw_value_reference: Mapped[str | None] = mapped_column(String, nullable=True)
     raw_evidence_uri: Mapped[str | None] = mapped_column(String, nullable=True)
     
+    # Canonical index compilation & fingerprint columns (Methodology §7.2)
+    normalized_price_inr: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    quality_status: Mapped[str] = mapped_column(String(30), default="VALID", nullable=False)
+    itinerary_fingerprint: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    offer_fingerprint: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    product_stratum_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    duplicate_group_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+
     adapter_version: Mapped[str] = mapped_column(String(20), nullable=False)
     normalizer_version: Mapped[str] = mapped_column(String(20), nullable=False)
     schema_version: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -222,6 +230,8 @@ class FareObservationRecord(Base):
         Index("ix_fare_obs_route", "origin", "destination"),
         Index("ix_fare_obs_airline", "airline"),
         Index("ix_fare_obs_lead_days", "lead_days"),
+        Index("ix_fare_obs_stratum", "product_stratum_id"),
+        Index("ix_fare_obs_offer_fp", "offer_fingerprint"),
     )
 
 

@@ -1,0 +1,169 @@
+{
+  "easemytrip_analysis": {
+    "total_records": 145,
+    "columns_present": [
+      "adapter_version",
+      "airline",
+      "airline_code",
+      "airport_charges",
+      "arrival_time_local",
+      "arrival_time_utc",
+      "availability",
+      "base_fare",
+      "cabin",
+      "collected_at",
+      "collection_run_id",
+      "convenience_fee",
+      "currency",
+      "departure_time_local",
+      "departure_time_utc",
+      "destination",
+      "discount",
+      "fare_class",
+      "fare_family",
+      "fees",
+      "flight_number",
+      "lead_days",
+      "normalizer_version",
+      "observation_id",
+      "origin",
+      "passenger_count",
+      "price_status",
+      "raw_evidence_uri",
+      "raw_value_reference",
+      "requires_self_transfer",
+      "schema_version",
+      "search_timestamp",
+      "source",
+      "source_itinerary_id",
+      "source_offer_id",
+      "source_url",
+      "stops",
+      "taxes",
+      "total_fare",
+      "travel_date",
+      "trip_type"
+    ],
+    "null_counts": {
+      "fare_family": 145,
+      "price_status": 145,
+      "taxes": 145,
+      "convenience_fee": 145,
+      "raw_evidence_uri": 145,
+      "airport_charges": 145,
+      "fees": 145,
+      "arrival_time_utc": 145,
+      "fare_class": 145,
+      "departure_time_utc": 145,
+      "airline_code": 145,
+      "departure_time_local": 145,
+      "raw_value_reference": 145,
+      "base_fare": 145,
+      "requires_self_transfer": 145,
+      "source_itinerary_id": 145,
+      "source_url": 145,
+      "arrival_time_local": 145,
+      "discount": 145,
+      "stops": 59
+    },
+    "exact_duplicates": 0,
+    "offer_duplicates": 3,
+    "lead_days_distribution": {
+      "7": 145
+    },
+    "travel_dates": {
+      "2026-09-29": 145
+    },
+    "search_dates": {
+      "2026-09-22": 145
+    },
+    "airlines": {
+      "Air India Express": 18,
+      "IndiGo": 70,
+      "AkasaAir": 10,
+      "Air India": 45,
+      "SpiceJet": 2
+    },
+    "routes": {
+      "DEL->BOM": 145
+    },
+    "stops": {
+      "1": 86,
+      "null": 59
+    },
+    "currencies": {
+      "INR": 145
+    },
+    "fare_stats": {
+      "min": 6529.0,
+      "max": 25778.0,
+      "avg": 9398.79,
+      "count": 145
+    }
+  },
+  "ignav_analysis": {
+    "total_itineraries": 54,
+    "carriers": {
+      "Air India": 20,
+      "IndiGo": 21,
+      "Air India Express": 2,
+      "Akasa Air": 9,
+      "SpiceJet": 2
+    },
+    "stops": {
+      "0": 54
+    },
+    "has_times": 54,
+    "price_stats": {
+      "min": 6314.0,
+      "max": 10868.0,
+      "avg": 6826.61
+    }
+  },
+  "required_fields": [
+    "origin",
+    "destination",
+    "travel_date",
+    "day_of_week",
+    "search_timestamp_utc",
+    "search_timestamp_local",
+    "lead_days",
+    "airline",
+    "airline_code",
+    "flight_number",
+    "source_itinerary_id",
+    "source_offer_id",
+    "departure_time_local",
+    "arrival_time_local",
+    "departure_time_utc",
+    "arrival_time_utc",
+    "duration_minutes",
+    "stops",
+    "stopover_airports",
+    "cabin_class",
+    "fare_family",
+    "fare_class",
+    "baggage_allowance",
+    "refundability",
+    "changeability",
+    "meal_included",
+    "base_fare",
+    "taxes",
+    "airport_charges",
+    "mandatory_fees",
+    "convenience_fee",
+    "discount",
+    "total_fare",
+    "currency",
+    "availability_status",
+    "price_status",
+    "requires_self_transfer",
+    "source",
+    "source_type",
+    "source_url",
+    "raw_evidence_uri",
+    "adapter_version",
+    "normalizer_version",
+    "schema_version"
+  ]
+}
