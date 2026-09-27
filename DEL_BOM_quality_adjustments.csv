@@ -1,0 +1,6 @@
+adjustment_id,replacement_id,characteristic_name,base_value,replacement_value,adjustment_amount_inr,valuation_method,rationale,applied_at_utc
+QA_1,REP_50d68ac6_0db292b3,checkin_baggage_kg,15kg,20kg,500.0,OPTION_COST,Check-in baggage differential: +5kg valued at market rate,2026-09-27T09:26:55.528324+00:00
+QA_1,REP_50d68ac6_0db292b3,checkin_baggage_kg,15kg,20kg,500.0,OPTION_COST,Check-in baggage differential: +5kg valued at market rate,2026-09-27T09:26:55.528576+00:00
+QA_1,REP_028dc061_0db292b3,checkin_baggage_kg,15kg,20kg,500.0,OPTION_COST,Check-in baggage differential: +5kg valued at market rate,2026-09-27T09:26:55.528652+00:00
+QA_1,REP_028dc061_0db292b3,checkin_baggage_kg,15kg,20kg,500.0,OPTION_COST,Check-in baggage differential: +5kg valued at market rate,2026-09-27T09:26:55.528711+00:00
+QA_1,REP_028dc061_0db292b3,checkin_baggage_kg,15kg,20kg,500.0,OPTION_COST,Check-in baggage differential: +5kg valued at market rate,2026-09-27T09:26:55.528775+00:00

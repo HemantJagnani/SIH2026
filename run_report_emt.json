@@ -1,0 +1,114 @@
+{
+  "timestamp_utc": "2026-09-26T20:10:59.362050+00:00",
+  "summary": "Controlled live test for EaseMyTrip Normal User Search Lifecycle Recovery",
+  "jobs": [
+    {
+      "source": "easemytrip",
+      "route": "DEL-BOM",
+      "lead_time": "T+7",
+      "travel_date": "2026-10-03",
+      "extraction_mode": "CORE_ONLY",
+      "state": "DONE",
+      "observations": 100,
+      "enrichment_success": 0,
+      "enrichment_failure": 0,
+      "blocked": false,
+      "block_reason": null,
+      "fields_extracted": [
+        "airline",
+        "arrival_time_local",
+        "currency",
+        "departure_time_local",
+        "destination",
+        "flight_number",
+        "origin",
+        "stops",
+        "total_fare",
+        "travel_date"
+      ],
+      "fields_unavailable": {
+        "base_fare": "SOURCE_TOTAL_ONLY",
+        "taxes": "SOURCE_TOTAL_ONLY",
+        "fees": "NOT_PRESENT_IN_DOM",
+        "gst": "SOURCE_TOTAL_ONLY",
+        "cabin_baggage_kg": "NOT_PRESENT_IN_DOM",
+        "checkin_baggage_kg": "NOT_PRESENT_IN_DOM",
+        "fare_family": "NOT_PRESENT_IN_DOM"
+      },
+      "diagnostics": {},
+      "evidence_dir": "runtime\\evidence\\2026-09-26\\source=easemytrip\\run=96d98f81-a3d3-465d-8caa-b8cbdaeaebb9"
+    },
+    {
+      "source": "easemytrip",
+      "route": "DEL-BOM",
+      "lead_time": "T+21",
+      "travel_date": "2026-10-17",
+      "extraction_mode": "CORE_ONLY",
+      "state": "DONE",
+      "observations": 146,
+      "enrichment_success": 0,
+      "enrichment_failure": 0,
+      "blocked": false,
+      "block_reason": null,
+      "fields_extracted": [
+        "airline",
+        "arrival_time_local",
+        "currency",
+        "departure_time_local",
+        "destination",
+        "flight_number",
+        "origin",
+        "stops",
+        "total_fare",
+        "travel_date"
+      ],
+      "fields_unavailable": {
+        "base_fare": "SOURCE_TOTAL_ONLY",
+        "taxes": "SOURCE_TOTAL_ONLY",
+        "fees": "NOT_PRESENT_IN_DOM",
+        "gst": "SOURCE_TOTAL_ONLY",
+        "cabin_baggage_kg": "NOT_PRESENT_IN_DOM",
+        "checkin_baggage_kg": "NOT_PRESENT_IN_DOM",
+        "fare_family": "NOT_PRESENT_IN_DOM"
+      },
+      "diagnostics": {},
+      "evidence_dir": "runtime\\evidence\\2026-09-26\\source=easemytrip\\run=e0e06457-8e32-49ba-8b0c-7626332627de"
+    },
+    {
+      "source": "easemytrip",
+      "route": "DEL-BOM",
+      "lead_time": "T+7",
+      "travel_date": "2026-10-03",
+      "extraction_mode": "CORE_AND_DETAILS",
+      "state": "DONE",
+      "observations": 383,
+      "enrichment_success": 383,
+      "enrichment_failure": 0,
+      "blocked": false,
+      "block_reason": null,
+      "fields_extracted": [
+        "airline",
+        "arrival_time_local",
+        "currency",
+        "departure_time_local",
+        "destination",
+        "fare_family",
+        "flight_number",
+        "origin",
+        "stops",
+        "total_fare",
+        "travel_date"
+      ],
+      "fields_unavailable": {
+        "base_fare": "SOURCE_TOTAL_ONLY",
+        "taxes": "SOURCE_TOTAL_ONLY",
+        "fees": "NOT_PRESENT_IN_DOM",
+        "gst": "SOURCE_TOTAL_ONLY",
+        "cabin_baggage_kg": "NOT_PRESENT_IN_DOM",
+        "checkin_baggage_kg": "NOT_PRESENT_IN_DOM"
+      },
+      "diagnostics": {},
+      "evidence_dir": "runtime\\evidence\\2026-09-26\\source=easemytrip\\run=a2f475ae-4704-4d29-993f-c99cfb2a5826"
+    }
+  ]
+}

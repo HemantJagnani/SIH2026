@@ -1,0 +1,16 @@
+{
+  "unique_key": "https://www.easemytrip.com#7b9c8d27-11a9-47c6-a6c2-1c686ff573f1",
+  "url": "https://www.easemytrip.com",
+  "method": "GET",
+  "payload": null,
+  "headers": {},
+  "user_data": {
+    "__crawlee": {
+      "state": 4
+    }
+  },
+  "retry_count": 2,
+  "no_retry": false,
+  "loaded_url": "https://www.easemytrip.com/",
+  "handled_at": "2026-09-26 21:05:15.913517+00:00"
+}

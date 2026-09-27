@@ -1,8 +1,22 @@
 {
   "route": "DEL-BOM",
+  "reference_type": "PROVISIONAL_PROJECT_REFERENCE",
+  "experimental_project_reference_price": 6632.67,
+  "experimental_reference_period": "2026-09-26",
+  "reference_price": 6632.67,
+  "reference_price_method": "Option B — first production run weighted representative price",
+  "reference_price_source": "production_run_825fa969",
+  "reference_index_value": 100.00,
+  "index_reference_period": "2024=100",
+  "price_reference_period": "calendar-year 2024 average (Pending Historical Actuals)",
+  "weight_reference_period": "HCES 2023-24",
+  "chain_link_period": "December y-1 (Eurostat) / Month-over-Month (MoSPI)",
+  "methodology_version": "APIx v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)",
   "base_price_inr": 6632.67,
   "base_period": "2026-09-26",
-  "base_method": "Option B \u2014 first production run weighted representative price",
+  "base_method": "Option B — first production run weighted representative price",
+  "base_price_alias_note": "Explicit backward-compatibility alias for experimental_project_reference_price",
+  "base_period_alias_note": "Explicit backward-compatibility alias for experimental_reference_period",
   "locked_on": "2026-09-26T21:41:48.016424+00:00",
-  "note": "Delete this file to recompute base from next run, or edit manually to set a different base."
+  "institutional_note": "DO NOT describe ₹6,632.67 as the MoSPI price reference. MoSPI price reference is calendar-year 2024 average. This value is strictly the PROVISIONAL_PROJECT_REFERENCE for high-frequency prototype tracking."
 }

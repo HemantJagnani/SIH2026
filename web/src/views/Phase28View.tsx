@@ -42,6 +42,14 @@ interface IndexResult {
     route: string;
     base_price_inr: number;
     base_period: string;
+    index_reference_period?: string;
+    price_reference_period?: string;
+    weight_reference_period?: string;
+    chain_link_period?: string;
+    reference_type?: string;
+    experimental_project_reference_price?: number;
+    experimental_reference_period?: string;
+    reference_price?: number;
     collection_date: string;
     generated_at: string;
     total_observations: number;
@@ -51,11 +59,23 @@ interface IndexResult {
     formula: string;
     disclaimer: string;
   };
+  reference_taxonomy?: Record<string, {
+    label: string;
+    value?: string;
+    reference_type?: string;
+    reference_price_inr?: number;
+    reference_period?: string;
+    formula?: string;
+    status: string;
+  }>;
   headline: {
     weighted_representative_price_inr: number;
     route_index: number;
     interpretation: string;
     base_price_inr: number;
+    reference_index_value?: number;
+    experimental_project_reference_price?: number;
+    reference_type?: string;
   };
   lead_time_breakdown: Record<string, LeadDetail>;
   stratum_sub_indices: Record<string, StratumDetail>;
@@ -236,14 +256,15 @@ function FormulaBlock({ data }: { data: IndexResult }) {
 
       {/* Step 2 */}
       <div className="formula-step">
-        <div className="formula-step__label">Step 2 — Route Index</div>
+        <div className="formula-step__label">Step 2 — Route Index (Experimental Series)</div>
         <div className="formula-box">
           <code>
-            I<sub>DEL-BOM</sub> = (P<sub>route</sub> / P<sub>base</sub>) &times; 100
+            I<sub>DEL-BOM,t</sub> = (P<sub>route,t</sub> / P<sub>project,reference</sub>) &times; 100
           </code>
         </div>
         <p className="formula-prose">
-          Divide the current representative price by the illustrative base-period price and scale to 100.
+          Divide the current representative price by the project reference price (₹6,632.67 from first complete production run). 
+          <em>Note: This is strictly an experimental project reference, distinct from the official MoSPI CPI 2024 calendar-year price reference.</em>
         </p>
         <div className="formula-calc-row">
           <div className="formula-calc-cell">
@@ -252,7 +273,7 @@ function FormulaBlock({ data }: { data: IndexResult }) {
           </div>
           <div className="formula-calc-op">&divide;</div>
           <div className="formula-calc-cell">
-            <div className="formula-calc-label">P<sub>base</sub> (POC)</div>
+            <div className="formula-calc-label">P<sub>project,ref</sub> (2026-09-26)</div>
             <div className="formula-calc-val">{INR(headline.base_price_inr)}</div>
           </div>
           <div className="formula-calc-op">&times; 100 =</div>
@@ -264,7 +285,7 @@ function FormulaBlock({ data }: { data: IndexResult }) {
           </div>
         </div>
         <p className="formula-prose" style={{ marginTop: 'var(--sp-3)', color: 'var(--ink-2)' }}>
-          {headline.interpretation}. An index below 100 means current fares are cheaper than the base period.
+          {headline.interpretation}. An index above 100 indicates upward fare pressure relative to the provisional project reference.
         </p>
       </div>
     </section>
@@ -338,12 +359,12 @@ export default function Phase28View() {
         </div>
         <div>
           <p style={{ fontSize: 18, fontWeight: 700, marginBottom: 'var(--sp-3)' }}>
-            Fares are at <span style={{ color: 'var(--route-blue)' }}>{headline.route_index.toFixed(1)}%</span> of the base-period price
+            Fares are at <span style={{ color: 'var(--route-blue)' }}>{headline.route_index.toFixed(1)}%</span> of the project reference price
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--sp-4)' }}>
             {[
               { label: 'Representative price', val: INR(headline.weighted_representative_price_inr) },
-              { label: 'Base price (POC)', val: INR(headline.base_price_inr) },
+              { label: 'Project Reference (POC)', val: INR(headline.base_price_inr) },
               { label: 'Observations used', val: meta.total_observations.toLocaleString() },
             ].map(({ label, val }) => (
               <div key={label} style={{ borderLeft: '2px solid var(--contour)', paddingLeft: 'var(--sp-3)' }}>
@@ -353,9 +374,54 @@ export default function Phase28View() {
             ))}
           </div>
           <p style={{ marginTop: 'var(--sp-4)', fontSize: 'var(--t-ui)', color: 'var(--ink-2)' }}>
-            Base: {meta.base_period} &middot; Method: {meta.methodology}
+            Project Ref: {meta.base_period} &middot; Method: {meta.methodology}
           </p>
         </div>
+      </div>
+
+      {/* ── Reference Period Taxonomy Notice ── */}
+      <div style={{
+        background: '#f8fafc',
+        border: '1px solid #cbd5e1',
+        borderLeft: '4px solid var(--route-blue)',
+        padding: 'var(--sp-4)',
+        marginBottom: 'var(--sp-8)',
+        borderRadius: 4,
+      }}>
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span>🏛️</span>
+          <span>MoSPI CPI 2024 & Eurostat HICP Reference Period Taxonomy</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--sp-3)', marginTop: 'var(--sp-2)' }}>
+          <div style={{ background: '#ffffff', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 4 }}>
+            <div style={{ fontSize: 10, color: 'var(--ink-2)', fontWeight: 600 }}>PROJECT REFERENCE</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--route-blue)' }}>{INR(headline.base_price_inr)} (2026-09-26)</div>
+            <div style={{ fontSize: 10, color: '#64748b' }}>Provisional POC anchor</div>
+          </div>
+          <div style={{ background: '#ffffff', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 4 }}>
+            <div style={{ fontSize: 10, color: 'var(--ink-2)', fontWeight: 600 }}>MOSPI INDEX REFERENCE</div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>2024 = 100</div>
+            <div style={{ fontSize: 10, color: '#64748b' }}>Official revision scale</div>
+          </div>
+          <div style={{ background: '#ffffff', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 4 }}>
+            <div style={{ fontSize: 10, color: 'var(--ink-2)', fontWeight: 600 }}>MOSPI PRICE REFERENCE</div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>2024 Annual Average</div>
+            <div style={{ fontSize: 10, color: '#d97706' }}>Pending 2024 Actuals</div>
+          </div>
+          <div style={{ background: '#ffffff', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 4 }}>
+            <div style={{ fontSize: 10, color: 'var(--ink-2)', fontWeight: 600 }}>MOSPI WEIGHT REFERENCE</div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>HCES 2023-24</div>
+            <div style={{ fontSize: 10, color: '#64748b' }}>Weight: ~0.185%</div>
+          </div>
+          <div style={{ background: '#ffffff', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 4 }}>
+            <div style={{ fontSize: 10, color: 'var(--ink-2)', fontWeight: 600 }}>EUROSTAT LINKING</div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>December y-1</div>
+            <div style={{ fontSize: 10, color: '#64748b' }}>Annual recursive chain</div>
+          </div>
+        </div>
+        <p style={{ margin: '8px 0 0 0', fontSize: 11, color: '#64748b', fontStyle: 'italic' }}>
+          * Institutional distinction: The provisional project reference price ({INR(headline.base_price_inr)}) is an experimental operational anchor and is NOT the official MoSPI calendar-year 2024 price reference.
+        </p>
       </div>
 
       {/* ── Lead-time Breakdown ── */}
