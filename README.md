@@ -56,7 +56,7 @@ flowchart TD
     K --> L[Lead-Time Aggregation: Provisional Equal Weights w_L = 1/6 across T+1..T+45]
     L --> M[Route Aggregation: DEL-BOM Pilot W_r = 1.0000 / National DGCA Matrix]
     M --> N[All-India APIx Headline Index]
-    N --> O[CPI Integration Layer: Household Budget Impact via HCES 2023-24 Weight ~0.185%]
+    N --> O[CPI Integration Layer: Household Budget Impact via MoSPI CPI 2024 Weight 0.02951%]
     N --> P[Retained Diagnostic Prototype Median Benchmark: DEL_BOM_PROTOTYPE_MEDIAN_INDICATOR]
     N --> Q[Multi-Source Diagnostic Divergence: Google Flights vs EaseMyTrip]
 ```
@@ -72,7 +72,7 @@ To conform to national accounting principles and avoid methodological conflation
 | **1. PROJECT REFERENCE** | `experimental_project_reference_price` | **₹6,632.67** on `2026-09-26` | APIx Pilot Architecture (`PROVISIONAL_PROJECT_REFERENCE`) | Operational baseline from the first complete production run. Used exclusively to compute the high-frequency experimental prototype index: $I_{\text{project},t} = \frac{P_{\text{project},t}}{P_{\text{project},\text{reference}}} \times 100$. **NEVER described as MoSPI price reference.** |
 | **2. MOSPI INDEX REFERENCE** | `index_reference_period` | **$2024 = 100$** | MoSPI CPI 2024 National Revision Framework | The official numerical scaling reference period. All official CPI series are presented on the scale where the average of calendar year 2024 equals 100.00. |
 | **3. MOSPI PRICE REFERENCE** | `price_reference_period` | **Calendar-Year 2024 Average** | MoSPI CPI 2024 Service Price Compilation Manual | The unweighted or weighted average of all observed transaction prices across all 12 months of calendar year 2024. **Status: PENDING 2024 HISTORICAL ACTUALS.** Must never be manufactured or interpolated from 2026 data. |
-| **4. MOSPI WEIGHT REFERENCE** | `weight_reference_period` | **HCES 2023-24** | MoSPI Household Consumption Expenditure Survey 2023-24 | Household consumption expenditure survey period used to compute consumer budget weights ($W^{\text{CPI}}_{\text{airfare}} \approx 0.185\%$). Strictly separated from DGCA route traffic proxies. |
+| **4. MOSPI WEIGHT REFERENCE** | `weight_reference_period` | **HCES 2023-24** | MoSPI Household Consumption Expenditure Survey 2023-24 | Household consumption expenditure survey period used to compute consumer budget weights ($W^{\text{CPI}}_{\text{airfare}} = 0.02951\%$, decimal $0.0002951$, Item Code `07.3.3.1.2.01`). Strictly separated from DGCA route traffic proxies. |
 | **5. EUROSTAT CHAIN-LINKING REFERENCE** | `chain_link_period` | **December $y-1$** | Eurostat HICP Methodological Manual (2024 §3.4) | The annual chain-linking point. In Eurostat HICP, monthly prices are **not** divided directly by the annual average; short-period Jevons price relatives are chained recursively, and the long series is subsequently expressed in the index reference period. |
 
 ---
@@ -119,10 +119,21 @@ When a base flight becomes unavailable, the system audits 14 service characteris
 ### 4. Route Traffic Proxies vs. Macroeconomic CPI Expenditure Weights
 `[MO SPI REQUIREMENT / PRACTICE]`
 APIx enforces an impenetrable architectural boundary between transport volume and household budgets:
-- **Route Traffic Proxy ($W_r = 1.0000$ for DEL-BOM pilot):** Derived from monthly DGCA passenger volume reports. Answers: *"What proportion of domestic air passengers travel on route $r$?"*
-- **CPI Household Expenditure Weight ($W_{\text{cpi}}^{\text{combined}} \approx 0.001850$):** Derived from MoSPI HCES 2023-24. Answers: *"What proportion of total household consumption expenditure is spent on airfare?"*
-- **Headline CPI Impact:**
-  $$\text{Impact (percentage points)} = \frac{W_{\text{cpi}}^{\text{combined}}}{100} \times \Delta \text{APIx}_{\text{inflation}} = 0.0000185 \times \Delta \text{APIx}$$
+- **Route Traffic Weights (`DGCA_CY2024_TOP60`):** Derived from official DGCA calendar-year 2024 city-pair domestic traffic statistics. Answers: *"What proportion of domestic air passengers travel on route $r$ within the Top-60 basket?"*
+- **CPI Household Expenditure Weight ($W_{\text{cpi}}^{\text{combined}} = 0.02951\%$ / decimal $0.0002951$):** Derived from official MoSPI CPI 2024 "Weights of item CPI 2024" (Item Code `07.3.3.1.2.01` — *Passenger transport by air, domestic*). Answers: *"What proportion of total household consumption expenditure is spent on domestic airfare?"*
+
+> [!IMPORTANT]
+> **DGCA Top-60 Route Basket Specification (`DGCA_CY2024_TOP60`):**  
+> APIx route aggregation uses a Top-60 domestic city-pair basket selected by annual scheduled passenger volume from DGCA calendar-year 2024 data. Route weights are normalized within the selected Top-60 basket. The basket covers 57.0247% of 2024 domestic passenger traffic. These are APIx representativeness weights and are distinct from the MoSPI CPI airfare expenditure weight.
+
+> [!IMPORTANT]
+> **Mandatory Methodological Invariant & Disclaimer:**  
+> “The MoSPI CPI 2024 airfare expenditure weight is used only for the optional integration of the experimental Airfare Price Index into CPI. It is not used to construct the Airfare Price Index itself.”
+
+- **CPI Contribution Calculation:**
+  $$\text{airfare\_contribution\_pp} = \Delta \text{APIx} \times \frac{0.02951}{100} = \Delta \text{APIx} \times 0.0002951$$
+  *Example:* An APIx inflation change of $+10.0\%$ contributes:
+  $$\text{contribution} = 10.0 \times \frac{0.02951}{100} = +0.002951\text{ percentage points to headline CPI}$$
 
 ---
 
@@ -130,18 +141,40 @@ APIx enforces an impenetrable architectural boundary between transport volume an
 
 APIx compiles six forward-looking advance purchase classes:
 
-| Horizon | Lead Days | Methodological Role | Production Weight ($w_L$) | Official Status |
-| :---: | :---: | :--- | :---: | :--- |
-| **$T+1$** | 1 day | Last-minute emergency & corporate travel; peak dynamic elasticity | $1/6 \approx 0.166667$ | Analytical Stratum |
-| **$T+7$** | 7 days | Short-horizon discretionary booking window | $1/6 \approx 0.166667$ | Analytical Stratum |
-| **$T+15$** | 15 days | Standard domestic forward booking window | $1/6 \approx 0.166667$ | Analytical Stratum |
-| **$T+21$** | 21 days | **MoSPI Domestic Airfare Reference Checkpoint** | $1/6 \approx 0.166667$ | **Official MoSPI CPI 2024 Checkpoint** |
-| **$T+30$** | 30 days | Leisure vacation booking baseline | $1/6 \approx 0.166666$ | Analytical Stratum |
-| **$T+45$** | 45 days | Maximum domestic forward planning anchor | $1/6 \approx 0.166666$ | Analytical Stratum |
-| **Total** | — | — | **1.000000 (100%)** | Strict Unity Invariant |
+| Horizon | Lead Days | Methodological Role | Primary Empirical Weight ($w_L$) | Sensitivity Equal Weight ($w_L^{\text{sens}}$) | Official Status |
+| :---: | :---: | :--- | :---: | :---: | :--- |
+| **$T+1$** | 1 day | Last-minute emergency & corporate travel; peak dynamic elasticity | **0.0509 (5.09%)** | 0.166667 (16.67%) | Analytical Stratum |
+| **$T+7$** | 7 days | Short-horizon discretionary booking window | **0.1350 (13.50%)** | 0.166667 (16.67%) | Analytical Stratum |
+| **$T+15$** | 15 days | Standard domestic forward booking window | **0.1491 (14.91%)** | 0.166667 (16.67%) | Analytical Stratum |
+| **$T+21$** | 21 days | **MoSPI Domestic Airfare Reference Checkpoint** | **0.1519 (15.19%)** | 0.166667 (16.67%) | **Official MoSPI CPI 2024 Checkpoint** |
+| **$T+30$** | 30 days | Leisure vacation booking baseline | **0.2588 (25.88%)** | 0.166666 (16.67%) | Analytical Stratum |
+| **$T+45$** | 45 days | Maximum domestic forward planning anchor | **0.2543 (25.43%)** | 0.166666 (16.67%) | Analytical Stratum |
+| **Total** | — | — | **1.0000 (100.00%)** | **1.000000 (100.00%)** | Strict Unity Invariant |
 
-> [!NOTE]
-> Weights are formally designated as `PROVISIONAL EQUAL LEAD-TIME WEIGHTS` ($w_L = 1/6$). In accordance with statistical standards, $T+21$ receives no artificial weighting bias, but is isolated as an official benchmark sub-index.
+> [!IMPORTANT]
+> **Empirical Lead-Time Weights Specification (`EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`):**  
+> Primary APIx aggregation uses empirical weights derived from the supplied `Clean_Dataset.csv` booking dataset, treating `days_left` as booking lead time based on the verified dataset interpretation that each row represents an individual booking.
+>
+> - **Methodology Status:** `EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`
+> - **Source Dataset:** `Clean_Dataset.csv`
+> - **Source Interpretation:** Treat `days_left` as booking lead time; each row represents an individual booking transaction.
+> - **Mandatory Disclaimer:** **These weights are derived from the supplied Clean_Dataset.csv booking dataset and are not official Indian national booking weights.**
+> - **Preserved Sensitivity Configuration (`SENSITIVITY_EQUAL_LEAD_TIME_WEIGHTS`):** The equal-weight method ($w_L = 1/6 \approx 0.166667$, Eurostat HICP benchmark) is strictly preserved as an active configuration for sensitivity analysis and structural invariance testing.
+> - **Tri-Layer Separation:**
+>   1. **Route Representativeness Weights ($w_r$):** Derived from official DGCA CY2024 scheduled domestic city-pair passenger volumes (`DGCA_CY2024_TOP60`, 57.0247% coverage).
+>   2. **Lead-Time Profile Weights ($w_L$):** Derived from `Clean_Dataset.csv` empirical booking horizons (`EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`).
+>   3. **Macroeconomic Expenditure Weight ($W_{\text{cpi}} = 0.02951\%$):** Derived from MoSPI CPI 2024 "Weights of item CPI 2024" (Item Code `07.3.3.1.2.01`), operating exclusively at the national CPI aggregation layer.
+
+## ✈️ Regulatory Flight Universe Validation (DGCA CY2024 Schedules)
+
+> [!IMPORTANT]
+> **Flight-Universe Denominator Control vs Weighting Dataset:**  
+> The Directorate General of Civil Aviation (DGCA) approved domestic flight schedules (Summer 2024: 24,275 weekly departures across 125 airports; Winter 2024: 25,007 weekly departures across 124 airports) serve as a **regulatory flight-universe control and denominator dataset** (`config/dgca_cy2024_schedule.json`).
+>
+> - **Scraper Coverage Ratio:** $C_{\text{scraper}}(r, d) = \frac{|\text{Observed Approved Active Flights}|}{|\text{DGCA Approved Active Flights}|}$
+> - **Tripartite Classification:** Deterministically categorizes flights as `OBSERVED_AND_SCHEDULED`, `SCHEDULED_BUT_NOT_OBSERVED`, or `UNSCHEDULED_OBSERVED`.
+> - **Station Disambiguation Invariant:** South Goa Dabolim (`GOI`) and North Goa Mopa (`GOX`) are strictly separated; Delhi IGI (`DEL`) and Ghaziabad Hindon (`HDO`) are strictly separated.
+> - **Anti-Contamination Rule:** Schedule universe records contain zero prices and zero passenger volumes and must NEVER be used to calculate route weights, lead-time weights, or CPI weights.
 
 ---
 
@@ -165,6 +198,9 @@ SIH2026/
 │   │           ├── monthly_pricing.py    # Monthly Geometric Price Estimators
 │   │           ├── matching.py           # Longitudinal Stratum Matching Engine
 │   │           ├── jevons.py             # Short-Chain Jevons & Numerical Verifier
+│   │           ├── lead_time_weights.py  # Empirical Lead-Time Weights & Config
+│   │           ├── route_basket.py       # DGCA CY2024 Top-60 Route Basket & Validations
+│   │           ├── flight_schedule.py    # DGCA CY2024 Schedule Universe & Coverage Engine
 │   │           ├── weights.py            # Weight Registry (Lead-Time & Route Proxies)
 │   │           ├── aggregation.py        # Higher-Level Young/Laspeyres Aggregation
 │   │           └── engine.py             # Master APIx Compilation Engine Orchestrator
@@ -182,7 +218,18 @@ SIH2026/
 │   └── compute_delbom_index.py           # Diagnostic Pilot Runner
 ├── tests/
 │   └── core/
-│       └── test_phase29_mospi_eurostat_engine.py # 15 Mandatory Acceptance Criteria Gates
+│       ├── test_phase29_mospi_eurostat_engine.py # 15 Mandatory Acceptance Criteria Gates
+│       ├── test_cpi_2024_airfare_weight.py       # CPI 2024 Expenditure Weight Separation Tests
+│       ├── test_dgca_top60_route_basket.py       # DGCA CY2024 Top-60 Route Basket Tests
+│       ├── test_empirical_lead_time_weights.py   # Empirical Booking Lead-Time Weight Tests
+│       └── test_dgca_cy2024_flight_schedule.py   # DGCA Schedule Universe & Coverage Tests
+├── config/
+│   ├── routes.yaml                       # Tracked Routes Configuration
+│   ├── dgca_cy2024_top60.json            # Official DGCA Top-60 Basket Dataset
+│   ├── dgca_cy2024_schedule.json         # Approved DGCA CY2024 Flight Schedule Dataset
+│   └── empirical_lead_time_weights.json  # Empirical Booking Lead-Time Weights Dataset
+├── APIx_CY2024_Top60_Route_Weights.csv   # Validated Top-60 Route Weights Export (CSV)
+├── APIx_CY2024_Top60_Route_Weights.xlsx  # Validated Top-60 Route Weights Export (Excel)
 ├── apix_base_delbom.json                 # Locked Provisional Project Reference File
 ├── apix_delbom_result.json               # Backend Master Output Series
 ├── DEL_BOM_elementary_jevons.csv & .json # Published Elementary Jevons Output

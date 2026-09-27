@@ -137,21 +137,46 @@ base_value: Decimal = reference_index_value                 # Explicit alias
 
 ### JSON File Updates:
 - [`apix_base_delbom.json`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/apix_base_delbom.json): Contains explicit reference fields, locking the provisional project price at ₹6,632.67 with explicit notes forbidding its description as the MoSPI price reference.
-- [`DEL_BOM_route_index.json`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/DEL_BOM_route_index.json): Emits all five reference concepts alongside the headline route index (102.6407).
-- [`apix_delbom_result.json`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/apix_delbom_result.json): Exposes the structured `reference_taxonomy` block for frontend dashboard rendering.
+- [`DEL_BOM_route_index.json`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/DEL_BOM_route_index.json): Emits all five reference concepts alongside the headline route index (102.6407), official CPI airfare expenditure weight (0.02951%), and estimated CPI contribution (+0.000779 pp).
+- [`apix_delbom_result.json`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/apix_delbom_result.json): Exposes the structured `reference_taxonomy` block and CPI integration layer for frontend dashboard rendering.
 
 ---
 
-## 7. Compliance Verification & Test Proofs
+## 7. Official MoSPI CPI 2024 Airfare Expenditure Weight Integration
 
-The reference taxonomy implementation has been validated with dedicated test cases in [`tests/core/test_phase29_mospi_eurostat_engine.py`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/tests/core/test_phase29_mospi_eurostat_engine.py):
+### 7.1 Source and Official Specification
+From the official MoSPI "Weights of item CPI 2024" Excel workbook (`announcements_1769773015355_ff9dcdb4-3b64-454c-9810-b07b65600475_Weights_of_itme_CPI_2024.xlsx`, Annexure 5.3d):
 
-- **Gate 13:** Base/reference index remains strictly 100.0000.
-- **Gate 15:** Reference Period Taxonomy Validation:
-  - Asserts `index_reference_period == "2024=100"`
-  - Asserts `price_reference_period == "calendar-year 2024 average"`
-  - Asserts `weight_reference_period == "HCES 2023-24"`
-  - Asserts `chain_link_period == "December y-1"`
-  - Asserts `reference_type == "PROVISIONAL_PROJECT_REFERENCE"`
-  - Asserts `price_reference_period != "2026-09-26"` (strictly preventing conflation of project reference with MoSPI price reference)
-  - **Result:** 15/15 tests passing (100%).
+- **Item Code:** `07.3.3.1.2.01`
+- **Item Description:** `Passenger transport by air, domestic`
+- **All-India Combined Expenditure Weight:** **`0.02951%`**
+- **Decimal Form:** **`0.0002951`**
+- **Urban Share in All-India:** `0.017843%` (`0.00017843`)
+- **Rural Share in All-India:** `0.011666%` (`0.00011666`)
+- **Reference Year:** `2024`
+- **Weight Source:** `MoSPI CPI 2024 Weights of item CPI 2024`
+
+> [!IMPORTANT]
+> **Mandatory Methodological Principle & Disclaimer:**  
+> “The MoSPI CPI 2024 airfare expenditure weight is used only for the optional integration of the experimental Airfare Price Index into CPI. It is not used to construct the Airfare Price Index itself.”
+
+### 7.2 Strict Separation Axioms
+1. **APIx Construction:** APIx continues using route weights, lead-time weights, and product/stratum methodology. Individual fare observations are **never** multiplied by `0.0002951`. The CPI weight is **never** used as a route weight or lead-time weight.
+2. **CPI Contribution Calculation:** Given APIx percentage change $\Delta \text{APIx}$:
+   $$\text{airfare\_contribution\_pp} = \Delta \text{APIx} \times \frac{0.02951}{100} = \Delta \text{APIx} \times 0.0002951$$
+   *Example:* If APIx change is $+10\%$, contribution $= 10 \times 0.0002951 = +0.002951$ percentage points.
+3. **Separate Outputs:** APIx level, APIx MoM change, APIx YoY change, CPI airfare weight, and estimated CPI contribution in percentage points are published as separate, distinct outputs.
+
+---
+
+## 8. Compliance Verification & Test Proofs
+
+The reference taxonomy and CPI airfare expenditure weight implementation have been validated with dedicated test suites:
+- [`tests/core/test_phase29_mospi_eurostat_engine.py`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/tests/core/test_phase29_mospi_eurostat_engine.py): 15/15 tests passing.
+- [`tests/core/test_cpi_2024_airfare_weight.py`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/tests/core/test_cpi_2024_airfare_weight.py): 6/6 tests passing.
+  - Correct weight loading
+  - Percentage/decimal consistency validation
+  - Correct CPI contribution calculation (+10% -> +0.002951 pp)
+  - Protection against using CPI weight as route weight (raises `ValueError`)
+  - APIx construction independence
+  - Distinct separate output verification

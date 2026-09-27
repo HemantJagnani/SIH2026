@@ -46,17 +46,30 @@ All-India Airfare Price Index (APIx_t = ∑ W_r I_(r,t))
 
 Air travel pricing is characterized by dynamic yield management: ticket prices escalate as the departure date approaches. APIx monitors six advance-purchase horizons:
 
-| Horizon | Days to Departure | Analytical Role | Benchmark Weight ($W_l$) |
-| :---: | :---: | :--- | :---: |
-| **$T+1$** | 1 day | Last-minute business & emergency travel; peak price volatility | 0.1500 (15%) |
-| **$T+7$** | 7 days | Short-horizon discretionary booking window | 0.3000 (30%) |
-| **$T+15$** | 15 days | Standard domestic advance booking window | 0.2000 (20%) |
-| **$T+21$** | 21 days | **MoSPI CPI 2024 Official Alignment Checkpoint** | 0.1500 (15%) |
-| **$T+30$** | 30 days | Early booking vacation/leisure baseline | 0.1200 (12%) |
-| **$T+45$** | 45 days | Maximum domestic forward planning anchor | 0.0800 (8%) |
-| **Total** | — | — | **1.0000 (100%)** |
+| Horizon | Days to Departure | Analytical Role | Primary Empirical Weight ($W_l$) | Sensitivity Equal Weight ($W_l^{\text{sens}}$) |
+| :---: | :---: | :--- | :---: | :---: |
+| **$T+1$** | 1 day | Last-minute business & emergency travel; peak price volatility | **0.0509 (5.09%)** | 0.166667 (16.67%) |
+| **$T+7$** | 7 days | Short-horizon discretionary booking window | **0.1350 (13.50%)** | 0.166667 (16.67%) |
+| **$T+15$** | 15 days | Standard domestic advance booking window | **0.1491 (14.91%)** | 0.166667 (16.67%) |
+| **$T+21$** | 21 days | **MoSPI CPI 2024 Official Alignment Checkpoint** | **0.1519 (15.19%)** | 0.166667 (16.67%) |
+| **$T+30$** | 30 days | Early booking vacation/leisure baseline | **0.2588 (25.88%)** | 0.166666 (16.67%) |
+| **$T+45$** | 45 days | Maximum domestic forward planning anchor | **0.2543 (25.43%)** | 0.166666 (16.67%) |
+| **Total** | — | — | **1.0000 (100.00%)** | **1.000000 (100.00%)** |
 
 > [!IMPORTANT]
+> **Empirical Lead-Time Weights Specification (`EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`):**  
+> APIx primary lead-time aggregation uses empirical weights derived from the supplied `Clean_Dataset.csv` booking dataset, treating `days_left` as booking lead time based on the verified dataset interpretation that each row represents an individual booking.
+>
+> - **Methodology Status:** `EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`
+> - **Source Dataset:** `Clean_Dataset.csv`
+> - **Source Interpretation:** Treat `days_left` as booking lead time; each row represents an individual booking transaction.
+> - **Official Status Disclaimer:** **These weights are derived from the supplied booking dataset and are not official Indian national booking weights.**
+> - **Preserved Sensitivity Configuration (`SENSITIVITY_EQUAL_LEAD_TIME_WEIGHTS`):** The equal-weight method ($w_L = 1/6 \approx 0.166667$, Eurostat HICP benchmark) is strictly preserved as an active configuration for sensitivity analysis and structural invariance testing.
+> - **Tri-Layer Weight Separation:**
+>   1. **Route Representativeness Weights ($w_r$):** Derived from official DGCA CY2024 scheduled domestic city-pair passenger volumes (`DGCA_CY2024_TOP60`, 57.0247% coverage).
+>   2. **Lead-Time Profile Weights ($w_L$):** Derived from `Clean_Dataset.csv` empirical booking horizons (`EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`).
+>   3. **Macroeconomic Expenditure Weight ($W_{\text{cpi}} = 0.02951\%$):** Derived from MoSPI CPI 2024 "Weights of item CPI 2024" (Item Code `07.3.3.1.2.01`), operating exclusively at the national CPI aggregation layer.
+>
 > **$T+21$ MoSPI Alignment Rule:** The MoSPI CPI 2024 Expert Group specifically designated **21 days prior to departure** as the standard advance-purchase specification for domestic air travel. In APIx, $T+21$ is scheduled, captured, normalized, and aggregated as an **independent, isolated stratum**, preventing artificial blending with $T+15$ or $T+30$.
 
 ---
@@ -116,13 +129,53 @@ $$I_{s,t} = I_{s,t-1} \times J_{s,t}$$
 3. **All-India APIx ($APIx_t$):**
    $$APIx_t = \sum_{r \in R} W_r \cdot I_{r,t} \quad \text{where} \quad \sum_r W_r = 1.0000$$
 
+> [!IMPORTANT]
+> **DGCA Top-60 Route Basket Specification (`DGCA_CY2024_TOP60`):**  
+> APIx route aggregation uses a Top-60 domestic city-pair basket selected by annual scheduled passenger volume from DGCA calendar-year 2024 data. Route weights are normalized within the selected Top-60 basket. The basket covers 57.0247% of 2024 domestic passenger traffic. These are APIx representativeness weights and are distinct from the MoSPI CPI airfare expenditure weight.
+>
+> - **Basket Identifier:** `DGCA_CY2024_TOP60`
+> - **Reference Period:** `CY2024` (January 2024 – December 2024)
+> - **Basket Passenger Volume:** 91,995,307 (57.0247% of 161,325,253 All-India domestic passengers)
+> - **Route Weight Formula:** $W_r = \frac{\text{Annual Route Passenger Volume}}{91,995,307}$, $\sum_{r=1}^{60} W_r = 1.00000000$
+> - **Anti-Contamination Rule:** The MoSPI CPI 2024 airfare expenditure weight ($0.02951\%$ / $0.0002951$, Item `07.3.3.1.2.01`) operates strictly at the national CPI aggregation layer and must NEVER be used as an internal route weight.
+> - **Station Preservation:** Dual-airport stations such as South Goa Dabolim (`GOI`) and North Goa Mopa (`GOX`) are preserved as separate stations and never merged.
+
 ### 4.5 Inflation Metrics
 $$\text{MoM Inflation (\%)} = \left(\frac{APIx_t}{APIx_{t-1}} - 1\right) \times 100$$
 $$\text{YoY Inflation (\%)} = \left(\frac{APIx_t}{APIx_{t-12}} - 1\right) \times 100$$
 
 ---
 
-## 5. Non-Negotiable Methodological Rules
+## 5. Regulatory Flight Universe Validation (DGCA CY2024 Schedules)
+
+> [!IMPORTANT]
+> **Flight-Universe Control vs Pricing/Weighting Data:**  
+> The Directorate General of Civil Aviation (DGCA) approved domestic flight schedules (Northern Summer 2024: March 31 – October 26, 2024; Northern Winter 2024: October 27, 2024 – March 29, 2025) serve strictly as a **regulatory flight-universe control and denominator dataset**. They contain NO ticket prices and NO passenger headcounts and must **NEVER** be used to construct route weights, lead-time weights, or CPI weights.
+
+### 5.1 Scraper Coverage Metric
+To quantify web crawler completeness against the sovereign regulatory baseline, APIx calculates the active flight coverage ratio on travel date $d$:
+$$C_{\text{scraper}}(r, d) = \frac{|\text{Observed Approved Active Flights}|}{|\text{DGCA Approved Active Flights}|}$$
+
+### 5.2 Tripartite Universe Partitioning
+The schedule enables deterministic disambiguation of crawler omissions vs market cancellations:
+1. **`OBSERVED_AND_SCHEDULED`:** Captured by crawler and matched to an approved DGCA slot.
+2. **`SCHEDULED_BUT_NOT_OBSERVED`:** Approved by DGCA for travel date $d$, but not observed by crawler (distinguishing between true sell-outs/cancellations and potential crawler drop-off).
+3. **`UNSCHEDULED_OBSERVED`:** Scraped from OTA/airline but absent from seasonal approved filing (e.g. ad-hoc charters, seasonal overflow flights, codeshare marketing variants).
+
+### 5.3 Station Disambiguation & Time-Band Invariants
+- **Strict Station Separation:**
+  * South Goa Dabolim (`GOI`) and North Goa Manohar International Mopa (`GOX`) are distinct commercial airport stations and must NEVER be conflated.
+  * Delhi Indira Gandhi (`DEL`) and Ghaziabad Hindon (`HDO`) are distinct stations and must NEVER be conflated.
+- **Departure Time-Band Validation:**
+  Scheduled departure times validate scraper departure timestamps against standard daily time bands:
+  * `EARLY_MORNING`: 00:00 – 05:59
+  * `MORNING`: 06:00 – 11:59
+  * `AFTERNOON`: 12:00 – 17:59
+  * `EVENING`: 18:00 – 23:59
+
+---
+
+## 6. Non-Negotiable Methodological Rules
 
 1. **Never average raw scraped ticket prices directly:** Compositional shifts in scraper output create false volatility.
 2. **Never weight by scraper record counts:** Web crawling artifacts cannot proxy economic consumption.
@@ -132,10 +185,11 @@ $$\text{YoY Inflation (\%)} = \left(\frac{APIx_t}{APIx_{t-12}} - 1\right) \times
 6. **Never discard genuine market price surges:** Extreme surges during festival/peak demand are real price signals.
 7. **Always preserve raw payload artifacts:** Full DOM captures and raw JSON payloads must be archived for auditability.
 8. **Always use high-precision Decimal arithmetic:** Zero float rounding error in monetary calculations.
+9. **Never use flight schedule datasets for fare, route, lead-time, or CPI weights:** Approved schedules provide the regulatory flight universe and active denominator control only.
 
 ---
 
-## 6. Antigravity Acceptance Criteria Compliance
+## 7. Antigravity Acceptance Criteria Compliance
 
 | Gate | Acceptance Rule | Test Requirement | Verification Result |
 | :---: | :--- | :--- | :---: |

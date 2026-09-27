@@ -45,7 +45,7 @@ To prevent fundamental methodological error, APIx strictly separates and disting
 | **1. PROJECT REFERENCE** | `PROVISIONAL_PROJECT_REFERENCE` (APIx Engine) | `₹6,632.67` on `2026-09-26` | First complete production run representative price. Used exclusively to compute the high-frequency prototype index: $I_{\text{project},t} = \frac{P_{\text{project},t}}{P_{\text{project},\text{reference}}} \times 100$. **DO NOT describe this as the MoSPI price reference!** |
 | **2. MOSPI INDEX REFERENCE** | MoSPI CPI 2024 Framework | `2024 = 100` | The official numerical scaling reference period for the all-India CPI revision. |
 | **3. MOSPI PRICE REFERENCE** | MoSPI CPI 2024 Specification | `calendar-year 2024 average` | The official reference price must be derived from actual calendar-year 2024 observations or a documented historical reconstruction. **Never manufactured from 2026 data.** |
-| **4. MOSPI WEIGHT REFERENCE** | MoSPI National Sample Survey | `HCES 2023-24` | Household Consumption Expenditure Survey 2023-24 basket used to establish consumption expenditure weights ($W^{\text{CPI}}_{\text{airfare}} \approx 0.185\%$). |
+| **4. MOSPI WEIGHT REFERENCE** | MoSPI National Sample Survey | `HCES 2023-24` | Household Consumption Expenditure Survey 2023-24 basket used to establish consumption expenditure weights ($W^{\text{CPI}}_{\text{airfare}} = 0.02951\%$, decimal $0.0002951$, Item Code `07.3.3.1.2.01`). |
 | **5. EUROSTAT CHAIN-LINKING REFERENCE** | Eurostat HICP 2024 Manual §3 | `December y-1` | Annual linking point. Monthly prices are NOT directly divided by the annual average; short-period Jevons price relatives are chained recursively, and the long series is subsequently expressed in the index reference period. |
 
 ## 2. Frozen Headline Product Definition
@@ -195,16 +195,29 @@ This adjustment guarantees that only **pure inflationary price change** is refle
 
 `[MO SPI REQUIREMENT / PRACTICE]` / `[PROJECT DESIGN CHOICE]`
 
-To prevent systemic error, APIx maintains a strict separation between market passenger traffic proxies and macroeconomic household expenditure weights:
-
 | Parameter | Identifier | Value | Economic Meaning | Source Document |
 | :--- | :---: | :---: | :--- | :--- |
 | **Route Weight** | $W_r$ | $1.000000$ | Share of domestic air traffic on route $r$ | DGCA Monthly Domestic Traffic Report |
-| **Urban CPI Airfare Weight** | $W_{\text{cpi}}^{\text{urban}}$ | $0.003500$ | Share of urban household budget spent on airfare (~0.35%) | MoSPI HCES 2023-24 / CPI 2024 Basket |
-| **Rural CPI Airfare Weight** | $W_{\text{cpi}}^{\text{rural}}$ | $0.000450$ | Share of rural household budget spent on airfare (~0.045%) | MoSPI HCES 2023-24 / CPI 2024 Basket |
-| **Combined CPI Airfare Weight** | $W_{\text{cpi}}^{\text{combined}}$ | $0.001850$ | Share of all-India household budget spent on airfare (~0.185%) | MoSPI HCES 2023-24 / CPI 2024 Basket |
+| **All-India Combined CPI Weight** | $W_{\text{cpi}}^{\text{combined}}$ | **$0.02951\%$** (`0.0002951`) | Share of all-India household budget spent on domestic airfare | MoSPI CPI 2024 Weights of item CPI 2024 (Annexure 5.3d) |
+| **Urban Share in All-India** | $W_{\text{cpi}}^{\text{urban}}$ | $0.017843\%$ (`0.00017843`) | Urban domestic airfare expenditure share | MoSPI CPI 2024 Weights of item CPI 2024 (Annexure 5.3d) |
+| **Rural Share in All-India** | $W_{\text{cpi}}^{\text{rural}}$ | $0.011666\%$ (`0.00011666`) | Rural domestic airfare expenditure share | MoSPI CPI 2024 Weights of item CPI 2024 (Annexure 5.3d) |
+| **CPI Item Code** | — | `07.3.3.1.2.01` | COICOP 2018 Subclass domestic air passenger transport | MoSPI CPI 2024 Item Classification |
+| **CPI Item Description** | — | Passenger transport by air, domestic | Official MoSPI Item Description | MoSPI CPI 2024 Item Weights |
 
-$$\text{Headline CPI Impact (percentage points)} = \frac{W_{\text{cpi}}^{\text{combined}}}{100} \times \text{APIx Inflation Rate (\%)} = 0.0000185 \times \Delta \text{APIx}$$
+> [!IMPORTANT]
+> **Mandatory Methodological Invariant & Disclaimer:**  
+> “The MoSPI CPI 2024 airfare expenditure weight is used only for the optional integration of the experimental Airfare Price Index into CPI. It is not used to construct the Airfare Price Index itself.”
+
+### 6.1 CPI Contribution Formulation:
+Given APIx percentage change $\Delta \text{APIx}_t$:
+
+$$\text{airfare\_contribution\_pp} = \Delta \text{APIx}_t \times \frac{0.02951}{100} = \Delta \text{APIx}_t \times 0.0002951$$
+
+**Example Calculation:**
+- If $\Delta \text{APIx}_t = +10.0\%$ (APIx increases by 10%):
+  $$\text{contribution} = 10.0 \times \frac{0.02951}{100} = +0.002951\text{ percentage points}$$
+- For current evaluation run ($\Delta \text{APIx} = +2.6407\%$):
+  $$\text{contribution} = 2.6407 \times \frac{0.02951}{100} = +0.00077927\text{ percentage points}$$
 
 ---
 
