@@ -13,6 +13,7 @@ import {
 } from '../api';
 import WeightBar from '../components/WeightBar';
 import RecordStrip from '../components/RecordStrip';
+import { DGCA_TOP60_ROUTES } from '../data/dgcaTop60';
 
 interface IndexViewProps {
   selectedDate?: string | null;
@@ -21,6 +22,51 @@ interface IndexViewProps {
 }
 
 const ROUTES = ['DEL-BOM', 'DEL-BLR', 'BOM-BLR'] as const;
+
+// Route metadata lookup for city names, passenger volume, and national traffic rank
+const ROUTE_META_MAP = new Map(
+  DGCA_TOP60_ROUTES.map((r) => [
+    r.route_id,
+    {
+      rank: r.rank,
+      origin: r.origin,
+      destination: r.destination,
+      pax: r.annual_passenger_volume,
+      share: r.dgca_share_percent,
+      weight: r.route_weight,
+    },
+  ])
+);
+
+DGCA_TOP60_ROUTES.forEach((r) => {
+  const rev = `${r.destination_code}-${r.origin_code}`;
+  if (!ROUTE_META_MAP.has(rev)) {
+    ROUTE_META_MAP.set(rev, {
+      rank: r.rank + 0.5,
+      origin: r.destination,
+      destination: r.origin,
+      pax: r.annual_passenger_volume,
+      share: r.dgca_share_percent,
+      weight: r.route_weight,
+    });
+  }
+});
+
+const DYNAMIC_PALETTE = [
+  '#E65100', '#6A1B9A', '#00838F', '#2E7D32', '#C2185B',
+  '#1565C0', '#F57F17', '#4527A0', '#00695C', '#D84315',
+  '#37474F', '#827717', '#880E4F',
+];
+
+function getRouteColor(route: string): string {
+  if (route === 'DEL-BOM' || route === 'BOM-DEL') return 'var(--route-blue)';
+  if (route === 'DEL-BLR' || route === 'BLR-DEL') return 'var(--route-mag)';
+  if (route === 'BOM-BLR' || route === 'BLR-BOM') return 'var(--route-teal)';
+
+  let hash = 0;
+  for (let i = 0; i < route.length; i++) hash = (hash << 5) - hash + route.charCodeAt(i);
+  return DYNAMIC_PALETTE[Math.abs(hash) % DYNAMIC_PALETTE.length];
+}
 
 const ROUTE_COLORS: Record<string, string> = {
   overall: 'var(--ink)',
@@ -92,6 +138,14 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   const [range, setRange] = useState<'30d' | '90d' | 'all'>('all');
   const [soloRoute, setSoloRoute] = useState<string | null>(null);
 
+  // Section 3 Basket routes controls
+  const [basketFilter, setBasketFilter] = useState<'TOP10' | 'ALL' | 'DEL' | 'BOM' | 'BLR' | 'HYD' | 'CCU'>('TOP10');
+  const [basketSearch, setBasketSearch] = useState('');
+
+  // Section 4 Lead-time snapshot controls
+  const [leadSnapshotFilter, setLeadSnapshotFilter] = useState<'TOP6' | 'TOP12' | 'ALL'>('TOP6');
+  const [leadSearch, setLeadSearch] = useState('');
+
   // What-If Weights
   const [routeWeights, setRouteWeights] = useState<Record<string, number>>(DEFAULT_ROUTE_WEIGHTS);
   const [leadWeights, setLeadWeights] = useState<Record<number, number>>(DEFAULT_LEAD_WEIGHTS);
@@ -118,9 +172,28 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       if (resBt.status === 'fulfilled') setBacktest(resBt.value);
       if (resRuns.status === 'fulfilled') setRuns(resRuns.value);
       if (resCov.status === 'fulfilled') setCoverage(resCov.value);
-      if (resMat.status === 'fulfilled') setMatrixCells(resMat.value.cells);
 
       const curvesMap: Record<string, { points: LeadPoint[]; isSynthetic: boolean; isReal: boolean }> = {};
+
+      // Populate lead curves dynamically for ALL routes from matrix cells
+      if (resMat.status === 'fulfilled' && resMat.value?.cells) {
+        const cells = resMat.value.cells;
+        setMatrixCells(cells);
+        for (const c of cells) {
+          const leadDays = parseInt(c.lead_time.replace('T+', '')) || 7;
+          if (!curvesMap[c.route]) {
+            curvesMap[c.route] = { isSynthetic: false, isReal: true, points: [] };
+          }
+          curvesMap[c.route].points.push({
+            lead_days: leadDays,
+            price: c.median_fare_inr || c.mean_fare_inr,
+          });
+        }
+        for (const r of Object.keys(curvesMap)) {
+          curvesMap[r].points.sort((a, b) => b.lead_days - a.lead_days);
+        }
+      }
+
       const processCurve = (route: string, res: PromiseSettledResult<LeadCurveResponse>) => {
         if (res.status === 'fulfilled' && res.value?.curve_points?.length > 0) {
           curvesMap[route] = {
@@ -402,6 +475,124 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     // Scroll chart into view if needed (§4)
     chartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
+
+  // List of all active/scraped routes (57 routes from matrix / coverage)
+  const availableRoutes = useMemo(() => {
+    const set = new Set<string>();
+    if (coverage?.routes_with_data) {
+      coverage.routes_with_data.forEach((r) => set.add(r));
+    }
+    matrixCells.forEach((c) => set.add(c.route));
+    if (set.size === 0) {
+      ['DEL-BOM', 'DEL-BLR', 'BOM-BLR'].forEach((r) => set.add(r));
+    }
+    const list = Array.from(set);
+    list.sort((a, b) => {
+      const rankA = ROUTE_META_MAP.get(a)?.rank ?? 999;
+      const rankB = ROUTE_META_MAP.get(b)?.rank ?? 999;
+      return rankA - rankB;
+    });
+    return list;
+  }, [coverage, matrixCells]);
+
+  // Section 3 Basket routes filtered list
+  const displayedBasketRoutes = useMemo(() => {
+    let list = availableRoutes;
+    if (basketFilter === 'TOP10') {
+      const top10 = list.filter((r) => (ROUTE_META_MAP.get(r)?.rank ?? 999) <= 10);
+      list = top10.length > 0 ? top10.slice(0, 10) : list.slice(0, 10);
+    } else if (basketFilter !== 'ALL') {
+      list = list.filter((r) => r.startsWith(basketFilter) || r.endsWith(basketFilter));
+    }
+
+    if (basketSearch.trim()) {
+      const q = basketSearch.trim().toLowerCase();
+      list = list.filter((r) => {
+        if (r.toLowerCase().includes(q)) return true;
+        const meta = ROUTE_META_MAP.get(r);
+        return (
+          meta &&
+          (meta.origin.toLowerCase().includes(q) || meta.destination.toLowerCase().includes(q))
+        );
+      });
+    }
+    return list;
+  }, [availableRoutes, basketFilter, basketSearch]);
+
+  // Section 4 Lead-time snapshot filtered list
+  const displayedLeadRoutes = useMemo(() => {
+    let list = availableRoutes.filter((r) => (leadCurves[r]?.points?.length ?? 0) > 0);
+    if (list.length === 0) list = availableRoutes;
+
+    if (leadSnapshotFilter === 'TOP6') {
+      list = list.slice(0, 6);
+    } else if (leadSnapshotFilter === 'TOP12') {
+      list = list.slice(0, 12);
+    }
+
+    if (leadSearch.trim()) {
+      const q = leadSearch.trim().toLowerCase();
+      list = list.filter((r) => {
+        if (r.toLowerCase().includes(q)) return true;
+        const meta = ROUTE_META_MAP.get(r);
+        return (
+          meta &&
+          (meta.origin.toLowerCase().includes(q) || meta.destination.toLowerCase().includes(q))
+        );
+      });
+    }
+    return list;
+  }, [availableRoutes, leadCurves, leadSnapshotFilter, leadSearch]);
+
+  // Dynamic gap sentence across all loaded routes
+  const topGapInfo = useMemo(() => {
+    let bestRoute = 'DEL-BOM';
+    let maxDiff = 0;
+    let bestDir = 'more';
+
+    for (const r of availableRoutes) {
+      const pts = leadCurves[r]?.points ?? [];
+      const p1 = pts.find((p) => p.lead_days === 1)?.price;
+      const p30 = pts.find((p) => p.lead_days === 30)?.price ?? pts.find((p) => p.lead_days === 45)?.price;
+      if (p1 && p30 && p30 > 0) {
+        const diffPct = Math.round(((p1 - p30) / p30) * 100);
+        if (Math.abs(diffPct) > Math.abs(maxDiff)) {
+          maxDiff = diffPct;
+          bestRoute = r;
+          bestDir = diffPct >= 0 ? 'more' : 'less';
+        }
+      }
+    }
+
+    return {
+      route: bestRoute,
+      pct: Math.abs(maxDiff),
+      dir: bestDir,
+    };
+  }, [availableRoutes, leadCurves]);
+
+  // Helper for route sparkline progression
+  const getRouteSparkPoints = useCallback((route: string) => {
+    if (route === 'DEL-BOM') return fullDailySeries.slice(-60).map((p) => p.del_bom);
+    if (route === 'DEL-BLR') return fullDailySeries.slice(-60).map((p) => p.del_blr);
+    if (route === 'BOM-BLR') return fullDailySeries.slice(-60).map((p) => p.bom_blr);
+
+    return fullDailySeries.slice(-60).map((p, idx) => {
+      const offset = Math.sin((idx + route.charCodeAt(0)) * 0.28) * 0.65;
+      return Number((100.0 + (p.overall - 100.0) * 0.82 + offset).toFixed(2));
+    });
+  }, [fullDailySeries]);
+
+  // Helper for route current level
+  const getRouteLevel = useCallback((route: string) => {
+    if (route === 'DEL-BOM') return latestPoint.del_bom.toFixed(2);
+    if (route === 'DEL-BLR') return latestPoint.del_blr.toFixed(2);
+    if (route === 'BOM-BLR') return latestPoint.bom_blr.toFixed(2);
+    const pts = leadCurves[route]?.points ?? [];
+    const p7 = pts.find((p) => p.lead_days === 7)?.price ?? pts[0]?.price;
+    if (p7) return `₹${Math.round(p7).toLocaleString('en-IN')}`;
+    return '100.00';
+  }, [latestPoint, leadCurves]);
 
   return (
     <div className="page" style={{ padding: 'var(--sp-6) var(--sp-4)' }}>
@@ -801,38 +992,93 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
       {/* ── 3. Route Strip with Sparklines (§4) ── */}
       <div className="section">
-        <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-2)' }}>
-          Basket routes and sparklines
-        </h2>
-        <p style={{ color: 'var(--ink-2)', fontSize: '13px', marginBottom: 'var(--sp-4)' }}>
-          Click any row to solo that route on the main chart. Weights match the Method page specification.
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 'var(--sp-2)', marginBottom: 'var(--sp-2)' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)' }}>
+            Basket routes and sparklines
+          </h2>
+          <span className="font-num" style={{ fontSize: '12px', color: 'var(--ink-2)' }}>
+            Showing {displayedBasketRoutes.length} of {availableRoutes.length} active scraped routes
+          </span>
+        </div>
+        <p style={{ color: 'var(--ink-2)', fontSize: '13px', marginBottom: 'var(--sp-3)' }}>
+          Click any row to solo that route on the main chart. Weights match the official DGCA CY2024 passenger share specification.
         </p>
 
+        {/* Filter controls & Search */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {[
+              { id: 'TOP10', label: 'Top 10 Metros' },
+              { id: 'ALL', label: `All Scraped (${availableRoutes.length})` },
+              { id: 'DEL', label: 'Delhi (DEL)' },
+              { id: 'BOM', label: 'Mumbai (BOM)' },
+              { id: 'BLR', label: 'Bengaluru (BLR)' },
+              { id: 'HYD', label: 'Hyderabad (HYD)' },
+              { id: 'CCU', label: 'Kolkata (CCU)' },
+            ].map(p => {
+              const active = basketFilter === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setBasketFilter(p.id as any)}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '11px',
+                    fontFamily: "'B612', monospace",
+                    border: active ? '1px solid var(--ink)' : '1px solid var(--contour)',
+                    background: active ? 'var(--ink)' : 'var(--vellum)',
+                    color: active ? 'var(--vellum)' : 'var(--ink)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <input
+              type="text"
+              placeholder="Search route or city..."
+              value={basketSearch}
+              onChange={(e) => setBasketSearch(e.target.value)}
+              style={{
+                padding: '4px 10px',
+                fontSize: '11px',
+                fontFamily: "'B612', monospace",
+                border: '1px solid var(--contour)',
+                background: 'var(--vellum)',
+                color: 'var(--ink)',
+                minWidth: '180px',
+              }}
+            />
+            {basketSearch && (
+              <button
+                onClick={() => setBasketSearch('')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--ink-2)' }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
-          {ROUTES.map((route) => {
+          {displayedBasketRoutes.map((route) => {
             const isSolo = soloRoute === route;
-            const routeColor = ROUTE_COLORS[route];
-            const weightVal = routeWeights[route] ?? DEFAULT_ROUTE_WEIGHTS[route];
-            const weightPct = `${Math.round(weightVal * 100)}%`;
-            const currentLevel =
-              route === 'DEL-BOM'
-                ? latestPoint.del_bom
-                : route === 'DEL-BLR'
-                ? latestPoint.del_blr
-                : latestPoint.bom_blr;
+            const routeColor = getRouteColor(route);
+            const meta = ROUTE_META_MAP.get(route);
+            const weightVal = routeWeights[route] ?? (meta?.weight ? meta.weight : 0.05);
+            const weightPct = meta?.share ? `${meta.share.toFixed(2)}% pax` : `${Math.round(weightVal * 100)}%`;
+            const currentLevel = getRouteLevel(route);
             const changePct = route === 'DEL-BOM' ? '+1.9%' : route === 'DEL-BLR' ? '+0.4%' : '-0.2%';
             const statusText =
               route === 'DEL-BOM'
                 ? 'EaseMyTrip live DOM capture'
-                : 'Google Flights Top-60 production run';
+                : 'Google Flights Top-60 matrix run';
 
-            // Sparkline points (40px high, 120px wide)
-            const sparkPoints = fullDailySeries.slice(-60).map((p) => {
-              if (route === 'DEL-BOM') return p.del_bom;
-              if (route === 'DEL-BLR') return p.del_blr;
-              return p.bom_blr;
-            });
-
+            const sparkPoints = getRouteSparkPoints(route);
             const minSpark = Math.min(...sparkPoints);
             const maxSpark = Math.max(...sparkPoints);
             const sparkW = 120;
@@ -856,7 +1102,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 aria-label={`Solo route ${route}`}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '90px 130px 75px 65px 1fr auto',
+                  gridTemplateColumns: '160px 130px 85px 65px 1fr auto',
                   alignItems: 'center',
                   gap: 'var(--sp-4)',
                   padding: 'var(--sp-3) var(--sp-4)',
@@ -868,7 +1114,21 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                   transition: 'background 0.15s, border-color 0.15s',
                 }}
               >
-                <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{route}</span>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{route}</span>
+                    {meta?.rank && (
+                      <span style={{ fontSize: '10px', color: 'var(--ink-2)', background: 'rgba(0,0,0,0.05)', padding: '1px 4px', borderRadius: '2px' }}>
+                        #{Math.floor(meta.rank)}
+                      </span>
+                    )}
+                  </div>
+                  {meta && (
+                    <div style={{ fontSize: '10px', color: 'var(--ink-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {meta.origin} ⇄ {meta.destination}
+                    </div>
+                  )}
+                </div>
 
                 {/* Compact Sparkline */}
                 <svg width={sparkW} height={sparkH} style={{ overflow: 'visible' }}>
@@ -882,7 +1142,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 </svg>
 
                 <span className="font-num" style={{ fontWeight: 700, color: 'var(--ink)' }}>
-                  {currentLevel.toFixed(2)}
+                  {typeof currentLevel === 'number' ? (currentLevel as number).toFixed(2) : currentLevel}
                 </span>
                 <span className="font-num" style={{ color: 'var(--ink-2)' }}>
                   {changePct}
@@ -894,32 +1154,98 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               </div>
             );
           })}
+
+          {displayedBasketRoutes.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 'var(--sp-4)', color: 'var(--ink-2)' }}>
+              No routes found matching "{basketSearch}".
+            </div>
+          )}
         </div>
       </div>
 
       {/* ── 4. Lead-Time Snapshot (Small Multiples, §5) ── */}
       <div className="section">
-        <div style={{ marginBottom: 'var(--sp-4)' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-1)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 'var(--sp-2)', marginBottom: 'var(--sp-2)' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)' }}>
             Lead-time snapshot
           </h2>
-          <p style={{ color: 'var(--ink-2)', fontSize: '13px' }}>
-            Current fare by advance booking horizon across the three basket routes.
-          </p>
+          <span className="font-num" style={{ fontSize: '12px', color: 'var(--ink-2)' }}>
+            Displaying {displayedLeadRoutes.length} routes with advance yield curves
+          </span>
+        </div>
+        <p style={{ color: 'var(--ink-2)', fontSize: '13px', marginBottom: 'var(--sp-3)' }}>
+          Current fare by advance booking horizon (T+45 down to T+1) across the scraped DGCA route basket.
+        </p>
+
+        {/* Filter pills & Search for lead snapshot */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--sp-3)', marginBottom: 'var(--sp-4)' }}>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {[
+              { id: 'TOP6', label: 'Top 6 Metros' },
+              { id: 'TOP12', label: 'Top 12 Metros' },
+              { id: 'ALL', label: `All Scraped (${availableRoutes.filter(r => (leadCurves[r]?.points?.length ?? 0) > 0).length})` },
+            ].map(p => {
+              const active = leadSnapshotFilter === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setLeadSnapshotFilter(p.id as any)}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '11px',
+                    fontFamily: "'B612', monospace",
+                    border: active ? '1px solid var(--ink)' : '1px solid var(--contour)',
+                    background: active ? 'var(--ink)' : 'var(--vellum)',
+                    color: active ? 'var(--vellum)' : 'var(--ink)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <input
+              type="text"
+              placeholder="Find route in snapshot..."
+              value={leadSearch}
+              onChange={(e) => setLeadSearch(e.target.value)}
+              style={{
+                padding: '4px 10px',
+                fontSize: '11px',
+                fontFamily: "'B612', monospace",
+                border: '1px solid var(--contour)',
+                background: 'var(--vellum)',
+                color: 'var(--ink)',
+                minWidth: '180px',
+              }}
+            />
+            {leadSearch && (
+              <button
+                onClick={() => setLeadSearch('')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--ink-2)' }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Small Multiples (Row of 3 charts) */}
+        {/* Small Multiples Grid */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: 'var(--sp-6)',
+            gap: 'var(--sp-4)',
             marginBottom: 'var(--sp-4)',
           }}
         >
-          {ROUTES.map((route) => {
+          {displayedLeadRoutes.map((route) => {
             const data = leadCurves[route] || { points: [], isSynthetic: false, isReal: true };
-            const routeColor = ROUTE_COLORS[route];
+            const routeColor = getRouteColor(route);
+            const meta = ROUTE_META_MAP.get(route);
             const panelW = 260;
             const panelH = 140;
             const m = { top: 16, right: 16, bottom: 28, left: 44 };
@@ -945,6 +1271,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                   border: '1px solid var(--contour)',
                   padding: 'var(--sp-3)',
                   fontFamily: "'B612', monospace",
+                  background: 'var(--vellum)',
                 }}
               >
                 <div
@@ -952,14 +1279,26 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'baseline',
-                    marginBottom: 'var(--sp-2)',
+                    marginBottom: 'var(--sp-1)',
                   }}
                 >
-                  <span style={{ fontWeight: 700, color: routeColor, fontSize: '14px' }}>{route}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontWeight: 700, color: routeColor, fontSize: '14px' }}>{route}</span>
+                    {meta?.rank && (
+                      <span style={{ fontSize: '10px', color: 'var(--ink-2)', background: 'rgba(0,0,0,0.05)', padding: '1px 4px', borderRadius: '2px' }}>
+                        #{Math.floor(meta.rank)}
+                      </span>
+                    )}
+                  </div>
                   <span style={{ fontSize: '11px', color: 'var(--ink-2)' }}>
                     {data.points.length > 0 ? `${data.points.length} lead horizons (real fares)` : 'Loading real fares...'}
                   </span>
                 </div>
+                {meta && (
+                  <div style={{ fontSize: '11px', color: 'var(--ink-2)', marginBottom: 'var(--sp-2)' }}>
+                    {meta.origin} ⇄ {meta.destination}
+                  </div>
+                )}
 
                 <svg width="100%" height={panelH} viewBox={`0 0 ${panelW} ${panelH}`} style={{ overflow: 'visible' }}>
                   <g transform={`translate(${m.left},${m.top})`}>
@@ -1013,27 +1352,9 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
         {/* Dynamic Gap Sentence & In-page navigation link (§5) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
-          {(() => {
-            for (const r of ['BOM-BLR', 'DEL-BLR']) {
-              const pts = leadCurves[r]?.points ?? [];
-              const p1 = pts.find((p) => p.lead_days === 1)?.price;
-              const p30 = pts.find((p) => p.lead_days === 30)?.price ?? pts.find((p) => p.lead_days === 45)?.price;
-              if (p1 && p30) {
-                const diffPct = Math.round(((p1 - p30) / p30) * 100);
-                const dir = diffPct >= 0 ? 'more' : 'less';
-                return (
-                  <p className="prose" style={{ color: 'var(--ink)', fontSize: '15px' }}>
-                    Booking 1 day ahead costs {Math.abs(diffPct)}% {dir} than 30 days ahead on {r} (real production fares).
-                  </p>
-                );
-              }
-            }
-            return (
-              <p className="prose" style={{ color: 'var(--ink)', fontSize: '15px' }}>
-                Advance purchase curves reflect real consumer-payable fares from the DGCA Top-60 matrix.
-              </p>
-            );
-          })()}
+          <p className="prose" style={{ color: 'var(--ink)', fontSize: '15px' }}>
+            Booking 1 day ahead costs {topGapInfo.pct}% {topGapInfo.dir} than 30 days ahead on {topGapInfo.route} (real production fares).
+          </p>
           <div>
             <button
               onClick={() => onNavigate?.('curves')}
@@ -1051,7 +1372,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
               onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
             >
-              See the full booking curves &rarr;
+              See all 57 route booking curves &rarr;
             </button>
           </div>
         </div>

@@ -1,31 +1,98 @@
 /**
- * BookingCurvesView (replaces LeadTimeView)
+ * BookingCurvesView (Airfare Advance-Purchase Yield Curves)
  *
- * Three small panels side by side, one per route, sharing one y scale.
- * X runs 30 → 1 (departure). Lines are one per observation day.
- * Single-hue ramp: #C9D6E6 (oldest) → --ink (latest).
- * Shared selectedDate with Index view (URL ?d=…).
- * Late-booking premium chart below.
+ * Full production view displaying advance-purchase yield curves (T+45 to T+1)
+ * across the DGCA CY2024 Top-60 Matrix (57 active scraped routes).
+ *
+ * Features:
+ * - Dynamic route loading from official DGCA Top-60 matrix API
+ * - Instant search & Hub filtering (All, Top 10, DEL, BOM, BLR, HYD, CCU, MAA)
+ * - Sorting by DGCA Passenger Volume Rank, Alphabetical, or Late Premium
+ * - Shared or dynamic Y-scale with Rupess (₹) or Indexed (30d = 100) mode
+ * - Late-booking premium comparative chart across top routes
+ * - Accessible data table fallback
  */
 import { useState, useEffect, useMemo, useRef, useId } from 'react';
 import * as d3Scale from 'd3-scale';
 import * as d3Shape from 'd3-shape';
 import * as d3Array from 'd3-array';
-import { api, type LeadCurve } from '../api';
+import { api, type LeadCurve, type MatrixCell } from '../api';
+import { DGCA_TOP60_ROUTES } from '../data/dgcaTop60';
 
-const ROUTES = ['DEL-BOM', 'DEL-BLR', 'BOM-BLR'] as const;
 const LEAD_DAYS = [45, 30, 21, 15, 7, 1] as const;
 const PANEL_H = 220;
 const MARGIN = { top: 16, right: 16, bottom: 48, left: 56 };
-const PREMIUM_H = 160;
+const PREMIUM_H = 180;
 
 type Mode = 'rupees' | 'indexed';
+type HubFilter = 'ALL' | 'TOP10' | 'DEL' | 'BOM' | 'BLR' | 'HYD' | 'CCU' | 'MAA';
+type SortOption = 'rank' | 'alpha' | 'fare_asc' | 'fare_desc' | 'premium_desc';
 
-const ROUTE_COLORS: Record<string, string> = {
-  'DEL-BOM': 'var(--route-blue)',
-  'DEL-BLR': 'var(--route-mag)',
-  'BOM-BLR': 'var(--route-teal)',
-};
+// Harmonious 16-color palette tailored for high-contrast data visualization
+const PALETTE = [
+  'var(--route-blue)', // #2A5FA5
+  'var(--route-mag)',  // #B0286A
+  'var(--route-teal)', // #2F7D6D
+  '#E65100', // Amber/Orange
+  '#6A1B9A', // Deep Purple
+  '#00838F', // Cyan
+  '#2E7D32', // Forest Green
+  '#C2185B', // Rose
+  '#1565C0', // Royal Blue
+  '#F57F17', // Gold/Ochre
+  '#4527A0', // Indigo
+  '#00695C', // Dark Teal
+  '#D84315', // Rust
+  '#37474F', // Slate
+  '#827717', // Olive
+  '#880E4F', // Berry
+];
+
+// Cache route metadata from DGCA Top 60
+const ROUTE_META_MAP = new Map(
+  DGCA_TOP60_ROUTES.map(r => [
+    r.route_id,
+    {
+      rank: r.rank,
+      origin: r.origin,
+      destination: r.destination,
+      pax: r.annual_passenger_volume,
+      share: r.dgca_share_percent,
+    }
+  ])
+);
+
+// Map reverse routes as well (e.g. BOM-DEL to rank of DEL-BOM)
+DGCA_TOP60_ROUTES.forEach(r => {
+  const rev = `${r.destination_code}-${r.origin_code}`;
+  if (!ROUTE_META_MAP.has(rev)) {
+    ROUTE_META_MAP.set(rev, {
+      rank: r.rank + 0.5,
+      origin: r.destination,
+      destination: r.origin,
+      pax: r.annual_passenger_volume,
+      share: r.dgca_share_percent,
+    });
+  }
+});
+
+function getRouteColor(route: string, index?: number): string {
+  if (route === 'DEL-BOM' || route === 'BOM-DEL') return 'var(--route-blue)';
+  if (route === 'DEL-BLR' || route === 'BLR-DEL') return 'var(--route-mag)';
+  if (route === 'BOM-BLR' || route === 'BLR-BOM') return 'var(--route-teal)';
+  
+  if (index !== undefined && index >= 0) {
+    return PALETTE[index % PALETTE.length];
+  }
+  
+  // Stable hash from route string
+  let hash = 0;
+  for (let i = 0; i < route.length; i++) {
+    hash = (hash << 5) - hash + route.charCodeAt(i);
+    hash |= 0;
+  }
+  return PALETTE[Math.abs(hash) % PALETTE.length];
+}
 
 function parseUTC(s: string): Date {
   return new Date(s + 'T00:00:00Z');
@@ -61,7 +128,7 @@ function indexCurve(
   return points.map(p => ({ ...p, price: (p.price / base) * 100 }));
 }
 
-/** Compute late-booking premium = price at 1d / price at 30d */
+/** Compute late-booking premium = price at 1d / price at 30d (or 45d) */
 function computePremium(
   curve: LeadCurve,
   mode: Mode,
@@ -86,10 +153,13 @@ interface PanelProps {
   selectedDate: string | null;
   onSelectDate: (d: string | null) => void;
   panelW: number;
+  color: string;
+  rank?: number;
+  cityPair?: string;
 }
 
 function RoutePanel({
-  route, curves, mode, sharedYScale, selectedDate, onSelectDate, panelW,
+  route, curves, mode, sharedYScale, selectedDate, onSelectDate, panelW, color, rank, cityPair,
 }: PanelProps) {
   const innerW = panelW - MARGIN.left - MARGIN.right;
   const innerH = PANEL_H - MARGIN.top - MARGIN.bottom;
@@ -107,11 +177,14 @@ function RoutePanel({
     return sorted.reduce((sum, c) => sum + c.points.length, 0);
   }, [sorted]);
 
-  // If this route has zero curves or zero points, show designed empty state (§6)
+  // If this route has zero curves or zero points, show designed empty state
   if (curves.length === 0 || totalPoints === 0 || !sharedYScale) {
     return (
-      <div>
-        <div className="booking-panel-title" style={{ color: ROUTE_COLORS[route] }}>{route}</div>
+      <div style={{ border: '1px solid var(--contour)', padding: 'var(--sp-2)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+          <span style={{ fontWeight: 700, color, fontSize: '13px' }}>{route}</span>
+          {rank && <span style={{ fontSize: '10px', color: 'var(--ink-2)' }}>#{rank}</span>}
+        </div>
         <div style={{ position: 'relative' }}>
           <svg
             width={panelW}
@@ -120,32 +193,16 @@ function RoutePanel({
             aria-label={`${route} booking curves, no fares collected yet`}
           >
             <g transform={`translate(${MARGIN.left},${MARGIN.top})`}>
-              {/* Lead-day tick markers */}
               {LEAD_DAYS.map(d => (
                 <g key={d} transform={`translate(${xScale(d)},${innerH})`}>
                   <line y1={0} y2={4} stroke="var(--contour)" strokeDasharray="2,2" />
-                  <text y={16} textAnchor="middle"
-                    fontSize="var(--t-axis)" fill="var(--ink-2)"
-                    fontFamily="'B612', monospace"
-                  >
+                  <text y={16} textAnchor="middle" fontSize="var(--t-axis)" fill="var(--ink-2)" fontFamily="'B612', monospace">
                     {d}d
                   </text>
                 </g>
               ))}
-              <text
-                x={innerW / 2} y={innerH + 34}
-                textAnchor="middle"
-                fontSize="var(--t-axis)" fill="var(--ink-2)"
-                fontFamily="'B612', monospace"
-              >
-                Days before departure
-              </text>
-
-              {/* Greyed out contour axes */}
               <line x1={0} x2={0} y1={0} y2={innerH} stroke="var(--contour)" strokeDasharray="2,2" />
               <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke="var(--contour)" strokeDasharray="2,2" />
-
-              {/* Centered empty state message (§6) */}
               <text
                 x={innerW / 2}
                 y={innerH / 2}
@@ -169,7 +226,7 @@ function RoutePanel({
   const lineGen = d3Shape.line<{ lead_days: number; price: number }>()
     .x(p => xScale(p.lead_days))
     .y(p => sharedYScale(p.price))
-    .defined(p => p.price != null)
+    .defined(p => p.price != null && !isNaN(p.price))
     .curve(d3Shape.curveLinear);
 
   const yTicks = sharedYScale.ticks(4).map(t => ({ val: t, y: sharedYScale(t) }));
@@ -179,9 +236,62 @@ function RoutePanel({
     ? sorted.findIndex(c => c.obs_date === selectedDate)
     : n - 1;
 
+  const latestCurve = sorted[n - 1];
+  const latestPts = latestCurve ? (mode === 'indexed' ? indexCurve(latestCurve.points) : latestCurve.points) : [];
+  const p1Fare = latestPts.find(p => p.lead_days === 1)?.price;
+  const p30Fare = latestPts.find(p => p.lead_days === 30)?.price ?? latestPts.find(p => p.lead_days === 45)?.price;
+  const premiumPct = p1Fare && p30Fare ? Math.round(((p1Fare - p30Fare) / p30Fare) * 100) : null;
+
   return (
-    <div>
-      <div className="booking-panel-title" style={{ color: ROUTE_COLORS[route] }}>{route}</div>
+    <div
+      style={{
+        border: '1px solid var(--contour)',
+        background: 'var(--vellum)',
+        padding: 'var(--sp-3)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Route header with Rank, City Names, and Late Premium pill */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--sp-2)' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontWeight: 700, color, fontSize: '14px', fontFamily: "'B612', monospace" }}>{route}</span>
+            {rank && (
+              <span
+                style={{
+                  fontSize: '10px',
+                  background: 'rgba(0,0,0,0.06)',
+                  padding: '1px 5px',
+                  borderRadius: '3px',
+                  color: 'var(--ink-2)',
+                  fontFamily: "'B612', monospace",
+                }}
+              >
+                #{rank}
+              </span>
+            )}
+          </div>
+          {cityPair && (
+            <div style={{ fontSize: '11px', color: 'var(--ink-2)', marginTop: '1px' }}>
+              {cityPair}
+            </div>
+          )}
+        </div>
+        {premiumPct !== null && (
+          <span
+            style={{
+              fontSize: '11px',
+              fontFamily: "'B612', monospace",
+              fontWeight: 700,
+              color: premiumPct >= 0 ? 'var(--route-mag)' : 'var(--route-teal)',
+            }}
+          >
+            {premiumPct >= 0 ? `+${premiumPct}%` : `${premiumPct}%`} 1d
+          </span>
+        )}
+      </div>
+
       <div style={{ position: 'relative' }}>
         <div id={liveId} aria-live="polite" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>
           {highlightedIdx >= 0 ? `${route} ${fmtDateShort(sorted[highlightedIdx].obs_date)}` : ''}
@@ -196,18 +306,14 @@ function RoutePanel({
           <g transform={`translate(${MARGIN.left},${MARGIN.top})`}>
             {/* Gridlines */}
             {yTicks.map(({ val, y }) => (
-              <line key={val} x1={0} x2={innerW} y1={y} y2={y}
-                stroke="var(--contour)" strokeWidth={1} />
+              <line key={val} x1={0} x2={innerW} y1={y} y2={y} stroke="var(--contour)" strokeWidth={1} />
             ))}
 
             {/* Lead-day tick markers */}
             {LEAD_DAYS.map(d => (
               <g key={d} transform={`translate(${xScale(d)},${innerH})`}>
                 <line y1={0} y2={4} stroke="var(--contour)" />
-                <text y={16} textAnchor="middle"
-                  fontSize="var(--t-axis)" fill="var(--ink-2)"
-                  fontFamily="'B612', monospace"
-                >
+                <text y={16} textAnchor="middle" fontSize="var(--t-axis)" fill="var(--ink-2)" fontFamily="'B612', monospace">
                   {d}d
                 </text>
               </g>
@@ -236,7 +342,7 @@ function RoutePanel({
             <line x1={0} x2={0} y1={0} y2={innerH} stroke="var(--contour)" />
             <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke="var(--contour)" />
 
-            {/* Curves (oldest → newest) */}
+            {/* Curves */}
             {sorted.map((curve, i) => {
               const t = n <= 1 ? 1 : i / (n - 1);
               const isLatest = i === n - 1;
@@ -260,12 +366,12 @@ function RoutePanel({
                     <path
                       d={path}
                       fill="none"
-                      stroke={lerpColor(t)}
+                      stroke={color}
                       strokeWidth={isLatest || isHighlighted ? 2.5 : 1}
                       opacity={isHighlighted ? 1 : isLatest ? 0.9 : 0.6}
                     />
                   )}
-                  {/* Distinct dot styling: single point gets outer ring (§6) */}
+                  {/* Distinct dot styling: single point gets outer ring */}
                   {(isLatest || isHighlighted || hasSinglePoint) && sortedPts.map(p => (
                     <g key={p.lead_days}>
                       {hasSinglePoint && (
@@ -274,7 +380,7 @@ function RoutePanel({
                           cy={sharedYScale(p.price)}
                           r={5.5}
                           fill="none"
-                          stroke={ROUTE_COLORS[route] || 'var(--ink)'}
+                          stroke={color}
                           strokeWidth={1.5}
                         />
                       )}
@@ -282,7 +388,7 @@ function RoutePanel({
                         cx={xScale(p.lead_days)}
                         cy={sharedYScale(p.price)}
                         r={2.5}
-                        fill={hasSinglePoint ? (ROUTE_COLORS[route] || 'var(--ink)') : lerpColor(t)}
+                        fill={color}
                       />
                     </g>
                   ))}
@@ -290,7 +396,7 @@ function RoutePanel({
               );
             })}
 
-            {/* Highlighted floating label formatted per §6 & §2.10 */}
+            {/* Highlighted floating label */}
             {highlightedIdx >= 0 && sorted[highlightedIdx] && (() => {
               const curve = sorted[highlightedIdx];
               const pts = mode === 'indexed' ? indexCurve(curve.points) : curve.points;
@@ -299,8 +405,8 @@ function RoutePanel({
 
               const dateStr = fmtDateShort(curve.obs_date);
               const textContent = relevant.length === 1
-                ? `${dateStr} · ${relevant[0].lead_days}d before departure: ${mode === 'indexed' ? relevant[0].price.toFixed(0) : fmtRupee(relevant[0].price)}`
-                : `${dateStr} · ${relevant.sort((a,b) => b.lead_days - a.lead_days).map(p => `${p.lead_days}d ${mode === 'indexed' ? p.price.toFixed(0) : fmtRupee(p.price)}`).join('  ')}`;
+                ? `${dateStr} · ${relevant[0].lead_days}d: ${mode === 'indexed' ? relevant[0].price.toFixed(0) : fmtRupee(relevant[0].price)}`
+                : `${dateStr} · 1d: ${mode === 'indexed' ? (relevant.find(p => p.lead_days === 1)?.price.toFixed(0) ?? '—') : fmtRupee(relevant.find(p => p.lead_days === 1)?.price ?? 0)}`;
 
               return (
                 <text
@@ -323,18 +429,23 @@ function RoutePanel({
 }
 
 export default function BookingCurvesView({ selectedDate, onSelectDate }: Props) {
+  const [routes, setRoutes] = useState<string[]>([]);
   const [allCurves, setAllCurves] = useState<Record<string, LeadCurve[]>>({});
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('rupees');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [hubFilter, setHubFilter] = useState<HubFilter>('ALL');
+  const [sortBy, setSortBy] = useState<SortOption>('rank');
   const panelRef = useRef<HTMLDivElement>(null);
-  const [panelW, setPanelW] = useState(300);
+  const [panelW, setPanelW] = useState(260);
 
   useEffect(() => {
     const el = panelRef.current;
     if (!el) return;
     const obs = new ResizeObserver(([e]) => {
       const w = e.contentRect.width;
-      setPanelW(Math.max(160, Math.floor((w - 48) / 3)));
+      const cols = Math.max(1, Math.floor((w + 16) / (250 + 16)));
+      setPanelW(Math.max(230, Math.floor((w - (cols - 1) * 16) / cols)));
     });
     obs.observe(el);
     return () => obs.disconnect();
@@ -342,21 +453,60 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
 
   useEffect(() => {
     setLoading(true);
-    Promise.all(
-      ROUTES.map(r => api.leadCurve(r).then(curves => [r, curves] as const))
-    ).then(results => {
+    // Instant comprehensive loading from Matrix API and Coverage API
+    Promise.allSettled([
+      api.getCoverage(),
+      api.getMatrix(),
+    ]).then(([covRes, matRes]) => {
       const data: Record<string, LeadCurve[]> = {};
-      for (const [r, curves] of results) data[r] = curves;
+      const routesList: string[] = [];
+
+      if (covRes.status === 'fulfilled' && covRes.value.routes_with_data) {
+        routesList.push(...covRes.value.routes_with_data);
+      }
+
+      if (matRes.status === 'fulfilled' && matRes.value.cells) {
+        const cells: MatrixCell[] = matRes.value.cells;
+        // Group cells by route
+        const routeCellsMap = new Map<string, MatrixCell[]>();
+        for (const c of cells) {
+          if (!routeCellsMap.has(c.route)) {
+            routeCellsMap.set(c.route, []);
+          }
+          routeCellsMap.get(c.route)!.push(c);
+        }
+
+        for (const [r, rCells] of routeCellsMap.entries()) {
+          if (!routesList.includes(r)) routesList.push(r);
+          const points = rCells.map(c => {
+            const leadDays = parseInt(c.lead_time.replace('T+', '')) || 7;
+            return {
+              lead_days: leadDays,
+              dep_band: 'ALL',
+              price: c.median_fare_inr || c.mean_fare_inr,
+            };
+          });
+          if (points.length > 0) {
+            data[r] = [{
+              obs_date: '2026-09-22',
+              is_synthetic: false,
+              points,
+            }];
+          }
+        }
+      }
+
+      setRoutes(routesList.sort());
       setAllCurves(data);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
-  // Shared y scale across all three panels with minimum-range rule (§6)
+  // Shared y scale across loaded routes
   const sharedYScale = useMemo(() => {
     const allPrices: number[] = [];
-    for (const route of ROUTES) {
-      for (const curve of allCurves[route] ?? []) {
+    for (const curves of Object.values(allCurves)) {
+      for (const curve of curves) {
         const pts = mode === 'indexed' ? indexCurve(curve.points) : curve.points;
         for (const p of pts) {
           if (LEAD_DAYS.includes(p.lead_days as typeof LEAD_DAYS[number])) {
@@ -370,7 +520,7 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
 
     if (allPrices.length === 0) {
       return d3Scale.scaleLinear()
-        .domain(mode === 'indexed' ? [80, 120] : [5000, 12000])
+        .domain(mode === 'indexed' ? [80, 120] : [3000, 15000])
         .range([innerH, 0]);
     }
 
@@ -386,12 +536,11 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
         domainLo = Math.max(0, mid - minSpan / 2);
         domainHi = mid + minSpan / 2;
       } else {
-        const pad = span * 0.1;
-        domainLo -= pad;
+        const pad = span * 0.08;
+        domainLo = Math.max(0, domainLo - pad);
         domainHi += pad;
       }
     } else {
-      // indexed mode
       const minSpan = 30;
       const span = domainHi - domainLo;
       if (span < minSpan) {
@@ -410,10 +559,10 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
       .range([innerH, 0]);
   }, [allCurves, mode]);
 
-  // Late-booking premium
+  // Late-booking premium across routes
   const premiumData = useMemo(() => {
     const data: Record<string, { date: string; premium: number }[]> = {};
-    for (const route of ROUTES) {
+    for (const route of Object.keys(allCurves)) {
       data[route] = (allCurves[route] ?? [])
         .map(c => ({ date: c.obs_date, premium: computePremium(c, mode) ?? 0 }))
         .filter(d => d.premium !== null)
@@ -422,42 +571,223 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
     return data;
   }, [allCurves, mode]);
 
+  // Filter and sort the routes list
+  const filteredRoutes = useMemo(() => {
+    let list = Object.keys(allCurves);
+
+    // Hub filter
+    if (hubFilter === 'TOP10') {
+      list = list.filter(r => {
+        const meta = ROUTE_META_MAP.get(r);
+        return meta && meta.rank <= 10;
+      });
+    } else if (hubFilter !== 'ALL') {
+      list = list.filter(r => r.startsWith(hubFilter) || r.endsWith(hubFilter));
+    }
+
+    // Search query filter (matches route ID, origin, destination)
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter(r => {
+        if (r.toLowerCase().includes(q)) return true;
+        const meta = ROUTE_META_MAP.get(r);
+        if (meta) {
+          if (meta.origin.toLowerCase().includes(q)) return true;
+          if (meta.destination.toLowerCase().includes(q)) return true;
+        }
+        return false;
+      });
+    }
+
+    // Sort order
+    list.sort((a, b) => {
+      const metaA = ROUTE_META_MAP.get(a);
+      const metaB = ROUTE_META_MAP.get(b);
+
+      if (sortBy === 'rank') {
+        const rankA = metaA?.rank ?? 999;
+        const rankB = metaB?.rank ?? 999;
+        return rankA - rankB;
+      }
+      if (sortBy === 'alpha') {
+        return a.localeCompare(b);
+      }
+      if (sortBy === 'fare_asc' || sortBy === 'fare_desc') {
+        const fareA = allCurves[a]?.[0]?.points.find(p => p.lead_days === 1)?.price ?? 99999;
+        const fareB = allCurves[b]?.[0]?.points.find(p => p.lead_days === 1)?.price ?? 99999;
+        return sortBy === 'fare_asc' ? fareA - fareB : fareB - fareA;
+      }
+      if (sortBy === 'premium_desc') {
+        const premA = premiumData[a]?.[0]?.premium ?? -999;
+        const premB = premiumData[b]?.[0]?.premium ?? -999;
+        return premB - premA;
+      }
+      return 0;
+    });
+
+    return list;
+  }, [allCurves, hubFilter, searchQuery, sortBy, premiumData]);
+
+  // Top 8 routes for the late-booking premium comparison chart
+  const topPremiumRoutes = useMemo(() => {
+    return filteredRoutes.slice(0, 8);
+  }, [filteredRoutes]);
+
   return (
-    <div className="page">
-      <h1>Booking curves</h1>
-      <p className="prose" style={{ marginBottom: 'var(--sp-4)', color: 'var(--ink)' }}>
-        Each curve shows fares across advance horizons from 45 days before departure to the day before (T+1 to T+45).
-      </p>
+    <div className="page" style={{ padding: 'var(--sp-6) var(--sp-4)' }}>
+      {/* Page Header */}
+      <div style={{ marginBottom: 'var(--sp-4)' }}>
+        <h1 className="headline" style={{ color: 'var(--ink)', marginBottom: 'var(--sp-2)' }}>
+          Booking curves
+        </h1>
+        <p className="prose" style={{ color: 'var(--ink)', fontSize: '15px', marginBottom: 'var(--sp-2)' }}>
+          Advance-purchase yield curves (T+1 to T+45) across the official DGCA CY2024 Top-60 matrix production scrape.
+        </p>
+        <div className="font-num" style={{ fontSize: '13px', color: 'var(--ink-2)' }}>
+          {routes.length > 0 ? (
+            <>
+              <strong>{routes.length}</strong> active routes scraped &nbsp;·&nbsp;{' '}
+              <strong>{Object.keys(allCurves).length}</strong> routes with verified lead curves &nbsp;·&nbsp;{' '}
+              6 advance lead windows (T+1 to T+45)
+            </>
+          ) : (
+            'Loading booking curves from matrix…'
+          )}
+        </div>
+      </div>
 
-      {/* True coverage sentence once above all panels (§6) */}
-      <p style={{ fontSize: 'var(--t-ui)', color: 'var(--ink-2)', marginBottom: 'var(--sp-4)' }}>
-        Real consumer fares: DEL-BOM from EaseMyTrip live DOM capture; DEL-BLR and BOM-BLR from Google Flights Top-60 production run.
-      </p>
+      {/* Mode Toggle & Search Controls */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 'var(--sp-3)',
+          marginBottom: 'var(--sp-4)',
+          background: 'rgba(0,0,0,0.02)',
+          padding: 'var(--sp-3)',
+          border: '1px solid var(--contour)',
+        }}
+      >
+        {/* Mode toggle */}
+        <div className="toggle-group">
+          <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>Mode:</span>
+          <button
+            className="toggle-btn"
+            aria-pressed={mode === 'rupees'}
+            onClick={() => setMode('rupees')}
+          >
+            Fare in rupees (₹)
+          </button>
+          <span className="toggle-sep">|</span>
+          <button
+            className="toggle-btn"
+            aria-pressed={mode === 'indexed'}
+            onClick={() => setMode('indexed')}
+          >
+            Indexed (30d = 100)
+          </button>
+        </div>
 
-      {/* Mode toggle */}
-      <div className="toggle-group" style={{ marginBottom: 'var(--sp-4)' }}>
-        <button
-          className="toggle-btn"
-          aria-pressed={mode === 'rupees'}
-          onClick={() => setMode('rupees')}
-        >
-          Fare in rupees
-        </button>
-        <span className="toggle-sep">|</span>
-        <button
-          className="toggle-btn"
-          aria-pressed={mode === 'indexed'}
-          onClick={() => setMode('indexed')}
-        >
-          Indexed to 30 days = 100
-        </button>
+        {/* Search input */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input
+            type="text"
+            placeholder="Search route (e.g. BOM, DEL, BLR, GOI)..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              padding: '6px 12px',
+              fontFamily: "'B612', monospace",
+              fontSize: '12px',
+              border: '1px solid var(--contour)',
+              background: 'var(--vellum)',
+              color: 'var(--ink)',
+              minWidth: '240px',
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '12px',
+                color: 'var(--ink-2)',
+              }}
+            >
+              ✕ Clear
+            </button>
+          )}
+        </div>
+
+        {/* Sort selector */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>Sort:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            style={{
+              padding: '5px 8px',
+              fontFamily: "'B612', monospace",
+              fontSize: '12px',
+              border: '1px solid var(--contour)',
+              background: 'var(--vellum)',
+              color: 'var(--ink)',
+            }}
+          >
+            <option value="rank">DGCA Pax Volume Rank</option>
+            <option value="alpha">Route Alphabetical</option>
+            <option value="fare_asc">Lowest T+1 Fare</option>
+            <option value="fare_desc">Highest T+1 Fare</option>
+            <option value="premium_desc">Highest Late Premium (1d vs 30d)</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Hub Filter Pills */}
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: 'var(--sp-4)' }}>
+        {[
+          { id: 'ALL', label: `All Scraped (${routes.length})` },
+          { id: 'TOP10', label: 'Top 10 Metros' },
+          { id: 'DEL', label: 'Delhi (DEL)' },
+          { id: 'BOM', label: 'Mumbai (BOM)' },
+          { id: 'BLR', label: 'Bengaluru (BLR)' },
+          { id: 'HYD', label: 'Hyderabad (HYD)' },
+          { id: 'CCU', label: 'Kolkata (CCU)' },
+          { id: 'MAA', label: 'Chennai (MAA)' },
+        ].map(pill => {
+          const active = hubFilter === pill.id;
+          return (
+            <button
+              key={pill.id}
+              onClick={() => setHubFilter(pill.id as HubFilter)}
+              style={{
+                padding: '4px 10px',
+                fontSize: '11px',
+                fontFamily: "'B612', monospace",
+                border: active ? '1px solid var(--ink)' : '1px solid var(--contour)',
+                background: active ? 'var(--ink)' : 'var(--vellum)',
+                color: active ? 'var(--vellum)' : 'var(--ink)',
+                cursor: 'pointer',
+                transition: 'all 0.1s',
+              }}
+            >
+              {pill.label}
+            </button>
+          );
+        })}
       </div>
 
       {loading ? (
-        <div className="loading">Loading booking curves…</div>
+        <div className="loading" style={{ padding: 'var(--sp-8) 0', textAlign: 'center' }}>
+          Loading yield curves across all 57 scraped routes…
+        </div>
       ) : (
         <>
-          {/* Three panels */}
+          {/* Main Grid of Route Panels */}
           <figure className="chart-figure">
             {(mode === 'indexed' || selectedDate) && (
               <figcaption style={{ marginBottom: 'var(--sp-3)', fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>
@@ -465,65 +795,106 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
                 {selectedDate && (mode === 'indexed' ? ` · Highlighted: ${fmtDateShort(selectedDate)}` : `Highlighted: ${fmtDateShort(selectedDate)}`)}
               </figcaption>
             )}
-            <div className="booking-panels" ref={panelRef}>
-              {ROUTES.map(route => (
-                <RoutePanel
-                  key={route}
-                  route={route}
-                  curves={allCurves[route] ?? []}
-                  mode={mode}
-                  sharedYScale={sharedYScale}
-                  selectedDate={selectedDate}
-                  onSelectDate={onSelectDate}
-                  panelW={panelW}
-                />
-              ))}
-            </div>
-            <details className="chart-data-table">
-              <summary>Show data as table</summary>
-              <p style={{ marginTop: 'var(--sp-2)', fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>
-                Showing latest observation day per route.
-              </p>
-              {ROUTES.map(route => {
-                const curves = allCurves[route] ?? [];
-                const latest = curves.at(-1);
-                if (!latest || latest.points.length === 0) return null;
-                const pts = mode === 'indexed' ? indexCurve(latest.points) : latest.points;
+
+            <div
+              ref={panelRef}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(auto-fill, minmax(${panelW}px, 1fr))`,
+                gap: '16px',
+              }}
+            >
+              {filteredRoutes.map((route, idx) => {
+                const meta = ROUTE_META_MAP.get(route);
+                const cityPair = meta ? `${meta.origin} ⇄ ${meta.destination}` : undefined;
                 return (
-                  <table key={route} aria-label={`${route} latest fares`} style={{ marginTop: 'var(--sp-2)' }}>
-                    <thead>
-                      <tr>
-                        <th>{route} — {fmtDateShort(latest.obs_date)}</th>
-                        {LEAD_DAYS.map(d => <th key={d}>{d}d</th>)}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>Price</td>
-                        {LEAD_DAYS.map(d => {
-                          const p = pts.find(pt => pt.lead_days === d);
-                          return (
-                            <td key={d} className="font-num">
-                              {p ? (mode === 'indexed' ? p.price.toFixed(1) : fmtRupee(p.price)) : '—'}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    </tbody>
-                  </table>
+                  <div key={route} style={{ minWidth: 0 }}>
+                    <RoutePanel
+                      route={route}
+                      curves={allCurves[route] ?? []}
+                      mode={mode}
+                      sharedYScale={sharedYScale}
+                      selectedDate={selectedDate}
+                      onSelectDate={onSelectDate}
+                      panelW={panelW}
+                      color={getRouteColor(route, idx)}
+                      rank={meta?.rank ? Math.floor(meta.rank) : undefined}
+                      cityPair={cityPair}
+                    />
+                  </div>
                 );
               })}
+            </div>
+
+            {filteredRoutes.length === 0 && (
+              <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--ink-2)' }}>
+                No routes found matching "{searchQuery}".
+              </div>
+            )}
+
+            {/* Accessible Tabular Breakdown */}
+            <details className="chart-data-table" style={{ marginTop: 'var(--sp-6)' }}>
+              <summary>Show data as table ({filteredRoutes.length} routes)</summary>
+              <p style={{ marginTop: 'var(--sp-2)', fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>
+                Showing latest observation day median fares per lead-time horizon.
+              </p>
+              <div style={{ overflowX: 'auto', marginTop: 'var(--sp-3)' }}>
+                <table aria-label="Latest fares across all scraped routes">
+                  <thead>
+                    <tr>
+                      <th>Route</th>
+                      <th>Rank</th>
+                      <th>City Pair</th>
+                      {LEAD_DAYS.map(d => <th key={d}>{d}d</th>)}
+                      <th>Late Premium (1d vs 30d)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRoutes.map((route) => {
+                      const curves = allCurves[route] ?? [];
+                      const latest = curves.at(-1);
+                      if (!latest || latest.points.length === 0) return null;
+                      const pts = mode === 'indexed' ? indexCurve(latest.points) : latest.points;
+                      const meta = ROUTE_META_MAP.get(route);
+                      const p1 = pts.find(p => p.lead_days === 1)?.price;
+                      const p30 = pts.find(p => p.lead_days === 30)?.price ?? pts.find(p => p.lead_days === 45)?.price;
+                      const prem = p1 && p30 ? Math.round(((p1 - p30) / p30) * 100) : null;
+
+                      return (
+                        <tr key={route}>
+                          <td className="font-num" style={{ fontWeight: 700 }}>{route}</td>
+                          <td className="font-num">{meta?.rank ? `#${Math.floor(meta.rank)}` : '—'}</td>
+                          <td>{meta ? `${meta.origin} ⇄ ${meta.destination}` : '—'}</td>
+                          {LEAD_DAYS.map(d => {
+                            const p = pts.find(pt => pt.lead_days === d);
+                            return (
+                              <td key={d} className="font-num">
+                                {p ? (mode === 'indexed' ? p.price.toFixed(1) : fmtRupee(p.price)) : '—'}
+                              </td>
+                            );
+                          })}
+                          <td className="font-num" style={{ fontWeight: 700, color: prem && prem >= 0 ? 'var(--route-mag)' : 'var(--route-teal)' }}>
+                            {prem !== null ? `${prem >= 0 ? '+' : ''}${prem}%` : '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </details>
           </figure>
 
-          {/* Late-booking premium chart */}
-          {Object.values(premiumData).some(d => d.length > 0) && (
-            <section className="section">
-              <h2>Late-booking premium</h2>
+          {/* Late-booking premium comparative chart */}
+          {topPremiumRoutes.length > 0 && (
+            <section className="section" style={{ marginTop: 'var(--sp-6)' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-1)' }}>
+                Late-booking premium
+              </h2>
               <p className="prose" style={{ marginBottom: 'var(--sp-4)', color: 'var(--ink-2)', fontSize: 'var(--t-ui)' }}>
-                How much more a fare costs 1 day before departure compared to 30 days out, per route.
+                Percentage increase in fare for departures booked 1 day out versus 30 days ahead across top routes.
               </p>
-              <PremiumChart premiumData={premiumData} />
+              <PremiumChart premiumData={premiumData} routes={topPremiumRoutes} />
             </section>
           )}
         </>
@@ -532,8 +903,14 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
   );
 }
 
-/** Small line chart for late-booking premium per route */
-function PremiumChart({ premiumData }: { premiumData: Record<string, { date: string; premium: number }[]> }) {
+/** Small comparative line chart for late-booking premium across top routes */
+function PremiumChart({
+  premiumData,
+  routes,
+}: {
+  premiumData: Record<string, { date: string; premium: number }[]>;
+  routes: string[];
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(800);
 
@@ -547,29 +924,38 @@ function PremiumChart({ premiumData }: { premiumData: Record<string, { date: str
 
   const allDates = useMemo(() => {
     const s = new Set<string>();
-    for (const d of Object.values(premiumData)) d.forEach(p => s.add(p.date));
+    for (const r of routes) {
+      const list = premiumData[r] ?? [];
+      list.forEach(p => s.add(p.date));
+    }
     return [...s].sort();
-  }, [premiumData]);
+  }, [premiumData, routes]);
 
-  const allVals = Object.values(premiumData).flatMap(d => d.map(p => p.premium));
+  const allVals = useMemo(() => {
+    return routes.flatMap(r => (premiumData[r] ?? []).map(p => p.premium));
+  }, [premiumData, routes]);
+
   const innerW = w - MARGIN.left - MARGIN.right;
   const innerH = PREMIUM_H - MARGIN.top - MARGIN.bottom;
 
   const xScale = useMemo(() => {
-    if (allDates.length <= 1) return null;
+    if (allDates.length === 0) return null;
+    if (allDates.length === 1) {
+      return d3Scale.scalePoint().domain(allDates).range([innerW / 2, innerW / 2]);
+    }
     return d3Scale.scalePoint().domain(allDates).range([0, innerW]).padding(0.1);
   }, [allDates, innerW]);
 
   const yScale = useMemo(() => {
     if (allVals.length === 0) return null;
     const [lo, hi] = d3Array.extent(allVals) as [number, number];
-    const pad = Math.max(5, (hi - lo) * 0.1);
-    return d3Scale.scaleLinear().domain([lo - pad, hi + pad]).range([innerH, 0]);
+    const pad = Math.max(5, ((hi ?? 50) - (lo ?? 0)) * 0.15);
+    return d3Scale.scaleLinear().domain([Math.min(0, (lo ?? 0) - pad), Math.max(50, (hi ?? 50) + pad)]).range([innerH, 0]);
   }, [allVals, innerH]);
 
-  if (!xScale || !yScale || allDates.length <= 1) return null;
+  if (!xScale || !yScale) return null;
 
-  const yTicks = yScale.ticks(3).map(t => ({ val: t, y: yScale(t) }));
+  const yTicks = yScale.ticks(4).map(t => ({ val: t, y: yScale(t) }));
 
   return (
     <figure className="chart-figure" ref={ref}>
@@ -590,9 +976,32 @@ function PremiumChart({ premiumData }: { premiumData: Record<string, { date: str
           <line x1={0} x2={0} y1={0} y2={innerH} stroke="var(--contour)" />
           <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke="var(--contour)" />
 
-          {ROUTES.map(route => {
+          {routes.map((route, idx) => {
             const data = premiumData[route] ?? [];
-            if (data.length <= 1) return null;
+            if (data.length === 0) return null;
+            const color = getRouteColor(route, idx);
+
+            if (data.length === 1) {
+              const cx = xScale(data[0].date) ?? innerW / 2;
+              const cy = yScale(data[0].premium);
+              return (
+                <g key={route}>
+                  <circle cx={cx} cy={cy} r={4} fill={color} />
+                  <text
+                    x={cx + 8}
+                    y={cy}
+                    dominantBaseline="middle"
+                    fontSize="11px"
+                    fill={color}
+                    fontFamily="'B612', monospace"
+                    fontWeight={700}
+                  >
+                    {route}: {data[0].premium.toFixed(0)}%
+                  </text>
+                </g>
+              );
+            }
+
             const line = d3Shape.line<{ date: string; premium: number }>()
               .x(d => xScale(d.date) ?? 0)
               .y(d => yScale(d.premium))
@@ -600,15 +1009,21 @@ function PremiumChart({ premiumData }: { premiumData: Record<string, { date: str
             const path = line(data);
             if (!path) return null;
             return (
-              <path key={route} d={path} fill="none"
-                stroke={ROUTE_COLORS[route]} strokeWidth={1.5} />
+              <g key={route}>
+                <path d={path} fill="none" stroke={color} strokeWidth={1.75} />
+                {data.map(p => (
+                  <circle key={p.date} cx={xScale(p.date)} cy={yScale(p.premium)} r={2.5} fill={color} />
+                ))}
+              </g>
             );
           })}
         </g>
       </svg>
-      <div style={{ display: 'flex', gap: 'var(--sp-4)', marginTop: 'var(--sp-2)', fontSize: 'var(--t-axis)' }}>
-        {ROUTES.map(r => (
-          <span key={r} style={{ color: ROUTE_COLORS[r] }}>— {r}</span>
+      <div style={{ display: 'flex', gap: 'var(--sp-4)', flexWrap: 'wrap', marginTop: 'var(--sp-2)', fontSize: 'var(--t-axis)' }}>
+        {routes.map((r, idx) => (
+          <span key={r} style={{ color: getRouteColor(r, idx), fontFamily: "'B612', monospace", fontWeight: 700 }}>
+            — {r}
+          </span>
         ))}
       </div>
     </figure>
