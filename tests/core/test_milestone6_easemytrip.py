@@ -1,6 +1,6 @@
 import pytest
 from uuid import uuid4
-from datetime import date
+from datetime import date, timedelta
 from models.request import FareSearchRequest
 from models.observation import FareObservation
 from sources.easemytrip.adapter import EaseMyTripAdapter
@@ -8,12 +8,13 @@ from sources.easemytrip.navigation import NavigationState
 
 @pytest.fixture
 def dummy_request():
+    today = date.today()
     return FareSearchRequest(
         source="easemytrip",
         collection_mode="BROWSER",
         origin="DEL",
         destination="BOM",
-        travel_date=date(2026, 9, 29),
+        travel_date=today + timedelta(days=7),
         lead_days=7,
         passenger_count={"adults": 1, "children": 0, "infants": 0},
         cabin="ECONOMY",
@@ -63,6 +64,7 @@ async def test_easemytrip_valid_response(dummy_request):
             from sources.easemytrip.navigation import SearchResultContext
             ctx = SearchResultContext()
             ctx.terminal_state = NavigationState.RESULTS_DETECTED
+            ctx.rendered_dom = "<html><body><div class='row'>flight</div></body></html>"
             # Mock JSON response
             ctx.network_response = {
                 "flights": [
@@ -75,38 +77,38 @@ async def test_easemytrip_valid_response(dummy_request):
     original_nav = adapter_module.EaseMyTripNavigation
     adapter_module.EaseMyTripNavigation = MockNavigation
     
-    # Mock parser since we haven't implemented the real parser yet
-    def mock_parser(response, req, run_id, source):
-        import uuid
+    # Mock parser since we test the adapter flow
+    def mock_parser(*args, **kwargs):
+        from decimal import Decimal
         from datetime import datetime, timezone
+        from models.observation import AvailabilityStatus, CabinClass, TripType
         return [
-            dict(
-                collection_run_id=uuid.uuid4(),
+            FareObservation(
+                collection_run_id=uuid4(),
                 source="easemytrip",
                 origin="DEL",
                 destination="BOM",
-                travel_date=req.travel_date,
-                lead_days=req.lead_days,
+                travel_date=dummy_request.travel_date,
+                lead_days=dummy_request.lead_days,
                 collected_at=datetime.now(timezone.utc),
-                search_timestamp=datetime.now(timezone.utc),
                 airline="6E",
-                trip_type=req.trip_type,
-                cabin=req.cabin,
+                trip_type=TripType.ONE_WAY,
+                cabin=CabinClass.ECONOMY,
                 passenger_count=1,
-                availability="AVAILABLE",
+                availability=AvailabilityStatus.AVAILABLE,
                 adapter_version="1.0.0",
                 normalizer_version="1.0.0",
                 flight_number="123",
-                total_fare=5000,
+                total_fare=Decimal("5000"),
                 currency="INR",
                 source_url="http://example.com",
                 source_offer_id="mock-offer"
             )
         ]
     
-    import sources.easemytrip.parser as parser_module
-    original_parser = parser_module.parse_network_response
-    parser_module.parse_network_response = mock_parser
+    import sources.easemytrip.adapter as adapter_pkg
+    original_parse_dom = adapter_pkg.parse_dom
+    adapter_pkg.parse_dom = mock_parser
     
     try:
         observations, state = await adapter.search(None, dummy_request, uuid4())
@@ -114,4 +116,4 @@ async def test_easemytrip_valid_response(dummy_request):
         assert observations[0].total_fare == 5000
     finally:
         adapter_module.EaseMyTripNavigation = original_nav
-        parser_module.parse_network_response = original_parser
+        adapter_pkg.parse_dom = original_parse_dom

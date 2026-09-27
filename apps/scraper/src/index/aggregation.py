@@ -36,9 +36,10 @@ class IndexAggregationEngine:
     def __init__(
         self,
         weight_registry: Optional[WeightRegistry] = None,
+        weights: Optional[WeightRegistry] = None,
         methodology_version: str = "APIx v1.0",
     ):
-        self.weights = weight_registry or WeightRegistry()
+        self.weights = weight_registry or weights or WeightRegistry()
         self.methodology_version = methodology_version
         self.cpi_layer = CPIIntegrationLayer()
 
@@ -75,7 +76,7 @@ class IndexAggregationEngine:
                 strata_count=len(el_list),
                 coverage_ratio=round(mean_coverage, 4),
                 weight=w,
-                weight_label="PROVISIONAL EQUAL LEAD-TIME WEIGHTS",
+                weight_label=getattr(self.weights, "lead_time_weight_type", "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS"),
             )
 
         return lead_time_results
@@ -120,6 +121,7 @@ class IndexAggregationEngine:
                 index_value=Decimal(str(round(route_index, 4))),
                 lead_times_included=available_lts,
                 lead_time_weights=cond_weights,
+                lead_time_weight_type=getattr(self.weights, "lead_time_weight_type", "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS"),
                 elementary_indices_by_lead_time=lt_dict,
                 prototype_median_indicator=proto_index,
                 prototype_representative_price_inr=proto_price,
@@ -134,6 +136,10 @@ class IndexAggregationEngine:
                 reference_price_method=tax.reference_price_method,
                 reference_price_source=tax.reference_price_source,
                 reference_index_value=tax.reference_index_value,
+                cpi_item_code=self.cpi_layer.weight_config.item_code,
+                cpi_airfare_weight_percent=self.cpi_layer.weight_config.percentage_weight,
+                cpi_airfare_weight_decimal=self.cpi_layer.weight_config.decimal_weight,
+                cpi_weight_disclaimer=self.cpi_layer.weight_config.disclaimer,
                 methodology_version=self.methodology_version,
             )
 
@@ -149,6 +155,7 @@ class IndexAggregationEngine:
     ) -> APIxSeriesResult:
         """
         Aggregates route indices into All-India APIx using DGCA passenger traffic proxies.
+        Keeps APIx level and CPI contribution as strictly separate outputs.
         """
         available_routes = sorted(route_results.keys())
         cond_route_weights = self.weights.get_normalized_sub_weights(
@@ -176,14 +183,33 @@ class IndexAggregationEngine:
 
         ref_tax_meta = self.cpi_layer.get_reference_taxonomy_meta()
         tax = self.cpi_layer.taxonomy
+        cfg = self.cpi_layer.weight_config
+
+        # CPI Contribution Calculation:
+        # airfare_contribution_pp = APIx_percent_change * 0.02951 / 100
+        contrib_pp = None
+        if mom_pct is not None:
+            contrib_pp = self.cpi_layer.calculate_cpi_contribution_pp(mom_pct)
 
         cpi_integration_meta = {
+            "source": cfg.source,
+            "item_code": cfg.item_code,
+            "description": cfg.description,
+            "reference_year": cfg.reference_year,
+            "percentage_weight": float(cfg.percentage_weight),
+            "decimal_weight": float(cfg.decimal_weight),
+            "percentage_weight_str": str(cfg.percentage_weight),
+            "decimal_weight_str": str(cfg.decimal_weight),
             "cpi_airfare_weight_urban": str(self.cpi_layer.cpi_airfare_weight_urban),
             "cpi_airfare_weight_rural": str(self.cpi_layer.cpi_airfare_weight_rural),
             "cpi_airfare_weight_combined": str(self.cpi_layer.cpi_airfare_weight_combined),
             "cpi_weight_source": self.cpi_layer.cpi_weight_source,
+            "retrieval_date": cfg.retrieval_date,
+            "provenance_reference": cfg.provenance_reference,
+            "methodology_version": cfg.methodology_version,
+            "disclaimer": cfg.disclaimer,
+            "estimated_cpi_contribution_pp": float(contrib_pp) if contrib_pp is not None else None,
             "dgca_proxy_note": self.cpi_layer.dgca_traffic_proxy_note,
-            "estimated_combined_cpi_impact_pp": str(round(float(self.cpi_layer.calculate_cpi_impact(mom_pct or Decimal("0.0"))), 6)),
             "reference_taxonomy": ref_tax_meta,
         }
 
@@ -221,7 +247,28 @@ class IndexAggregationEngine:
             prototype_median_indicator=prototype_median_summary,
             coicop_classification=coicop_meta,
             cpi_integration=cpi_integration_meta,
+
+            # Separate CPI Weight and Contribution Outputs (Requirements 5 & 6)
+            cpi_airfare_weight_percent=cfg.percentage_weight,
+            cpi_airfare_weight_decimal=cfg.decimal_weight,
+            cpi_airfare_item_code=cfg.item_code,
+            cpi_airfare_item_description=cfg.description,
+            cpi_reference_year=cfg.reference_year,
+            cpi_weight_source=cfg.source,
+            estimated_cpi_contribution_pp=contrib_pp,
+            cpi_weight_disclaimer=cfg.disclaimer,
+
             methodology_version=self.methodology_version,
             product_definition_version="APIx_PRODUCT_DEF_v2.0_FROZEN",
             weight_version=self.weights.version,
+
+            # DGCA Route Basket Integration
+            route_basket_id=getattr(self.weights, "basket_id", "DGCA_CY2024_TOP60"),
+            route_basket_reference_period=getattr(self.weights, "reference_period", "CY2024"),
+            route_basket_coverage_percent=getattr(self.weights, "coverage_percent", Decimal("57.0247")),
+            route_weights_used={r: float(cond_route_weights[r]) for r in available_routes},
+
+            # Lead-Time Weights Specification
+            lead_time_weight_type=getattr(self.weights, "lead_time_weight_type", "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS"),
+            lead_time_weights_used={k: float(v) for k, v in self.weights.lead_time_weights.items()},
         )

@@ -1,0 +1,70 @@
+{
+  "methodology_status": "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS",
+  "source_dataset": "Clean_Dataset.csv",
+  "source_interpretation": "Treat days_left as booking lead time, based on verified dataset interpretation that each row represents an individual booking.",
+  "is_official_national_weights": false,
+  "disclaimer": "These lead-time weights are derived from the supplied Clean_Dataset.csv booking dataset and are not official Indian national booking weights.",
+  "lead_time_count": 6,
+  "lead_times": [
+    {
+      "lead_time_class": "T+1",
+      "lead_days": 1,
+      "weight": 0.0509,
+      "weight_percent": 5.09,
+      "methodology": "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS",
+      "source_dataset": "Clean_Dataset.csv"
+    },
+    {
+      "lead_time_class": "T+7",
+      "lead_days": 7,
+      "weight": 0.1350,
+      "weight_percent": 13.50,
+      "methodology": "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS",
+      "source_dataset": "Clean_Dataset.csv"
+    },
+    {
+      "lead_time_class": "T+15",
+      "lead_days": 15,
+      "weight": 0.1491,
+      "weight_percent": 14.91,
+      "methodology": "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS",
+      "source_dataset": "Clean_Dataset.csv"
+    },
+    {
+      "lead_time_class": "T+21",
+      "lead_days": 21,
+      "weight": 0.1519,
+      "weight_percent": 15.19,
+      "methodology": "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS",
+      "source_dataset": "Clean_Dataset.csv"
+    },
+    {
+      "lead_time_class": "T+30",
+      "lead_days": 30,
+      "weight": 0.2588,
+      "weight_percent": 25.88,
+      "methodology": "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS",
+      "source_dataset": "Clean_Dataset.csv"
+    },
+    {
+      "lead_time_class": "T+45",
+      "lead_days": 45,
+      "weight": 0.2543,
+      "weight_percent": 25.43,
+      "methodology": "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS",
+      "source_dataset": "Clean_Dataset.csv"
+    }
+  ],
+  "sensitivity_analysis": {
+    "methodology_status": "SENSITIVITY_EQUAL_LEAD_TIME_WEIGHTS",
+    "description": "Preserved equal weighting (w_L = 1/6) sensitivity configuration",
+    "weights": {
+      "T+1": 0.166667,
+      "T+7": 0.166667,
+      "T+15": 0.166667,
+      "T+21": 0.166667,
+      "T+30": 0.166666,
+      "T+45": 0.166666
+    }
+  }
+}

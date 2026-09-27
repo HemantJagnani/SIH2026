@@ -370,17 +370,19 @@ def test_gate12_cpi_expenditure_weights_separate_from_dgca():
     # Verify DGCA passenger share is a route representativeness proxy
     assert cpi_layer.dgca_passenger_share_del_bom == Decimal("1.000000")
 
-    # Verify CPI household expenditure weight is separate and tiny (~0.185% of consumption basket)
-    assert cpi_layer.cpi_airfare_weight_combined == Decimal("0.001850")
-    assert cpi_layer.cpi_airfare_weight_urban == Decimal("0.003500")
+    # Verify official MoSPI CPI 2024 airfare expenditure weight (0.02951% / 0.0002951)
+    assert cpi_layer.cpi_airfare_weight_percent == Decimal("0.02951")
+    assert cpi_layer.cpi_airfare_weight_decimal == Decimal("0.0002951")
+    assert cpi_layer.cpi_airfare_weight_combined == Decimal("0.0002951")
 
-    # Verify COICOP classification
+    # Verify COICOP classification with official CPI 2024 item code
     coicop = cpi_layer.coicop
     assert coicop.division == "07"
     assert coicop.group == "07.3"
     assert coicop.coicop_class == "07.3.3"
     assert coicop.subclass == "07.3.3.1"
-    assert coicop.cpi_item_code == "07.3.3.1.01"
+    assert coicop.cpi_item_code == "07.3.3.1.2.01"
+    assert coicop.cpi_item_description == "Passenger transport by air, domestic"
 
 
 # Gate 13: Base/reference index remains 100

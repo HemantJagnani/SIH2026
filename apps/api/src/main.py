@@ -14,7 +14,7 @@ if scraper_src not in sys.path:
     sys.path.insert(0, scraper_src)
 
 from models.canonical import NormalizedFareObservation
-from index import APIxEngine, WeightRegistry
+from index import APIxEngine, WeightRegistry, CPIAirfareWeightConfig
 
 load_dotenv()
 
@@ -187,16 +187,11 @@ async def get_runs():
 @app.get("/api/methodology")
 async def get_methodology():
     """
-    Returns the complete methodology specification and weight configuration.
+    Returns the complete methodology specification, weight configuration,
+    and official MoSPI CPI 2024 airfare expenditure weight metadata.
     """
-    registry = WeightRegistry(
-        route_weights={
-            "DEL-BOM": Decimal("0.35"),
-            "DEL-BLR": Decimal("0.35"),
-            "BOM-BLR": Decimal("0.30"),
-        },
-        is_single_route_pilot=False,
-    )
+    registry = WeightRegistry()
+    cpi_cfg = CPIAirfareWeightConfig()
     return {
         "base_value": 100.0,
         "reference_period": "2024",
@@ -207,7 +202,9 @@ async def get_methodology():
         "lead_time_alignment_checkpoint": "T+21",
         "route_weights": {k: float(v) for k, v in registry.route_weights.items()},
         "lead_time_weights": {k: float(v) for k, v in registry.lead_time_weights.items()},
-        "methodology_version": "APIx v1.0",
+        "cpi_airfare_weight": cpi_cfg.to_metadata_dict(),
+        "disclaimer": cpi_cfg.disclaimer,
+        "methodology_version": "APIx v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)",
         "weight_version": registry.version,
     }
 

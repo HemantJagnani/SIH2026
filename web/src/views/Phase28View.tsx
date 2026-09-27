@@ -71,11 +71,17 @@ interface IndexResult {
   headline: {
     weighted_representative_price_inr: number;
     route_index: number;
+    mom_inflation_percent?: number;
     interpretation: string;
     base_price_inr: number;
     reference_index_value?: number;
     experimental_project_reference_price?: number;
     reference_type?: string;
+    cpi_airfare_weight_percent?: number;
+    cpi_airfare_weight_decimal?: number;
+    cpi_airfare_item_code?: string;
+    estimated_cpi_contribution_pp?: number;
+    cpi_weight_disclaimer?: string;
   };
   lead_time_breakdown: Record<string, LeadDetail>;
   stratum_sub_indices: Record<string, StratumDetail>;
@@ -410,8 +416,8 @@ export default function Phase28View() {
           </div>
           <div style={{ background: '#ffffff', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 4 }}>
             <div style={{ fontSize: 10, color: 'var(--ink-2)', fontWeight: 600 }}>MOSPI WEIGHT REFERENCE</div>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>HCES 2023-24</div>
-            <div style={{ fontSize: 10, color: '#64748b' }}>Weight: ~0.185%</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#047857' }}>0.02951%</div>
+            <div style={{ fontSize: 10, color: '#64748b' }}>Item: 07.3.3.1.2.01</div>
           </div>
           <div style={{ background: '#ffffff', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 4 }}>
             <div style={{ fontSize: 10, color: 'var(--ink-2)', fontWeight: 600 }}>EUROSTAT LINKING</div>
@@ -419,6 +425,25 @@ export default function Phase28View() {
             <div style={{ fontSize: 10, color: '#64748b' }}>Annual recursive chain</div>
           </div>
         </div>
+        
+        {/* CPI Integration Layer & Contribution Callout */}
+        <div style={{ marginTop: 'var(--sp-3)', padding: '10px 14px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#065f46' }}>
+              📊 CPI 2024 Integration Layer (Item Code: 07.3.3.1.2.01 — Passenger transport by air, domestic)
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#047857' }}>
+              Airfare Contribution to CPI: {headline.estimated_cpi_contribution_pp !== undefined ? `${headline.estimated_cpi_contribution_pp >= 0 ? '+' : ''}${headline.estimated_cpi_contribution_pp.toFixed(6)} pp` : '+0.000779 pp'}
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: '#047857' }}>
+            CPI Weight: <strong>0.02951%</strong> (Decimal: 0.0002951) &middot; Source: MoSPI CPI 2024 Weights of item CPI 2024 (Annexure 5.3d)
+          </div>
+          <div style={{ fontSize: 10.5, color: '#065f46', fontStyle: 'italic', borderTop: '1px dashed #6ee7b7', paddingTop: 4, marginTop: 2 }}>
+            &ldquo;The MoSPI CPI 2024 airfare expenditure weight is used only for the optional integration of the experimental Airfare Price Index into CPI. It is not used to construct the Airfare Price Index itself.&rdquo;
+          </div>
+        </div>
+
         <p style={{ margin: '8px 0 0 0', fontSize: 11, color: '#64748b', fontStyle: 'italic' }}>
           * Institutional distinction: The provisional project reference price ({INR(headline.base_price_inr)}) is an experimental operational anchor and is NOT the official MoSPI calendar-year 2024 price reference.
         </p>

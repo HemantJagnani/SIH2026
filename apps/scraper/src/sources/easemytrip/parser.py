@@ -61,7 +61,10 @@ def parse_dom(
     if not html:
         return observations
 
-    soup = BeautifulSoup(html, "html.parser")
+    try:
+        soup = BeautifulSoup(html, "lxml")
+    except Exception:
+        soup = BeautifulSoup(html, "html.parser")
     cards = soup.select(".nw_listing_bx")
 
     if not cards:

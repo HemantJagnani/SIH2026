@@ -72,8 +72,8 @@ class LeadTimeIndexResult(BaseModel):
     index_value: Decimal
     strata_count: int
     coverage_ratio: float = 1.0
-    weight: Decimal = Decimal("0.166667")
-    weight_label: str = "PROVISIONAL EQUAL LEAD-TIME WEIGHTS"
+    weight: Decimal = Decimal("0.1519")
+    weight_label: str = "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS"
 
 
 class RouteIndexResult(BaseModel):
@@ -81,9 +81,13 @@ class RouteIndexResult(BaseModel):
     route: str
     period: str
     index_value: Decimal
-    lead_times_included: List[str]
-    lead_time_weights: Dict[str, Decimal]
-    elementary_indices_by_lead_time: Dict[str, Decimal]
+    lead_times_included: List[str] = Field(default_factory=list)
+    lead_time_weights: Dict[str, Decimal] = Field(default_factory=dict)
+    lead_time_weight_type: str = Field(
+        default="EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS",
+        description="Methodology status for lead-time weights"
+    )
+    elementary_indices_by_lead_time: Dict[str, Decimal] = Field(default_factory=dict)
     
     # Retained diagnostic prototype indicator per Phase 29 §2 & §19
     prototype_median_indicator: Optional[Decimal] = Field(
@@ -110,6 +114,14 @@ class RouteIndexResult(BaseModel):
     reference_price_method: str = Field(default="Option B — first production run weighted representative price", description="Calculation methodology")
     reference_price_source: str = Field(default="production_run_825fa969", description="Source run ID or dataset")
     reference_index_value: Decimal = Field(default=Decimal("100.00"), description="Index value at reference period")
+    # MoSPI CPI 2024 Weight Specification (Annexure 5.3d Item 07.3.3.1.2.01)
+    cpi_item_code: str = Field(default="07.3.3.1.2.01", description="Official MoSPI CPI 2024 item code")
+    cpi_airfare_weight_percent: Decimal = Field(default=Decimal("0.02951"), description="Official MoSPI CPI 2024 expenditure weight in percentage (0.02951%)")
+    cpi_airfare_weight_decimal: Decimal = Field(default=Decimal("0.0002951"), description="Official MoSPI CPI 2024 expenditure weight in decimal form (0.0002951)")
+    cpi_weight_disclaimer: str = Field(
+        default="The MoSPI CPI 2024 airfare expenditure weight is used only for the optional integration of the experimental Airfare Price Index into CPI. It is not used to construct the Airfare Price Index itself.",
+        description="Mandatory methodological disclaimer"
+    )
     methodology_version: str = Field(default="APIx v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)", description="Engine methodology version")
 
 
@@ -155,9 +167,71 @@ class APIxSeriesResult(BaseModel):
     # Retained prototype median calculation per Phase 29 §2 & §19
     prototype_median_indicator: Optional[Dict[str, Any]] = None
     
-    # MoSPI COICOP & CPI Integration
+    # MoSPI COICOP & Official CPI 2024 Integration (Strictly separated from APIx construction)
     coicop_classification: Dict[str, str] = Field(default_factory=dict)
     cpi_integration: Dict[str, Any] = Field(default_factory=dict)
+
+    # Official MoSPI CPI 2024 Airfare Expenditure Weight & Contribution (Distinct Output Fields)
+    cpi_airfare_weight_percent: Decimal = Field(
+        default=Decimal("0.02951"),
+        description="Official MoSPI CPI 2024 airfare expenditure weight in percentage (0.02951%)"
+    )
+    cpi_airfare_weight_decimal: Decimal = Field(
+        default=Decimal("0.0002951"),
+        description="Official MoSPI CPI 2024 airfare expenditure weight in decimal form (0.0002951)"
+    )
+    cpi_airfare_item_code: str = Field(
+        default="07.3.3.1.2.01",
+        description="Official MoSPI CPI 2024 item code for domestic air passenger transport"
+    )
+    cpi_airfare_item_description: str = Field(
+        default="Passenger transport by air, domestic",
+        description="Official item description in CPI 2024 item weights"
+    )
+    cpi_reference_year: int = Field(
+        default=2024,
+        description="CPI revision reference year"
+    )
+    cpi_weight_source: str = Field(
+        default="MoSPI CPI 2024 Weights of item CPI 2024",
+        description="Official source document"
+    )
+    estimated_cpi_contribution_pp: Optional[Decimal] = Field(
+        default=None,
+        description="Estimated CPI contribution in percentage points: APIx_percent_change * 0.02951 / 100"
+    )
+    cpi_weight_disclaimer: str = Field(
+        default="The MoSPI CPI 2024 airfare expenditure weight is used only for the optional integration of the experimental Airfare Price Index into CPI. It is not used to construct the Airfare Price Index itself.",
+        description="Mandatory methodological disclaimer"
+    )
+
+    # DGCA Route Basket Specifications (Top-60 CY2024)
+    route_basket_id: str = Field(
+        default="DGCA_CY2024_TOP60",
+        description="Identifier of the empirical DGCA route basket"
+    )
+    route_basket_reference_period: str = Field(
+        default="CY2024",
+        description="Reference period for DGCA scheduled domestic passenger volumes"
+    )
+    route_basket_coverage_percent: Optional[Decimal] = Field(
+        default=Decimal("57.0247"),
+        description="Share of national domestic passenger traffic covered by the basket (57.0247%)"
+    )
+    route_weights_used: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Exact normalized route weights applied in index aggregation"
+    )
+
+    # Lead-Time Weighting Specifications (Empirical vs Sensitivity)
+    lead_time_weight_type: str = Field(
+        default="EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS",
+        description="Methodology status of lead-time weights applied"
+    )
+    lead_time_weights_used: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Normalized lead-time weights used in index aggregation"
+    )
     
     # Versioning & Audit Trail
     collection_run_id: str = "PHASE28-29-RUN-DELBOM"
