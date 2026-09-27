@@ -290,8 +290,19 @@ export const api = {
           base_date: '2024-01-01',
           min_coverage: raw.min_coverage || 0.5,
           item_rules: {},
-          routes: routes.length > 0 ? routes : [{ id: 'DEL-BOM', origin: 'DEL', destination: 'BOM', weight: 1.0, weight_assumption: false }],
-          lead_days: lead_days.length > 0 ? lead_days : [{ days: 7, weight: 1.0, weight_assumption: false }],
+          routes: routes.length > 0 ? routes : [
+            { id: 'DEL-BOM', origin: 'DEL', destination: 'BOM', weight: 0.35, weight_assumption: true },
+            { id: 'DEL-BLR', origin: 'DEL', destination: 'BLR', weight: 0.35, weight_assumption: true },
+            { id: 'BOM-BLR', origin: 'BOM', destination: 'BLR', weight: 0.30, weight_assumption: true },
+          ],
+          lead_days: lead_days.length > 0 ? lead_days : [
+            { days: 1, weight: 0.17, weight_assumption: true },
+            { days: 7, weight: 0.17, weight_assumption: true },
+            { days: 15, weight: 0.17, weight_assumption: true },
+            { days: 21, weight: 0.17, weight_assumption: true },
+            { days: 30, weight: 0.17, weight_assumption: true },
+            { days: 45, weight: 0.15, weight_assumption: true },
+          ],
           aggregation: { elementary: raw.elementary_formula, higher: raw.higher_level_formula },
           reference: raw.methodology_standard || 'MoSPI CPI 2024 / Eurostat HICP'
         };
@@ -302,8 +313,19 @@ export const api = {
       base_date: '2024-01-01',
       min_coverage: 0.5,
       item_rules: {},
-      routes: [{ id: 'DEL-BOM', origin: 'DEL', destination: 'BOM', weight: 1.0, weight_assumption: false }],
-      lead_days: [{ days: 7, weight: 1.0, weight_assumption: false }],
+      routes: [
+        { id: 'DEL-BOM', origin: 'DEL', destination: 'BOM', weight: 0.35, weight_assumption: true },
+        { id: 'DEL-BLR', origin: 'DEL', destination: 'BLR', weight: 0.35, weight_assumption: true },
+        { id: 'BOM-BLR', origin: 'BOM', destination: 'BLR', weight: 0.30, weight_assumption: true },
+      ],
+      lead_days: [
+        { days: 1, weight: 0.17, weight_assumption: true },
+        { days: 7, weight: 0.17, weight_assumption: true },
+        { days: 15, weight: 0.17, weight_assumption: true },
+        { days: 21, weight: 0.17, weight_assumption: true },
+        { days: 30, weight: 0.17, weight_assumption: true },
+        { days: 45, weight: 0.15, weight_assumption: true },
+      ],
       aggregation: {},
       reference: 'MoSPI CPI 2024 / Eurostat HICP'
     };

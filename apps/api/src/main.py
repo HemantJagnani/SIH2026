@@ -189,7 +189,14 @@ async def get_methodology():
     """
     Returns the complete methodology specification and weight configuration.
     """
-    registry = WeightRegistry()
+    registry = WeightRegistry(
+        route_weights={
+            "DEL-BOM": Decimal("0.35"),
+            "DEL-BLR": Decimal("0.35"),
+            "BOM-BLR": Decimal("0.30"),
+        },
+        is_single_route_pilot=False,
+    )
     return {
         "base_value": 100.0,
         "reference_period": "2024",
