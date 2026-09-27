@@ -40,16 +40,58 @@ export interface LeadCurvePoint {
   lead_time: string;
   lead_days: number;
   average_fare_inr: number;
+  median_fare_inr?: number;
+  geometric_mean_inr?: number;
   quote_count: number;
   min_fare: number;
   max_fare: number;
+  is_real?: boolean;
 }
 
 export interface LeadCurveResponse {
   route: string;
   period: string;
   currency: string;
+  data_source?: string;
+  total_observations?: number;
   curve_points: LeadCurvePoint[];
+}
+
+export interface MatrixCell {
+  route: string;
+  lead_time: string;
+  observation_count: number;
+  median_fare_inr: number;
+  mean_fare_inr: number;
+  geometric_mean_inr: number;
+  min_fare_inr: number;
+  max_fare_inr: number;
+  stddev: number;
+}
+
+export interface MatrixResponse {
+  generated_at: string;
+  source: string;
+  total_cells: number;
+  total_observations: number;
+  cells: MatrixCell[];
+}
+
+export interface CoverageResponse {
+  generated_at: string;
+  source: string;
+  total_target_cells: number;
+  populated_cells: number;
+  missing_cells: number;
+  coverage_percent: number;
+  routes_with_data: string[];
+  routes_with_data_count: number;
+  total_raw_observations: number;
+  observations_with_fare: number;
+  valid_baseline: number;
+  duplicate: number;
+  higher_fare_family: number;
+  foreign_transit: number;
 }
 
 export interface BacktestSummary {
@@ -250,6 +292,21 @@ export const api = {
   getSensitivity: async (): Promise<SensitivityResponse> => {
     const res = await fetch(`${BASE}/v1/sensitivity`);
     if (!res.ok) throw new Error(`API error ${res.status}: /v1/sensitivity`);
+    return res.json();
+  },
+
+  getMatrix: async (params?: { route?: string; lead_time?: string }): Promise<MatrixResponse> => {
+    const q = new URLSearchParams();
+    if (params?.route) q.set('route', params.route);
+    if (params?.lead_time) q.set('lead_time', params.lead_time);
+    const res = await fetch(`${BASE}/v1/matrix?${q.toString()}`);
+    if (!res.ok) throw new Error(`API error ${res.status}: /v1/matrix`);
+    return res.json();
+  },
+
+  getCoverage: async (): Promise<CoverageResponse> => {
+    const res = await fetch(`${BASE}/v1/coverage`);
+    if (!res.ok) throw new Error(`API error ${res.status}: /v1/coverage`);
     return res.json();
   },
 

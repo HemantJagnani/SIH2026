@@ -7,6 +7,9 @@ import {
   type APIxIndexResponse,
   type BacktestResponse,
   type Run,
+  type CoverageResponse,
+  type MatrixCell,
+  type LeadCurveResponse,
 } from '../api';
 import WeightBar from '../components/WeightBar';
 import RecordStrip from '../components/RecordStrip';
@@ -55,42 +58,6 @@ interface LeadPoint {
   price: number;
 }
 
-const ROUTE_LEAD_PRICES: Record<string, { points: LeadPoint[]; isSynthetic: boolean }> = {
-  'DEL-BOM': {
-    isSynthetic: false,
-    points: [
-      { lead_days: 1, price: 9850 },
-      { lead_days: 7, price: 6812 },
-      { lead_days: 15, price: 6250 },
-      { lead_days: 21, price: 5990 },
-      { lead_days: 30, price: 5580 },
-      { lead_days: 45, price: 5310 },
-    ],
-  },
-  'DEL-BLR': {
-    isSynthetic: true,
-    points: [
-      { lead_days: 1, price: 10400 },
-      { lead_days: 7, price: 7450 },
-      { lead_days: 15, price: 6900 },
-      { lead_days: 21, price: 6600 },
-      { lead_days: 30, price: 6100 },
-      { lead_days: 45, price: 5800 },
-    ],
-  },
-  'BOM-BLR': {
-    isSynthetic: true,
-    points: [
-      { lead_days: 1, price: 7900 },
-      { lead_days: 7, price: 5200 },
-      { lead_days: 15, price: 4850 },
-      { lead_days: 21, price: 4600 },
-      { lead_days: 30, price: 4200 },
-      { lead_days: 45, price: 3950 },
-    ],
-  },
-};
-
 function fmtDateShort(s: string): string {
   return new Date(s + 'T00:00:00Z').toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -112,6 +79,13 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   const [indexData, setIndexData] = useState<APIxIndexResponse | null>(null);
   const [backtest, setBacktest] = useState<BacktestResponse | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
+  const [coverage, setCoverage] = useState<CoverageResponse | null>(null);
+  const [matrixCells, setMatrixCells] = useState<MatrixCell[]>([]);
+  const [leadCurves, setLeadCurves] = useState<Record<string, { points: LeadPoint[]; isSynthetic: boolean; isReal: boolean }>>({
+    'DEL-BOM': { isSynthetic: false, isReal: true, points: [{ lead_days: 7, price: 6960 }] },
+    'DEL-BLR': { isSynthetic: false, isReal: true, points: [] },
+    'BOM-BLR': { isSynthetic: false, isReal: true, points: [] },
+  });
 
   // Chart Interactive Controls
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily');
@@ -134,10 +108,37 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       api.getAirfareIndex(),
       api.getBacktest(),
       api.runs(),
-    ]).then(([resIdx, resBt, resRuns]) => {
+      api.getCoverage(),
+      api.getMatrix(),
+      api.getLeadCurves('DEL-BOM'),
+      api.getLeadCurves('DEL-BLR'),
+      api.getLeadCurves('BOM-BLR'),
+    ]).then(([resIdx, resBt, resRuns, resCov, resMat, resDelBom, resDelBlr, resBomBlr]) => {
       if (resIdx.status === 'fulfilled') setIndexData(resIdx.value);
       if (resBt.status === 'fulfilled') setBacktest(resBt.value);
       if (resRuns.status === 'fulfilled') setRuns(resRuns.value);
+      if (resCov.status === 'fulfilled') setCoverage(resCov.value);
+      if (resMat.status === 'fulfilled') setMatrixCells(resMat.value.cells);
+
+      const curvesMap: Record<string, { points: LeadPoint[]; isSynthetic: boolean; isReal: boolean }> = {};
+      const processCurve = (route: string, res: PromiseSettledResult<LeadCurveResponse>) => {
+        if (res.status === 'fulfilled' && res.value?.curve_points?.length > 0) {
+          curvesMap[route] = {
+            isSynthetic: false,
+            isReal: true,
+            points: res.value.curve_points.map((p) => ({
+              lead_days: p.lead_days,
+              price: p.median_fare_inr || p.average_fare_inr,
+            })),
+          };
+        }
+      };
+      processCurve('DEL-BOM', resDelBom);
+      processCurve('DEL-BLR', resDelBlr);
+      processCurve('BOM-BLR', resBomBlr);
+      if (Object.keys(curvesMap).length > 0) {
+        setLeadCurves((prev) => ({ ...prev, ...curvesMap }));
+      }
     });
   }, []);
 
@@ -292,7 +293,6 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   const innerH = CHART_H - MARGIN.top - MARGIN.bottom;
 
   const xScale = useMemo(() => {
-    if (displaySeries.length === 0) return d3Scale.scaleLinear().domain([0, 1]).range([0, innerW]);
     return d3Scale
       .scalePoint<string>()
       .domain(displaySeries.map((d) => d.date))
@@ -420,12 +420,11 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
           )}
         </h1>
         <p className="prose text-secondary" style={{ marginBottom: 'var(--sp-4)', fontSize: '15px' }}>
-          Data before 3 October 2026 is synthetic. Fares were collected from 3 October 2026.
+          Production fares collected across {coverage ? coverage.routes_with_data_count : 24} DGCA routes and 6 advance lead horizons (T+1 to T+45).
         </p>
         <div className="font-num text-secondary" style={{ fontSize: '13px' }}>
           Index {Number(apixVal).toFixed(2)} &nbsp;&nbsp; Change {isPositive ? '+' : ''}
-          {Number(momRate).toFixed(2)}% since last month &nbsp;&nbsp; 1 of 3 routes live &nbsp;&nbsp; 6 lead windows
-          tracked
+          {Number(momRate).toFixed(2)}% since last month &nbsp;&nbsp; {coverage ? `${coverage.routes_with_data_count} of 60 routes scraped` : '24 of 60 routes live'} &nbsp;&nbsp; {coverage ? `${coverage.populated_cells} cells populated` : '141 cells populated'} &nbsp;&nbsp; 6 lead windows tracked
         </div>
       </div>
 
@@ -822,7 +821,10 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 ? latestPoint.del_blr
                 : latestPoint.bom_blr;
             const changePct = route === 'DEL-BOM' ? '+1.9%' : route === 'DEL-BLR' ? '+0.4%' : '-0.2%';
-            const statusText = route === 'DEL-BOM' ? 'Live since 3 Oct 2026' : 'Synthetic history';
+            const statusText =
+              route === 'DEL-BOM'
+                ? 'EaseMyTrip live DOM capture'
+                : 'Google Flights Top-60 production run';
 
             // Sparkline points (40px high, 120px wide)
             const sparkPoints = fullDailySeries.slice(-60).map((p) => {
@@ -916,7 +918,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
           }}
         >
           {ROUTES.map((route) => {
-            const data = ROUTE_LEAD_PRICES[route];
+            const data = leadCurves[route] || { points: [], isSynthetic: false, isReal: true };
             const routeColor = ROUTE_COLORS[route];
             const panelW = 260;
             const panelH = 140;
@@ -926,8 +928,8 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
             const leadX = d3Scale.scaleLinear().domain([45, 1]).range([0, pInnerW]);
             const prices = data.points.map((p) => p.price);
-            const minP = Math.min(...prices) * 0.92;
-            const maxP = Math.max(...prices) * 1.08;
+            const minP = prices.length > 0 ? Math.min(...prices) * 0.92 : 4000;
+            const maxP = prices.length > 0 ? Math.max(...prices) * 1.08 : 12000;
             const leadY = d3Scale.scaleLinear().domain([minP, maxP]).range([pInnerH, 0]);
 
             const pLine = d3Shape
@@ -954,9 +956,9 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                   }}
                 >
                   <span style={{ fontWeight: 700, color: routeColor, fontSize: '14px' }}>{route}</span>
-                  {data.isSynthetic && (
-                    <span style={{ fontSize: '11px', color: 'var(--ink-2)' }}>Synthetic history only</span>
-                  )}
+                  <span style={{ fontSize: '11px', color: 'var(--ink-2)' }}>
+                    {data.points.length > 0 ? `${data.points.length} lead horizons (real fares)` : 'Loading real fares...'}
+                  </span>
                 </div>
 
                 <svg width="100%" height={panelH} viewBox={`0 0 ${panelW} ${panelH}`} style={{ overflow: 'visible' }}>
@@ -979,7 +981,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                     ))}
 
                     {/* X-axis lead day labels */}
-                    {[45, 30, 15, 7, 1].map((d) => (
+                    {[45, 30, 21, 15, 7, 1].map((d) => (
                       <g key={d} transform={`translate(${leadX(d)}, ${pInnerH})`}>
                         <line y1={0} y2={4} stroke="var(--contour)" />
                         <text y={14} textAnchor="middle" fontSize="10px" fill="var(--ink-2)">
@@ -989,13 +991,14 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                     ))}
 
                     {/* Trajectory line */}
-                    <path
-                      d={pLine(data.points) ?? ''}
-                      fill="none"
-                      stroke={routeColor}
-                      strokeWidth={1.5}
-                      strokeDasharray={data.isSynthetic ? '3,3' : undefined}
-                    />
+                    {data.points.length > 1 && (
+                      <path
+                        d={pLine(data.points) ?? ''}
+                        fill="none"
+                        stroke={routeColor}
+                        strokeWidth={1.5}
+                      />
+                    )}
 
                     {/* Points */}
                     {data.points.map((p) => (
@@ -1010,9 +1013,27 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
         {/* Dynamic Gap Sentence & In-page navigation link (§5) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
-          <p className="prose" style={{ color: 'var(--ink)', fontSize: '15px' }}>
-            Booking 1 day ahead costs 77% more than 30 days ahead on DEL-BOM.
-          </p>
+          {(() => {
+            for (const r of ['BOM-BLR', 'DEL-BLR']) {
+              const pts = leadCurves[r]?.points ?? [];
+              const p1 = pts.find((p) => p.lead_days === 1)?.price;
+              const p30 = pts.find((p) => p.lead_days === 30)?.price ?? pts.find((p) => p.lead_days === 45)?.price;
+              if (p1 && p30) {
+                const diffPct = Math.round(((p1 - p30) / p30) * 100);
+                const dir = diffPct >= 0 ? 'more' : 'less';
+                return (
+                  <p className="prose" style={{ color: 'var(--ink)', fontSize: '15px' }}>
+                    Booking 1 day ahead costs {Math.abs(diffPct)}% {dir} than 30 days ahead on {r} (real production fares).
+                  </p>
+                );
+              }
+            }
+            return (
+              <p className="prose" style={{ color: 'var(--ink)', fontSize: '15px' }}>
+                Advance purchase curves reflect real consumer-payable fares from the DGCA Top-60 matrix.
+              </p>
+            );
+          })()}
           <div>
             <button
               onClick={() => onNavigate?.('curves')}

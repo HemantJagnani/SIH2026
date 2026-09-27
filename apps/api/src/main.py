@@ -1,6 +1,8 @@
 import os
 import sys
 import json
+import math
+import statistics
 from decimal import Decimal
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -17,6 +19,49 @@ from models.canonical import NormalizedFareObservation
 from index import APIxEngine, WeightRegistry, CPIAirfareWeightConfig
 
 load_dotenv()
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+
+# Lead-day → lead-time class mapping
+def _lead_class(days: int) -> str:
+    if days <= 1: return 'T+1'
+    elif days <= 7: return 'T+7'
+    elif days <= 15: return 'T+15'
+    elif days <= 21: return 'T+21'
+    elif days <= 30: return 'T+30'
+    else: return 'T+45'
+
+
+def _geomean(vals: List[float]) -> float:
+    if not vals:
+        return 0.0
+    log_sum = sum(math.log(v) for v in vals if v > 0)
+    return math.exp(log_sum / len(vals))
+
+
+# Cache for top60 observations to avoid reloading on every request
+_top60_obs_cache: Optional[List[dict]] = None
+_top60_obs_mtime: float = 0.0
+
+
+def load_top60_observations() -> List[dict]:
+    """Load real top-60 fare observations from disk, with mtime-based cache."""
+    global _top60_obs_cache, _top60_obs_mtime
+    path = os.path.join(ROOT, 'runtime', 'top60_fare_observations.json')
+    if not os.path.exists(path):
+        return []
+    mtime = os.path.getmtime(path)
+    if _top60_obs_cache is not None and mtime == _top60_obs_mtime:
+        return _top60_obs_cache
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        _top60_obs_cache = data if isinstance(data, list) else []
+        _top60_obs_mtime = mtime
+        return _top60_obs_cache
+    except Exception as e:
+        print(f'Error loading top60 observations: {e}')
+        return []
 
 app = FastAPI(
     title="India Airfare Price Index (APIx) API",
@@ -130,34 +175,89 @@ async def get_lead_curves(route: str = Query("DEL-BOM")):
     """
     Returns the advance-purchase yield curve showing prices across lead times:
     T+1, T+7, T+15, T+21, T+30, T+45.
+    Serves real scraped Top-60 data first; falls back to canonical normalized data.
     """
+    # Try real top-60 observations first
+    top60_obs = load_top60_observations()
+    # Match route in both directions (BOM-DEL matches DEL-BOM)
+    def route_matches(o: dict) -> bool:
+        origin = o.get('origin', '')
+        dest = o.get('destination', '')
+        fwd = f'{origin}-{dest}'
+        rev = f'{dest}-{origin}'
+        return fwd == route or rev == route
+
+    route_obs_top60 = [o for o in top60_obs if route_matches(o)]
+
+    if route_obs_top60:
+        by_lead_time: Dict[str, List[float]] = {}
+        for o in route_obs_top60:
+            fare = float(o.get('total_fare', 0) or 0)
+            if fare <= 0:
+                continue
+            days = int(o.get('lead_days', 7) or 7)
+            lt = _lead_class(days)
+            by_lead_time.setdefault(lt, []).append(fare)
+
+        lt_order = ['T+1', 'T+7', 'T+15', 'T+21', 'T+30', 'T+45']
+        curve_points = []
+        for lt in lt_order:
+            fares = by_lead_time.get(lt, [])
+            if not fares:
+                continue
+            lead_days = int(lt.replace('T+', ''))
+            curve_points.append({
+                'lead_time': lt,
+                'lead_days': lead_days,
+                'average_fare_inr': round(sum(fares) / len(fares), 2),
+                'median_fare_inr': round(statistics.median(fares), 2),
+                'geometric_mean_inr': round(_geomean(fares), 2),
+                'quote_count': len(fares),
+                'min_fare': round(min(fares), 2),
+                'max_fare': round(max(fares), 2),
+                'is_real': True,
+            })
+
+        return {
+            'route': route,
+            'period': '2026-09',
+            'currency': 'INR',
+            'data_source': 'google_flights_top60',
+            'total_observations': len(route_obs_top60),
+            'curve_points': curve_points,
+        }
+
+    # Fallback: canonical normalized data (EaseMyTrip)
     observations = load_canonical_data()
     route_obs = [o for o in observations if o.route == route]
-    
-    by_lead_time: Dict[str, List[float]] = {}
+
+    by_lead_time2: Dict[str, List[float]] = {}
     for o in route_obs:
         lt = o.lead_time_class
-        if lt not in by_lead_time:
-            by_lead_time[lt] = []
-        by_lead_time[lt].append(float(o.total_fare))
+        by_lead_time2.setdefault(lt, []).append(float(o.total_fare))
 
     curve_points = []
-    for lt, fares in sorted(by_lead_time.items()):
+    for lt, fares in sorted(by_lead_time2.items()):
         avg_price = sum(fares) / len(fares) if fares else 0.0
         curve_points.append({
-            "lead_time": lt,
-            "lead_days": int(lt.replace("T+", "")) if lt.startswith("T+") and lt[2:].isdigit() else 7,
-            "average_fare_inr": round(avg_price, 2),
-            "quote_count": len(fares),
-            "min_fare": min(fares) if fares else 0.0,
-            "max_fare": max(fares) if fares else 0.0,
+            'lead_time': lt,
+            'lead_days': int(lt.replace('T+', '')) if lt.startswith('T+') and lt[2:].isdigit() else 7,
+            'average_fare_inr': round(avg_price, 2),
+            'median_fare_inr': round(statistics.median(fares), 2) if fares else 0.0,
+            'geometric_mean_inr': round(_geomean(fares), 2) if fares else 0.0,
+            'quote_count': len(fares),
+            'min_fare': round(min(fares), 2) if fares else 0.0,
+            'max_fare': round(max(fares), 2) if fares else 0.0,
+            'is_real': True,
         })
 
     return {
-        "route": route,
-        "period": "2026-09",
-        "currency": "INR",
-        "curve_points": curve_points
+        'route': route,
+        'period': '2026-09',
+        'currency': 'INR',
+        'data_source': 'canonical_normalized',
+        'total_observations': len(route_obs),
+        'curve_points': curve_points,
     }
 
 
@@ -252,6 +352,131 @@ async def get_observations():
     except Exception as e:
         print(f"Error reading JSON: {e}")
         return []
+
+
+@app.get("/api/v1/matrix")
+async def get_matrix(
+    route: Optional[str] = Query(None, description="Filter by route e.g. DEL-BOM"),
+    lead_time: Optional[str] = Query(None, description="Filter by lead time e.g. T+21"),
+):
+    """
+    Returns per-cell fare statistics for the DGCA CY2024 Top-60 x 6 lead-time matrix.
+    Source: real Google Flights production scrape.
+    """
+    obs_all = load_top60_observations()
+
+    # Group into cells
+    cells: Dict[str, Dict[str, List[float]]] = {}
+    for o in obs_all:
+        fare = float(o.get('total_fare', 0) or 0)
+        if fare <= 0:
+            continue
+        origin = o.get('origin', '')
+        dest = o.get('destination', '')
+        r = f'{origin}-{dest}'
+        days = int(o.get('lead_days', 7) or 7)
+        lt = _lead_class(days)
+
+        if route and r != route:
+            continue
+        if lead_time and lt != lead_time:
+            continue
+
+        cells.setdefault(r, {}).setdefault(lt, []).append(fare)
+
+    lt_order = ['T+1', 'T+7', 'T+15', 'T+21', 'T+30', 'T+45']
+    result = []
+    for r, lt_map in sorted(cells.items()):
+        for lt in lt_order:
+            fares = lt_map.get(lt)
+            if not fares:
+                continue
+            result.append({
+                'route': r,
+                'lead_time': lt,
+                'observation_count': len(fares),
+                'median_fare_inr': round(statistics.median(fares), 2),
+                'mean_fare_inr': round(sum(fares) / len(fares), 2),
+                'geometric_mean_inr': round(_geomean(fares), 2),
+                'min_fare_inr': round(min(fares), 2),
+                'max_fare_inr': round(max(fares), 2),
+                'stddev': round(statistics.stdev(fares), 2) if len(fares) > 1 else 0.0,
+            })
+
+    return {
+        'generated_at': datetime.now(timezone.utc).isoformat(),
+        'source': 'google_flights_top60_production',
+        'total_cells': len(result),
+        'total_observations': sum(c['observation_count'] for c in result),
+        'cells': result,
+    }
+
+
+@app.get("/api/v1/coverage")
+async def get_coverage():
+    """
+    Returns basket-level coverage summary: populated cells, missing cells,
+    route list, DGCA-weighted coverage, observation counts by status.
+    """
+    obs_all = load_top60_observations()
+
+    routes_seen: set = set()
+    cell_set: set = set()
+    total_obs = len(obs_all)
+    obs_with_fare = 0
+
+    for o in obs_all:
+        fare = float(o.get('total_fare', 0) or 0)
+        origin = o.get('origin', '')
+        dest = o.get('destination', '')
+        r = f'{origin}-{dest}'
+        days = int(o.get('lead_days', 7) or 7)
+        lt = _lead_class(days)
+        routes_seen.add(r)
+        if fare > 0:
+            obs_with_fare += 1
+            cell_set.add((r, lt))
+
+    # Also load classification for VALID/DUPLICATE breakdown if available
+    cls_path = os.path.join(ROOT, 'runtime', 'top60_observation_classification.json')
+    valid_count = 0
+    duplicate_count = 0
+    higher_fare_count = 0
+    foreign_transit_count = 0
+    if os.path.exists(cls_path):
+        try:
+            with open(cls_path, 'r', encoding='utf-8') as f:
+                cls_data = json.load(f)
+            cls_obs = cls_data.get('observations', []) if isinstance(cls_data, dict) else cls_data
+            for o in cls_obs:
+                s = o.get('status', '')
+                if s == 'VALID_BASELINE': valid_count += 1
+                elif s == 'DUPLICATE': duplicate_count += 1
+                elif s == 'HIGHER_FARE_FAMILY': higher_fare_count += 1
+                elif s == 'FOREIGN_TRANSIT': foreign_transit_count += 1
+        except Exception:
+            pass
+
+    populated = len(cell_set)
+    total_target = 360  # 60 routes x 6 lead times
+    missing = total_target - populated
+
+    return {
+        'generated_at': datetime.now(timezone.utc).isoformat(),
+        'source': 'google_flights_top60_production',
+        'total_target_cells': total_target,
+        'populated_cells': populated,
+        'missing_cells': missing,
+        'coverage_percent': round(populated / total_target * 100, 2),
+        'routes_with_data': sorted(list(routes_seen)),
+        'routes_with_data_count': len(routes_seen),
+        'total_raw_observations': total_obs,
+        'observations_with_fare': obs_with_fare,
+        'valid_baseline': valid_count,
+        'duplicate': duplicate_count,
+        'higher_fare_family': higher_fare_count,
+        'foreign_transit': foreign_transit_count,
+    }
 
 
 @app.get("/api/v1/backtest")

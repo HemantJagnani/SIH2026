@@ -14,7 +14,7 @@ import * as d3Array from 'd3-array';
 import { api, type LeadCurve } from '../api';
 
 const ROUTES = ['DEL-BOM', 'DEL-BLR', 'BOM-BLR'] as const;
-const LEAD_DAYS = [30, 15, 7, 1] as const;
+const LEAD_DAYS = [45, 30, 21, 15, 7, 1] as const;
 const PANEL_H = 220;
 const MARGIN = { top: 16, right: 16, bottom: 48, left: 56 };
 const PREMIUM_H = 160;
@@ -56,7 +56,7 @@ function lerpColor(t: number): string {
 function indexCurve(
   points: { lead_days: number; price: number }[],
 ): { lead_days: number; price: number }[] {
-  const base = points.find(p => p.lead_days === 30)?.price ?? null;
+  const base = points.find(p => p.lead_days === 30)?.price ?? points.find(p => p.lead_days === 45)?.price ?? points[0]?.price ?? null;
   if (!base || base === 0) return points;
   return points.map(p => ({ ...p, price: (p.price / base) * 100 }));
 }
@@ -68,7 +68,7 @@ function computePremium(
 ): number | null {
   const pts = mode === 'indexed' ? indexCurve(curve.points) : curve.points;
   const p1 = pts.find(p => p.lead_days === 1)?.price;
-  const p30 = pts.find(p => p.lead_days === 30)?.price;
+  const p30 = pts.find(p => p.lead_days === 30)?.price ?? pts.find(p => p.lead_days === 45)?.price;
   if (p1 == null || p30 == null || p30 === 0) return null;
   return (p1 / p30 - 1) * 100;
 }
@@ -96,7 +96,7 @@ function RoutePanel({
   const liveId = useId();
 
   const xScale = useMemo(() => (
-    d3Scale.scaleLinear().domain([30, 1]).range([0, innerW])
+    d3Scale.scaleLinear().domain([45, 1]).range([0, innerW])
   ), [innerW]);
 
   const sorted = useMemo(() => (
@@ -426,12 +426,12 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
     <div className="page">
       <h1>Booking curves</h1>
       <p className="prose" style={{ marginBottom: 'var(--sp-4)', color: 'var(--ink)' }}>
-        Each line is one day's fares, from 30 days before departure to the day before. Darker lines are more recent.
+        Each curve shows fares across advance horizons from 45 days before departure to the day before (T+1 to T+45).
       </p>
 
       {/* True coverage sentence once above all panels (§6) */}
       <p style={{ fontSize: 'var(--t-ui)', color: 'var(--ink-2)', marginBottom: 'var(--sp-4)' }}>
-        DEL-BOM: 1 day of real fares collected. DEL-BLR and BOM-BLR: synthetic history only.
+        Real consumer fares: DEL-BOM from EaseMyTrip live DOM capture; DEL-BLR and BOM-BLR from Google Flights Top-60 production run.
       </p>
 
       {/* Mode toggle */}

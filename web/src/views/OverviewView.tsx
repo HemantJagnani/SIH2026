@@ -1,59 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { api, type APIxIndexResponse, type Run } from '../api';
+import { api, type CoverageResponse } from '../api';
 
 interface OverviewViewProps {
   onNavigate: (tab: 'index' | 'curves' | 'method') => void;
 }
 
-interface RouteStatus {
-  route: string;
-  statusText: string;
-  isLive: boolean;
-}
-
 export default function OverviewView({ onNavigate }: OverviewViewProps) {
-  const [routeStatuses, setRouteStatuses] = useState<RouteStatus[]>([
-    { route: 'DEL-BOM', statusText: 'collecting real fares since 3 October 2026', isLive: true },
-    { route: 'DEL-BLR', statusText: 'not yet collecting — shown with synthetic history', isLive: false },
-    { route: 'BOM-BLR', statusText: 'not yet collecting — shown with synthetic history', isLive: false },
-  ]);
+  const [coverage, setCoverage] = useState<CoverageResponse | null>(null);
+  const [coverageLoading, setCoverageLoading] = useState(true);
 
   useEffect(() => {
-    // Generate route status dynamically from live data
-    Promise.allSettled([api.runs(), api.getAirfareIndex()]).then(([runsRes, idxRes]) => {
-      const liveRoutes = new Set<string>();
-      if (runsRes.status === 'fulfilled' && runsRes.value.length > 0) {
-        liveRoutes.add('DEL-BOM');
-      }
-      if (idxRes.status === 'fulfilled' && idxRes.value.route_indices) {
-        // If other routes have verified live data, they would be marked here
-      }
-
-      setRouteStatuses([
-        {
-          route: 'DEL-BOM',
-          statusText: liveRoutes.has('DEL-BOM')
-            ? 'collecting real fares since 3 October 2026'
-            : 'not yet collecting — shown with synthetic history',
-          isLive: liveRoutes.has('DEL-BOM'),
-        },
-        {
-          route: 'DEL-BLR',
-          statusText: liveRoutes.has('DEL-BLR')
-            ? 'collecting real fares'
-            : 'not yet collecting — shown with synthetic history',
-          isLive: liveRoutes.has('DEL-BLR'),
-        },
-        {
-          route: 'BOM-BLR',
-          statusText: liveRoutes.has('BOM-BLR')
-            ? 'collecting real fares'
-            : 'not yet collecting — shown with synthetic history',
-          isLive: liveRoutes.has('BOM-BLR'),
-        },
-      ]);
-    });
+    api.getCoverage()
+      .then(setCoverage)
+      .catch(() => setCoverage(null))
+      .finally(() => setCoverageLoading(false));
   }, []);
+
+  const routesWithData = coverage?.routes_with_data ?? [];
 
   return (
     <div
@@ -139,42 +102,82 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
             marginBottom: 'var(--sp-3)',
           }}
         >
-          Production Data & Basket Status
+          Production Data &amp; Basket Status
         </h2>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 'var(--sp-2)',
-            fontFamily: "'B612', monospace",
-            fontSize: 'var(--t-ui)',
-          }}
-        >
-          {routeStatuses.map((rs) => (
+        {coverageLoading ? (
+          <p style={{ fontFamily: "'B612', monospace", fontSize: 'var(--t-ui)', color: 'var(--ink-2)' }}>
+            Loading basket coverage...
+          </p>
+        ) : coverage ? (
+          <>
+            {/* Summary stats bar */}
             <div
-              key={rs.route}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '90px 1fr',
-                gap: 'var(--sp-4)',
-                paddingBottom: 'var(--sp-1)',
-                borderBottom: '1px solid var(--contour)',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: 'var(--sp-3)',
+                marginBottom: 'var(--sp-4)',
+                fontFamily: "'B612', monospace",
+                fontSize: 'var(--t-ui)',
               }}
             >
-              <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{rs.route}</span>
-              <span style={{ color: 'var(--ink-2)' }}>{rs.statusText}</span>
+              {[
+                { label: 'Routes scraped', val: `${coverage.routes_with_data_count} / 60` },
+                { label: 'Cells populated', val: `${coverage.populated_cells} / ${coverage.total_target_cells}` },
+                { label: 'Coverage', val: `${coverage.coverage_percent.toFixed(1)}%` },
+                { label: 'Raw observations', val: coverage.total_raw_observations.toLocaleString() },
+              ].map(({ label, val }) => (
+                <div key={label} style={{ borderLeft: '2px solid var(--ink)', paddingLeft: 'var(--sp-3)' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '16px' }}>{val}</div>
+                  <div style={{ color: 'var(--ink-2)', fontSize: '12px', marginTop: '2px' }}>{label}</div>
+                </div>
+              ))}
             </div>
-          ))}
-          <div
-            style={{
-              paddingTop: 'var(--sp-2)',
-              fontSize: '12px',
-              color: 'var(--ink-2)',
-            }}
-          >
-            + 57 additional scheduled routes in the official DGCA Top-60 basket catalogued in the Method section.
-          </div>
-        </div>
+            {/* Route list */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--sp-2)',
+                fontFamily: "'B612', monospace",
+                fontSize: 'var(--t-ui)',
+                maxHeight: '260px',
+                overflowY: 'auto',
+              }}
+            >
+              {routesWithData.map((route) => (
+                <div
+                  key={route}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '90px 1fr',
+                    gap: 'var(--sp-4)',
+                    paddingBottom: 'var(--sp-1)',
+                    borderBottom: '1px solid var(--contour)',
+                  }}
+                >
+                  <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{route}</span>
+                  <span style={{ color: 'var(--ink-2)' }}>real fares collected · Sep 2026 production run</span>
+                </div>
+              ))}
+            </div>
+            {coverage.routes_with_data_count < 60 && (
+              <div
+                style={{
+                  paddingTop: 'var(--sp-2)',
+                  fontSize: '12px',
+                  color: 'var(--ink-2)',
+                }}
+              >
+                + {60 - coverage.routes_with_data_count} additional scheduled routes in the DGCA Top-60 basket.
+              </div>
+            )}
+          </>
+        ) : (
+          <p style={{ fontFamily: "'B612', monospace", fontSize: 'var(--t-ui)', color: 'var(--ink-2)' }}>
+            Backend unavailable — verify API service is active.
+          </p>
+        )}
       </div>
 
       <p
