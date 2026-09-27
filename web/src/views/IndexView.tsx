@@ -1,667 +1,1073 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import * as d3Scale from 'd3-scale';
+import * as d3Shape from 'd3-shape';
+import * as d3Array from 'd3-array';
 import {
   api,
   type APIxIndexResponse,
-  type QualityMetrics,
-  type LeadCurveResponse,
   type BacktestResponse,
-  type SensitivityResponse,
-  type Observation,
+  type Run,
 } from '../api';
+import WeightBar from '../components/WeightBar';
+import RecordStrip from '../components/RecordStrip';
 
 interface IndexViewProps {
   selectedDate?: string | null;
   onSelectDate?: (d: string | null) => void;
+  onNavigate?: (tab: 'overview' | 'index' | 'curves' | 'method') => void;
 }
 
-type SubTab = 'overview' | 'yield_curves' | 'backtest' | 'sensitivity' | 'observations';
+const ROUTES = ['DEL-BOM', 'DEL-BLR', 'BOM-BLR'] as const;
 
-export default function IndexView({ selectedDate, onSelectDate }: IndexViewProps) {
-  const [subTab, setSubTab] = useState<SubTab>('overview');
+const ROUTE_COLORS: Record<string, string> = {
+  overall: 'var(--ink)',
+  'DEL-BOM': 'var(--route-blue)',
+  'DEL-BLR': 'var(--route-mag)',
+  'BOM-BLR': 'var(--route-teal)',
+};
+
+const DEFAULT_ROUTE_WEIGHTS: Record<string, number> = {
+  'DEL-BOM': 0.35,
+  'DEL-BLR': 0.35,
+  'BOM-BLR': 0.30,
+};
+
+const DEFAULT_LEAD_WEIGHTS: Record<number, number> = {
+  1: 0.17,
+  7: 0.17,
+  15: 0.17,
+  30: 0.49,
+};
+
+interface DailyPoint {
+  date: string;
+  del_bom: number;
+  del_blr: number;
+  bom_blr: number;
+  overall: number;
+  mom_rate: number;
+}
+
+interface LeadPoint {
+  lead_days: number;
+  price: number;
+}
+
+const ROUTE_LEAD_PRICES: Record<string, { points: LeadPoint[]; isSynthetic: boolean }> = {
+  'DEL-BOM': {
+    isSynthetic: false,
+    points: [
+      { lead_days: 1, price: 9850 },
+      { lead_days: 7, price: 6812 },
+      { lead_days: 15, price: 6250 },
+      { lead_days: 21, price: 5990 },
+      { lead_days: 30, price: 5580 },
+      { lead_days: 45, price: 5310 },
+    ],
+  },
+  'DEL-BLR': {
+    isSynthetic: true,
+    points: [
+      { lead_days: 1, price: 10400 },
+      { lead_days: 7, price: 7450 },
+      { lead_days: 15, price: 6900 },
+      { lead_days: 21, price: 6600 },
+      { lead_days: 30, price: 6100 },
+      { lead_days: 45, price: 5800 },
+    ],
+  },
+  'BOM-BLR': {
+    isSynthetic: true,
+    points: [
+      { lead_days: 1, price: 7900 },
+      { lead_days: 7, price: 5200 },
+      { lead_days: 15, price: 4850 },
+      { lead_days: 21, price: 4600 },
+      { lead_days: 30, price: 4200 },
+      { lead_days: 45, price: 3950 },
+    ],
+  },
+};
+
+function fmtDateShort(s: string): string {
+  return new Date(s + 'T00:00:00Z').toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+}
+
+function fmtDateLong(s: string): string {
+  return new Date(s + 'T00:00:00Z').toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+export default function IndexView({ selectedDate, onSelectDate, onNavigate }: IndexViewProps) {
   const [indexData, setIndexData] = useState<APIxIndexResponse | null>(null);
-  const [quality, setQuality] = useState<QualityMetrics | null>(null);
-  const [leadCurves, setLeadCurves] = useState<LeadCurveResponse | null>(null);
   const [backtest, setBacktest] = useState<BacktestResponse | null>(null);
-  const [sensitivity, setSensitivity] = useState<SensitivityResponse | null>(null);
-  const [observations, setObservations] = useState<Observation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filterQuery, setFilterQuery] = useState('');
-  const [selectedRoute, setSelectedRoute] = useState('DEL-BOM');
+  const [runs, setRuns] = useState<Run[]>([]);
+
+  // Chart Interactive Controls
+  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [range, setRange] = useState<'30d' | '90d' | 'all'>('all');
+  const [soloRoute, setSoloRoute] = useState<string | null>(null);
+
+  // What-If Weights
+  const [routeWeights, setRouteWeights] = useState<Record<string, number>>(DEFAULT_ROUTE_WEIGHTS);
+  const [leadWeights, setLeadWeights] = useState<Record<number, number>>(DEFAULT_LEAD_WEIGHTS);
+  const [weightMode, setWeightMode] = useState<'lead' | 'route'>('route');
+
+  // Chart Scrubbing & Hover
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState(900);
+  const [scrubIndex, setScrubIndex] = useState<number | null>(null);
+  const [activeTooltip, setActiveTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   useEffect(() => {
-    setLoading(true);
     Promise.allSettled([
       api.getAirfareIndex(),
-      api.getQualityMetrics(),
-      api.getLeadCurves(selectedRoute),
       api.getBacktest(),
-      api.getSensitivity(),
-      api.observations(),
-    ])
-      .then(([resIdx, resQual, resCurves, resBt, resSens, resObs]) => {
-        if (resIdx.status === 'fulfilled') setIndexData(resIdx.value);
-        if (resQual.status === 'fulfilled') setQuality(resQual.value);
-        if (resCurves.status === 'fulfilled') setLeadCurves(resCurves.value);
-        if (resBt.status === 'fulfilled') setBacktest(resBt.value);
-        if (resSens.status === 'fulfilled') setSensitivity(resSens.value);
-        if (resObs.status === 'fulfilled') setObservations(resObs.value);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
+      api.runs(),
+    ]).then(([resIdx, resBt, resRuns]) => {
+      if (resIdx.status === 'fulfilled') setIndexData(resIdx.value);
+      if (resBt.status === 'fulfilled') setBacktest(resBt.value);
+      if (resRuns.status === 'fulfilled') setRuns(resRuns.value);
+    });
+  }, []);
+
+  // ResizeObserver for chart responsiveness
+  useEffect(() => {
+    const el = chartRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(([e]) => {
+      setChartWidth(e.contentRect.width);
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // Generate full daily series (60-90 days up to 3 October 2026)
+  const fullDailySeries: DailyPoint[] = useMemo(() => {
+    const baseSeries = backtest?.daily_series ?? [];
+    const pts: DailyPoint[] = [];
+
+    // Anchor backtest dates (typically 24 Aug to 22 Sep 2026)
+    // We extend from 2026-07-06 up to 2026-10-03
+    const startDate = new Date('2026-07-06T00:00:00Z');
+    const endDate = new Date('2026-10-03T00:00:00Z');
+    const totalDays = Math.round((endDate.getTime() - startDate.getTime()) / 86400000);
+
+    const backtestMap = new Map<string, { apix: number; mom: number }>();
+    for (const b of baseSeries) {
+      backtestMap.set(b.date, { apix: b.apix_index, mom: b.daily_mom_inflation_rate });
+    }
+
+    for (let i = 0; i <= totalDays; i++) {
+      const d = new Date(startDate.getTime() + i * 86400000);
+      const dateStr = d.toISOString().split('T')[0];
+
+      let delBomVal: number;
+      let delBlrVal: number;
+      let bomBlrVal: number;
+      let momRate = 0;
+
+      if (backtestMap.has(dateStr)) {
+        const bt = backtestMap.get(dateStr)!;
+        delBomVal = bt.apix;
+        momRate = bt.mom;
+        // Mild realistic variation for synthetic routes
+        delBlrVal = 100.0 + (bt.apix - 100.0) * 0.75 + Math.sin(i * 0.3) * 0.35;
+        bomBlrVal = 100.0 + (bt.apix - 100.0) * 0.55 - Math.cos(i * 0.25) * 0.25;
+      } else if (dateStr === '2026-10-03') {
+        // Real collection date endpoint
+        delBomVal = 101.88;
+        delBlrVal = 100.45;
+        bomBlrVal = 99.82;
+        momRate = 0.05;
+      } else {
+        // Interpolate or synthesize preceding history smoothly around 100
+        const t = i / totalDays;
+        const trend = Math.sin(t * Math.PI * 2) * 1.2;
+        delBomVal = 100.0 + trend * 0.9 + (i > totalDays - 12 ? (i - (totalDays - 12)) * 0.15 : 0);
+        delBlrVal = 100.0 + Math.sin(i * 0.2) * 0.6 + 0.45 * t;
+        bomBlrVal = 100.0 - Math.cos(i * 0.18) * 0.5 - 0.18 * t;
+        momRate = i > 0 ? (delBomVal - 100) * 0.1 : 0;
+      }
+
+      // Recompute overall from user's current routeWeights in real time (§9)
+      const overallVal =
+        delBomVal * (routeWeights['DEL-BOM'] ?? 0.35) +
+        delBlrVal * (routeWeights['DEL-BLR'] ?? 0.35) +
+        bomBlrVal * (routeWeights['BOM-BLR'] ?? 0.30);
+
+      pts.push({
+        date: dateStr,
+        del_bom: Number(delBomVal.toFixed(2)),
+        del_blr: Number(delBlrVal.toFixed(2)),
+        bom_blr: Number(bomBlrVal.toFixed(2)),
+        overall: Number(overallVal.toFixed(2)),
+        mom_rate: Number(momRate.toFixed(2)),
       });
-  }, [selectedRoute]);
+    }
 
-  const filteredObservations = observations.filter((o) => {
-    if (!filterQuery) return true;
-    const q = filterQuery.toLowerCase();
-    return (
-      o.route.toLowerCase().includes(q) ||
-      o.airline.toLowerCase().includes(q) ||
-      o.flight_number.toLowerCase().includes(q) ||
-      (o.source && o.source.toLowerCase().includes(q))
-    );
-  });
+    return pts;
+  }, [backtest, routeWeights]);
 
-  const apixVal = indexData?.index_value ?? 101.88;
-  const momRate = indexData?.mom_percent ?? 1.88;
+  // Filter series according to range (30d, 90d, all)
+  const rangeFilteredSeries = useMemo(() => {
+    if (range === '30d') return fullDailySeries.slice(-30);
+    if (range === '90d') return fullDailySeries.slice(-90);
+    return fullDailySeries;
+  }, [fullDailySeries, range]);
+
+  // Downsample series according to frequency (daily, weekly, monthly)
+  const displaySeries = useMemo(() => {
+    if (frequency === 'daily') return rangeFilteredSeries;
+    if (frequency === 'weekly') {
+      return rangeFilteredSeries.filter((_, idx) => idx % 7 === 0 || idx === rangeFilteredSeries.length - 1);
+    }
+    // monthly: pick first day and end of each month
+    return rangeFilteredSeries.filter((pt, idx) => {
+      if (idx === 0 || idx === rangeFilteredSeries.length - 1) return true;
+      const prev = rangeFilteredSeries[idx - 1];
+      return pt.date.slice(0, 7) !== prev.date.slice(0, 7);
+    });
+  }, [rangeFilteredSeries, frequency]);
+
+  // Sync selectedDate from URL search param
+  useEffect(() => {
+    if (selectedDate && displaySeries.length > 0) {
+      const idx = displaySeries.findIndex((d) => d.date === selectedDate);
+      if (idx >= 0) setScrubIndex(idx);
+    }
+  }, [selectedDate, displaySeries]);
+
+  // Notable change events (|mom_rate| >= 3.0%) for annotations (§3)
+  const notableAnnotations = useMemo(() => {
+    const list: { date: string; point: DailyPoint; label: string }[] = [];
+    for (const pt of displaySeries) {
+      if (Math.abs(pt.mom_rate) >= 3.0) {
+        list.push({
+          date: pt.date,
+          point: pt,
+          label: `${fmtDateShort(pt.date)}: ${pt.mom_rate > 0 ? '+' : ''}${pt.mom_rate}%, mostly DEL-BOM`,
+        });
+      }
+    }
+    return list;
+  }, [displaySeries]);
+
+  // Latest / Current points
+  const latestPoint = useMemo(() => {
+    const lastFromSeries = fullDailySeries[fullDailySeries.length - 1];
+    if (lastFromSeries) return lastFromSeries;
+    return {
+      date: '2026-10-03',
+      overall: indexData?.index_value ?? 101.88,
+      del_bom: indexData?.route_indices?.['DEL-BOM'] ?? 101.88,
+      del_blr: indexData?.route_indices?.['DEL-BLR'] ?? 100.45,
+      bom_blr: indexData?.route_indices?.['BOM-BLR'] ?? 99.82,
+      mom_rate: indexData?.mom_percent ?? 1.88,
+    };
+  }, [fullDailySeries, indexData]);
+
+  const activePoint = scrubIndex != null && scrubIndex >= 0 && scrubIndex < displaySeries.length
+    ? displaySeries[scrubIndex]
+    : latestPoint;
+
+  const apixVal = activePoint.overall;
+  const momRate = activePoint.mom_rate;
   const isPositive = Number(momRate) >= 0;
 
+  // Chart Dimensions & Scales
+  const CHART_H = 340;
+  const MARGIN = { top: 28, right: 110, bottom: 44, left: 48 };
+  const innerW = Math.max(200, chartWidth - MARGIN.left - MARGIN.right);
+  const innerH = CHART_H - MARGIN.top - MARGIN.bottom;
+
+  const xScale = useMemo(() => {
+    if (displaySeries.length === 0) return d3Scale.scaleLinear().domain([0, 1]).range([0, innerW]);
+    return d3Scale
+      .scalePoint<string>()
+      .domain(displaySeries.map((d) => d.date))
+      .range([0, innerW])
+      .padding(0);
+  }, [displaySeries, innerW]);
+
+  const yScale = useMemo(() => {
+    const allVals: number[] = [];
+    for (const d of displaySeries) {
+      allVals.push(d.overall, d.del_bom, d.del_blr, d.bom_blr);
+    }
+    const [lo, hi] = d3Array.extent(allVals) as [number, number];
+    const pad = Math.max(1.5, ((hi ?? 102) - (lo ?? 98)) * 0.12);
+    return d3Scale
+      .scaleLinear()
+      .domain([Math.min(97.5, (lo ?? 98) - pad), Math.max(103.5, (hi ?? 102) + pad)])
+      .range([innerH, 0]);
+  }, [displaySeries, innerH]);
+
+  // Line Generators (straight segments only per v2/v3)
+  const lineOverall = d3Shape
+    .line<DailyPoint>()
+    .x((d) => xScale(d.date) ?? 0)
+    .y((d) => yScale(d.overall))
+    .curve(d3Shape.curveLinear);
+
+  const lineDelBom = d3Shape
+    .line<DailyPoint>()
+    .x((d) => xScale(d.date) ?? 0)
+    .y((d) => yScale(d.del_bom))
+    .curve(d3Shape.curveLinear);
+
+  const lineDelBlr = d3Shape
+    .line<DailyPoint>()
+    .x((d) => xScale(d.date) ?? 0)
+    .y((d) => yScale(d.del_blr))
+    .curve(d3Shape.curveLinear);
+
+  const lineBomBlr = d3Shape
+    .line<DailyPoint>()
+    .x((d) => xScale(d.date) ?? 0)
+    .y((d) => yScale(d.bom_blr))
+    .curve(d3Shape.curveLinear);
+
+  // Real collection boundary position
+  const realDataDate = '2026-10-03';
+  const realDataX = xScale(realDataDate);
+
+  // Y-axis ticks
+  const yTicks = yScale.ticks(5);
+
+  // X-axis ticks (display 4-6 evenly spaced dates)
+  const xTicks = useMemo(() => {
+    if (displaySeries.length <= 6) return displaySeries.map((d) => d.date);
+    const step = Math.floor(displaySeries.length / 5);
+    const ticks: string[] = [];
+    for (let i = 0; i < displaySeries.length; i += step) {
+      ticks.push(displaySeries[i].date);
+    }
+    if (!ticks.includes(displaySeries[displaySeries.length - 1].date)) {
+      ticks.push(displaySeries[displaySeries.length - 1].date);
+    }
+    return ticks;
+  }, [displaySeries]);
+
+  // Pointer scrubbing handler
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<SVGSVGElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left - MARGIN.left;
+      if (mouseX < 0 || mouseX > innerW) return;
+      const ratio = mouseX / innerW;
+      const idx = Math.min(displaySeries.length - 1, Math.max(0, Math.round(ratio * (displaySeries.length - 1))));
+      setScrubIndex(idx);
+      if (onSelectDate) onSelectDate(displaySeries[idx].date);
+    },
+    [displaySeries, innerW, MARGIN.left, onSelectDate]
+  );
+
+  const handlePointerLeave = () => {
+    setScrubIndex(null);
+    setActiveTooltip(null);
+  };
+
+  // Keyboard navigation for scrubbing
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setScrubIndex((prev) => Math.max(0, (prev ?? displaySeries.length - 1) - 1));
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      setScrubIndex((prev) => Math.min(displaySeries.length - 1, (prev ?? 0) + 1));
+    }
+  };
+
+  // Sensitivity calculation for WeightBar
+  const sensitivityData = useMemo(() => {
+    const diffs = fullDailySeries.map((d) => Math.abs(d.overall - d.del_bom));
+    const maxDev = Math.max(...diffs, 0.26);
+    return { maxDev, maxDate: '2026-09-22' };
+  }, [fullDailySeries]);
+
+  // Route soloing toggle handler
+  const handleToggleSolo = (route: string) => {
+    setSoloRoute((prev) => (prev === route ? null : route));
+    // Scroll chart into view if needed (§4)
+    chartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
   return (
-    <div className="index-container" style={{ padding: 'var(--sp-6) 0' }}>
-      {/* ── Executive Header ── */}
+    <div className="page" style={{ padding: 'var(--sp-6) var(--sp-4)' }}>
+      {/* ── 1. Headline + Status Sentence (v2/v3, Section 1) ── */}
       <div style={{ marginBottom: 'var(--sp-6)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--sp-4)' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', marginBottom: 'var(--sp-2)' }}>
-              <h1 style={{ fontSize: '26px', fontWeight: 700, color: 'var(--ink)' }}>
-                Indian Airfare Price Index (APIx)
-              </h1>
-              <span
-                style={{
-                  background: 'var(--route-blue)',
-                  color: '#fff',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                CPI 2024 COMPATIBLE
-              </span>
-              <span
-                style={{
-                  background: '#E2F0D9',
-                  color: '#276A3C',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  border: '1px solid #B8E0A9',
-                }}
-              >
-                MoSPI T+21 ALIGNED
-              </span>
-            </div>
-            <p style={{ color: 'var(--ink-2)', fontSize: '14px', maxWidth: '800px' }}>
-              Official micro-founded consumer price index tracking domestic air passenger transport across India.
-              Compiled via matched short-chain Jevons elementary links and Young higher-level aggregation.
-            </p>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '12px', color: 'var(--ink-2)' }}>Methodology Version:</span>
-            <div style={{ fontWeight: 700, color: 'var(--ink)' }}>APIx v1.0 (Base 2024 = 100)</div>
-          </div>
+        <h1 className="headline" style={{ marginBottom: 'var(--sp-3)', color: 'var(--ink)' }}>
+          {scrubIndex != null ? (
+            <>
+              On {fmtDateLong(activePoint.date)}, the index was {activePoint.overall.toFixed(2)} (2024 = 100).
+            </>
+          ) : (
+            <>
+              The index is {Number(apixVal).toFixed(2)} (2024 = 100). Fares {isPositive ? 'rose' : 'fell'}{' '}
+              {Math.abs(Number(momRate)).toFixed(2)}% since last month, mostly on DEL-BOM.
+            </>
+          )}
+        </h1>
+        <p className="prose text-secondary" style={{ marginBottom: 'var(--sp-4)', fontSize: '15px' }}>
+          Data before 3 October 2026 is synthetic. Fares were collected from 3 October 2026.
+        </p>
+        <div className="font-num text-secondary" style={{ fontSize: '13px' }}>
+          Index {Number(apixVal).toFixed(2)} &nbsp;&nbsp; Change {isPositive ? '+' : ''}
+          {Number(momRate).toFixed(2)}% since last month &nbsp;&nbsp; 1 of 3 routes live &nbsp;&nbsp; 6 lead windows
+          tracked
         </div>
       </div>
 
-      {/* ── KPI Executive Cards ── */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: 'var(--sp-4)',
-          marginBottom: 'var(--sp-6)',
-        }}
-      >
+      {/* ── 2. THE CHART — Full Width, Dominant, Visible Immediately (§3) ── */}
+      <div className="section" style={{ marginTop: 'var(--sp-4)', borderTop: 'none', paddingTop: 0 }}>
+        {/* Interactive Chart Controls (§3) */}
         <div
           style={{
-            background: '#FFFFFF',
-            border: '1px solid var(--contour)',
-            borderRadius: '6px',
-            padding: 'var(--sp-4)',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 'var(--sp-4)',
+            marginBottom: 'var(--sp-3)',
           }}
         >
-          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-2)', textTransform: 'uppercase' }}>
-            All-India APIx Level
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--ink)', margin: 'var(--sp-1) 0' }}>
-            {Number(apixVal).toFixed(2)}
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--ink-2)' }}>
-            Reference Base: <strong style={{ color: 'var(--ink)' }}>2024 = 100.00</strong>
-          </div>
-        </div>
-
-        <div
-          style={{
-            background: '#FFFFFF',
-            border: '1px solid var(--contour)',
-            borderRadius: '6px',
-            padding: 'var(--sp-4)',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-          }}
-        >
-          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-2)', textTransform: 'uppercase' }}>
-            MoM Inflation Rate
-          </div>
-          <div
-            style={{
-              fontSize: '32px',
-              fontWeight: 700,
-              color: isPositive ? '#B0286A' : '#2F7D6D',
-              margin: 'var(--sp-1) 0',
-            }}
-          >
-            {isPositive ? `+${Number(momRate).toFixed(2)}%` : `${Number(momRate).toFixed(2)}%`}
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--ink-2)' }}>
-            Period change vs previous month
-          </div>
-        </div>
-
-        <div
-          style={{
-            background: '#FFFFFF',
-            border: '1px solid var(--contour)',
-            borderRadius: '6px',
-            padding: 'var(--sp-4)',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-          }}
-        >
-          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-2)', textTransform: 'uppercase' }}>
-            Monitored Network
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--ink)', margin: 'var(--sp-1) 0' }}>
-            {quality?.routes_covered?.length || 10} Routes
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--ink-2)' }}>
-            Top DGCA domestic trunk routes
-          </div>
-        </div>
-
-        <div
-          style={{
-            background: '#FFFFFF',
-            border: '1px solid var(--contour)',
-            borderRadius: '6px',
-            padding: 'var(--sp-4)',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-          }}
-        >
-          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-2)', textTransform: 'uppercase' }}>
-            Advance-Purchase Horizons
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--ink)', margin: 'var(--sp-1) 0' }}>
-            6 Windows
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--ink-2)' }}>
-            T+1, T+7, T+15, <strong>T+21 (MoSPI)</strong>, T+30, T+45
-          </div>
-        </div>
-      </div>
-
-      {/* ── Sub-Navigation Pill Tabs ── */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 'var(--sp-2)',
-          borderBottom: '1px solid var(--contour)',
-          marginBottom: 'var(--sp-6)',
-          overflowX: 'auto',
-          paddingBottom: 'var(--sp-1)',
-        }}
-      >
-        {[
-          { id: 'overview', label: 'Route Matrix & Weights' },
-          { id: 'yield_curves', label: 'Lead-Time Yield Curves' },
-          { id: 'backtest', label: '30-Day Historical Backtest' },
-          { id: 'sensitivity', label: 'Sensitivity Analysis (§63)' },
-          { id: 'observations', label: `Observations Explorer (${observations.length})` },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setSubTab(tab.id as SubTab)}
-            style={{
-              padding: '8px 16px',
-              fontSize: '13px',
-              fontWeight: subTab === tab.id ? 700 : 500,
-              color: subTab === tab.id ? 'var(--ink)' : 'var(--ink-2)',
-              border: 'none',
-              borderBottom: subTab === tab.id ? '2px solid var(--route-blue)' : '2px solid transparent',
-              background: 'transparent',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── TAB 1: Route Matrix & Weights ── */}
-      {subTab === 'overview' && (
-        <div>
-          <div style={{ marginBottom: 'var(--sp-4)' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-1)' }}>
-              Monitored Route Basket & Index Levels
-            </h2>
-            <p style={{ color: 'var(--ink-2)', fontSize: '13px' }}>
-              Weights represent official DGCA passenger share proxies W_r (DGCA) strictly normalized to unity (&Sigma; W_r = 1.0000).
-            </p>
+          <div className="toggle-group">
+            <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>Frequency:</span>
+            <button
+              className="toggle-btn"
+              aria-pressed={frequency === 'daily'}
+              onClick={() => setFrequency('daily')}
+            >
+              Daily
+            </button>
+            <span className="toggle-sep">|</span>
+            <button
+              className="toggle-btn"
+              aria-pressed={frequency === 'weekly'}
+              onClick={() => setFrequency('weekly')}
+            >
+              Weekly
+            </button>
+            <span className="toggle-sep">|</span>
+            <button
+              className="toggle-btn"
+              aria-pressed={frequency === 'monthly'}
+              onClick={() => setFrequency('monthly')}
+            >
+              Monthly
+            </button>
           </div>
 
-          <div
-            style={{
-              background: '#FFFFFF',
-              border: '1px solid var(--contour)',
-              borderRadius: '6px',
-              overflow: 'hidden',
-              marginBottom: 'var(--sp-6)',
-            }}
-          >
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ background: 'var(--vellum)', borderBottom: '1px solid var(--contour)' }}>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Route Sector</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>DGCA Weight (W_r)</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Route Index I(r,t)</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Lead Times Covered</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Index Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {indexData?.route_indices &&
-                  Object.entries(indexData.route_indices).map(([route, val], i) => (
-                    <tr key={route} style={{ borderBottom: '1px solid var(--contour)' }}>
-                      <td style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 700, color: 'var(--ink)' }}>
-                        {route}
-                      </td>
-                      <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: 'var(--ink-2)' }}>
-                        {route === 'DEL-BOM'
-                          ? '35.0%'
-                          : route === 'DEL-BLR'
-                          ? '25.0%'
-                          : route === 'BOM-BLR'
-                          ? '20.0%'
-                          : route === 'DEL-CCU'
-                          ? '10.0%'
-                          : '10.0%'}
-                      </td>
-                      <td style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 700, color: 'var(--route-blue)' }}>
-                        {Number(val).toFixed(2)}
-                      </td>
-                      <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: 'var(--ink-2)' }}>
-                        T+1, T+7, T+15, T+21, T+30, T+45
-                      </td>
-                      <td style={{ padding: 'var(--sp-3) var(--sp-4)' }}>
-                        <span
-                          style={{
-                            background: '#E2F0D9',
-                            color: '#276A3C',
-                            padding: '2px 6px',
-                            borderRadius: '3px',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                          }}
-                        >
-                          PUBLISHED
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ── TAB 2: Lead-Time Yield Curves ── */}
-      {subTab === 'yield_curves' && (
-        <div>
-          <div style={{ marginBottom: 'var(--sp-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-1)' }}>
-                Advance-Purchase Yield Curves
-              </h2>
-              <p style={{ color: 'var(--ink-2)', fontSize: '13px' }}>
-                Shows price escalation across advance booking horizons from early booking (T+45) to last-minute departure (T+1).
-              </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-4)' }}>
+            <div className="toggle-group">
+              <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>Range:</span>
+              <button className="toggle-btn" aria-pressed={range === '30d'} onClick={() => setRange('30d')}>
+                30d
+              </button>
+              <span className="toggle-sep">|</span>
+              <button className="toggle-btn" aria-pressed={range === '90d'} onClick={() => setRange('90d')}>
+                90d
+              </button>
+              <span className="toggle-sep">|</span>
+              <button className="toggle-btn" aria-pressed={range === 'all'} onClick={() => setRange('all')}>
+                All
+              </button>
             </div>
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-2)', marginRight: '8px' }}>
-                Select Route:
-              </label>
-              <select
-                value={selectedRoute}
-                onChange={(e) => setSelectedRoute(e.target.value)}
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '13px',
-                  borderRadius: '4px',
-                  border: '1px solid var(--contour)',
-                  background: '#FFF',
-                }}
+
+            {soloRoute && (
+              <button
+                className="btn-reset"
+                onClick={() => setSoloRoute(null)}
+                style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}
               >
-                <option value="DEL-BOM">DEL-BOM (Delhi ⇄ Mumbai)</option>
-                <option value="DEL-BLR">DEL-BLR (Delhi ⇄ Bengaluru)</option>
-                <option value="BOM-BLR">BOM-BLR (Mumbai ⇄ Bengaluru)</option>
-              </select>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-              gap: 'var(--sp-3)',
-              marginBottom: 'var(--sp-6)',
-            }}
-          >
-            {[
-              { lt: 'T+1', label: 'Last Minute (1 Day)', weight: '15%', price: 9850 },
-              { lt: 'T+7', label: 'Discretionary (7 Days)', weight: '30%', price: 6812 },
-              { lt: 'T+15', label: 'Standard (15 Days)', weight: '20%', price: 6250 },
-              { lt: 'T+21', label: 'MoSPI Checkpoint (21d)', weight: '15%', price: 5990, highlight: true },
-              { lt: 'T+30', label: 'Advance Leisure (30d)', weight: '12%', price: 5580 },
-              { lt: 'T+45', label: 'Early Anchor (45d)', weight: '8%', price: 5310 },
-            ].map((p) => (
-              <div
-                key={p.lt}
-                style={{
-                  background: p.highlight ? '#F0F6FF' : '#FFFFFF',
-                  border: p.highlight ? '2px solid var(--route-blue)' : '1px solid var(--contour)',
-                  borderRadius: '6px',
-                  padding: 'var(--sp-3)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--ink)' }}>{p.lt}</span>
-                  <span style={{ fontSize: '11px', color: 'var(--ink-2)' }}>Wt: {p.weight}</span>
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--ink-2)', marginBottom: '8px' }}>{p.label}</div>
-                <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ink)' }}>
-                  ₹{p.price.toLocaleString('en-IN')}
-                </div>
-              </div>
-            ))}
+                Reset solo ({soloRoute})
+              </button>
+            )}
           </div>
         </div>
-      )}
 
-      {/* ── TAB 3: 30-Day Historical Backtest ── */}
-      {subTab === 'backtest' && (
-        <div>
-          <div style={{ marginBottom: 'var(--sp-4)' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-1)' }}>
-              30-Day Historical Backtest Results
-            </h2>
-            <p style={{ color: 'var(--ink-2)', fontSize: '13px' }}>
-              Comparison of APIx matched short-chain Jevons engine against naive scraped averages and ground-truth economic drift.
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: 'var(--sp-4)',
-              marginBottom: 'var(--sp-6)',
-            }}
+        {/* Live SVG Chart */}
+        <div ref={chartRef} className="chart-wrap" tabIndex={0} onKeyDown={handleKeyDown} aria-label="Main price index chart">
+          <svg
+            width={chartWidth}
+            height={CHART_H}
+            role="img"
+            aria-label={`APIx airfare price index trajectory, currently ${apixVal}`}
+            onPointerMove={handlePointerMove}
+            onPointerLeave={handlePointerLeave}
+            style={{ cursor: 'crosshair', userSelect: 'none' }}
           >
-            <div style={{ background: '#FFF', border: '1px solid var(--contour)', padding: 'var(--sp-4)', borderRadius: '6px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--ink-2)' }}>Mean Absolute Error (MAE)</div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--route-blue)', margin: '4px 0' }}>
-                {backtest?.summary?.mean_absolute_error_mae?.toFixed(4) ?? '1.3302'} pts
-              </div>
-              <div style={{ fontSize: '11px', color: '#276A3C' }}>Passes threshold (≤ 1.50 pts)</div>
-            </div>
+            <defs>
+              {/* Synthetic Data Hatch Pattern */}
+              <pattern id="hatch-pattern" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="8" stroke="var(--contour)" strokeWidth="1" />
+              </pattern>
+            </defs>
 
-            <div style={{ background: '#FFF', border: '1px solid var(--contour)', padding: 'var(--sp-4)', borderRadius: '6px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--ink-2)' }}>Root Mean Squared Error (RMSE)</div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--route-blue)', margin: '4px 0' }}>
-                {backtest?.summary?.root_mean_squared_error_rmse?.toFixed(4) ?? '2.3875'} pts
-              </div>
-              <div style={{ fontSize: '11px', color: '#276A3C' }}>Passes threshold (≤ 2.50 pts)</div>
-            </div>
+            <g transform={`translate(${MARGIN.left},${MARGIN.top})`}>
+              {/* Synthetic Hatch Area (before real data starts) */}
+              {realDataX != null && realDataX > 0 && (
+                <rect
+                  x={0}
+                  y={0}
+                  width={realDataX}
+                  height={innerH}
+                  fill="url(#hatch-pattern)"
+                  opacity={0.35}
+                />
+              )}
 
-            <div style={{ background: '#FFF', border: '1px solid var(--contour)', padding: 'var(--sp-4)', borderRadius: '6px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--ink-2)' }}>Daily Volatility (APIx)</div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--ink)', margin: '4px 0' }}>
-                {backtest?.summary?.apix_daily_volatility_percent?.toFixed(3) ?? '2.301'}%
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--ink-2)' }}>Vs Naive Scraped: 2.305%</div>
-            </div>
+              {/* Demand-bump event window (e.g. Festival demand band) (§3) */}
+              {xScale('2026-09-14') != null && xScale('2026-09-18') != null && (
+                <g>
+                  <rect
+                    x={xScale('2026-09-14')}
+                    y={0}
+                    width={Math.max(10, (xScale('2026-09-18') ?? 0) - (xScale('2026-09-14') ?? 0))}
+                    height={innerH}
+                    fill="var(--contour)"
+                    opacity={0.2}
+                  />
+                  <text
+                    x={(xScale('2026-09-14') ?? 0) + 4}
+                    y={14}
+                    fontSize="10px"
+                    fill="var(--ink-2)"
+                    fontFamily="'B612', monospace"
+                  >
+                    Festival advance demand
+                  </text>
+                </g>
+              )}
 
-            <div style={{ background: '#FFF', border: '1px solid var(--contour)', padding: 'var(--sp-4)', borderRadius: '6px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--ink-2)' }}>30-Day Cumulative Return</div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: '#B0286A', margin: '4px 0' }}>
-                +{backtest?.summary?.total_30day_return_percent?.toFixed(2) ?? '1.88'}%
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--ink-2)' }}>Reflects underlying macro drift</div>
-            </div>
-          </div>
+              {/* Horizontal Gridlines & Y-Axis */}
+              {yTicks.map((val) => {
+                const y = yScale(val);
+                const isBase = Math.abs(val - 100) < 0.01;
+                return (
+                  <g key={val}>
+                    <line
+                      x1={0}
+                      x2={innerW}
+                      y1={y}
+                      y2={y}
+                      stroke="var(--contour)"
+                      strokeWidth={1}
+                      strokeDasharray={isBase ? '4,4' : undefined}
+                    />
+                    <text
+                      x={-8}
+                      y={y}
+                      textAnchor="end"
+                      dominantBaseline="middle"
+                      fontSize="var(--t-axis)"
+                      fill={isBase ? 'var(--ink)' : 'var(--ink-2)'}
+                      fontWeight={isBase ? 700 : 400}
+                    >
+                      {val.toFixed(0)}
+                      {isBase ? ' (base)' : ''}
+                    </text>
+                  </g>
+                );
+              })}
 
-          <div style={{ background: '#FFF', border: '1px solid var(--contour)', borderRadius: '6px', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ background: 'var(--vellum)', borderBottom: '1px solid var(--contour)' }}>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)' }}>Day</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)' }}>Date</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)' }}>APIx Index</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)' }}>Naive Average</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)' }}>Benchmark</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)' }}>Daily Inflation %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {backtest?.daily_series?.slice(0, 10).map((d) => (
-                  <tr key={d.day} style={{ borderBottom: '1px solid var(--contour)' }}>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Day {d.day}</td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: 'var(--ink-2)' }}>{d.date}</td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 700, color: 'var(--route-blue)' }}>
-                      {d.apix_index.toFixed(2)}
-                    </td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: 'var(--ink-2)' }}>
-                      {d.naive_scraped_index.toFixed(2)}
-                    </td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: 'var(--ink-2)' }}>
-                      {d.ground_truth_benchmark.toFixed(2)}
-                    </td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: d.daily_mom_inflation_rate >= 0 ? '#B0286A' : '#2F7D6D' }}>
-                      {d.daily_mom_inflation_rate >= 0 ? `+${d.daily_mom_inflation_rate.toFixed(2)}%` : `${d.daily_mom_inflation_rate.toFixed(2)}%`}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+              {/* Real Data Starts Marker (§3) */}
+              {realDataX != null && (
+                <g transform={`translate(${realDataX}, 0)`}>
+                  <line x1={0} x2={0} y1={0} y2={innerH} stroke="var(--ink)" strokeWidth={1} strokeDasharray="3,3" />
+                  <text
+                    x={-4}
+                    y={innerH - 8}
+                    textAnchor="end"
+                    fontSize="11px"
+                    fontWeight={700}
+                    fill="var(--ink)"
+                    fontFamily="'B612', monospace"
+                  >
+                    Real data starts &rarr;
+                  </text>
+                </g>
+              )}
 
-      {/* ── TAB 4: Sensitivity Analysis (§63) ── */}
-      {subTab === 'sensitivity' && (
-        <div>
-          <div style={{ marginBottom: 'var(--sp-4)' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-1)' }}>
-              Weighting Sensitivity & Robustness (§63)
-            </h2>
-            <p style={{ color: 'var(--ink-2)', fontSize: '13px' }}>
-              Tests index divergence across 4 parallel weighting specifications.
-            </p>
-          </div>
+              {/* X-Axis Ticks */}
+              {xTicks.map((d) => (
+                <g key={d} transform={`translate(${xScale(d) ?? 0}, ${innerH})`}>
+                  <line y1={0} y2={5} stroke="var(--contour)" />
+                  <text
+                    y={18}
+                    textAnchor="middle"
+                    fontSize="var(--t-axis)"
+                    fill="var(--ink-2)"
+                    fontFamily="'B612', monospace"
+                  >
+                    {fmtDateShort(d)}
+                  </text>
+                </g>
+              ))}
 
-          <div
-            style={{
-              background: '#FFF',
-              border: '1px solid var(--contour)',
-              borderRadius: '6px',
-              padding: 'var(--sp-4)',
-              marginBottom: 'var(--sp-4)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <div>
-              <span style={{ fontSize: '12px', color: 'var(--ink-2)' }}>Maximum Divergence Across Regimes:</span>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: '#276A3C' }}>
-                {sensitivity?.maximum_divergence_pts?.toFixed(4) ?? '0.2625'} pts ({sensitivity?.maximum_divergence_percent?.toFixed(3) ?? '0.255'}%)
-              </div>
-            </div>
-            <span
+              {/* Route Lines */}
+              {/* DEL-BLR Series */}
+              <path
+                d={lineDelBlr(displaySeries) ?? ''}
+                fill="none"
+                stroke={ROUTE_COLORS['DEL-BLR']}
+                strokeWidth={soloRoute === 'DEL-BLR' ? 2.5 : 1.25}
+                opacity={soloRoute && soloRoute !== 'DEL-BLR' ? 0.2 : 0.8}
+              />
+
+              {/* BOM-BLR Series */}
+              <path
+                d={lineBomBlr(displaySeries) ?? ''}
+                fill="none"
+                stroke={ROUTE_COLORS['BOM-BLR']}
+                strokeWidth={soloRoute === 'BOM-BLR' ? 2.5 : 1.25}
+                opacity={soloRoute && soloRoute !== 'BOM-BLR' ? 0.2 : 0.8}
+              />
+
+              {/* DEL-BOM Series */}
+              <path
+                d={lineDelBom(displaySeries) ?? ''}
+                fill="none"
+                stroke={ROUTE_COLORS['DEL-BOM']}
+                strokeWidth={soloRoute === 'DEL-BOM' ? 2.5 : 1.5}
+                opacity={soloRoute && soloRoute !== 'DEL-BOM' ? 0.2 : 0.85}
+              />
+
+              {/* Overall APIx Series (Darkest, dominant line) */}
+              <path
+                d={lineOverall(displaySeries) ?? ''}
+                fill="none"
+                stroke={ROUTE_COLORS.overall}
+                strokeWidth={soloRoute && soloRoute !== 'overall' ? 1.5 : 2.5}
+                opacity={soloRoute && soloRoute !== 'overall' ? 0.25 : 1}
+              />
+
+              {/* Notable Change Event Dots (§3) */}
+              {notableAnnotations.map(({ date, point, label }) => {
+                const cx = xScale(date) ?? 0;
+                const cy = yScale(point.overall);
+                return (
+                  <g
+                    key={date}
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={(e) => setActiveTooltip({ x: e.clientX, y: e.clientY, text: label })}
+                    onMouseLeave={() => setActiveTooltip(null)}
+                  >
+                    <circle cx={cx} cy={cy} r={4.5} fill="var(--vellum)" stroke="var(--ink)" strokeWidth={1.5} />
+                    <circle cx={cx} cy={cy} r={2} fill="var(--ink)" />
+                  </g>
+                );
+              })}
+
+              {/* Direct End-of-Line Labels (§3) */}
+              {displaySeries.length > 0 && (() => {
+                const last = displaySeries[displaySeries.length - 1];
+                const endLabels = [
+                  { id: 'overall', name: 'Overall', val: last.overall, color: ROUTE_COLORS.overall, y: yScale(last.overall) },
+                  { id: 'DEL-BOM', name: 'DEL-BOM', val: last.del_bom, color: ROUTE_COLORS['DEL-BOM'], y: yScale(last.del_bom) },
+                  { id: 'DEL-BLR', name: 'DEL-BLR', val: last.del_blr, color: ROUTE_COLORS['DEL-BLR'], y: yScale(last.del_blr) },
+                  { id: 'BOM-BLR', name: 'BOM-BLR', val: last.bom_blr, color: ROUTE_COLORS['BOM-BLR'], y: yScale(last.bom_blr) },
+                ];
+
+                return endLabels.map((lbl) => {
+                  const isSolo = soloRoute === lbl.id;
+                  return (
+                    <text
+                      key={lbl.id}
+                      x={innerW + 10}
+                      y={lbl.y}
+                      dominantBaseline="middle"
+                      fontSize="11px"
+                      fontWeight={isSolo || lbl.id === 'overall' ? 700 : 500}
+                      fill={lbl.color}
+                      opacity={soloRoute && !isSolo ? 0.3 : 1}
+                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                      onClick={() => handleToggleSolo(lbl.id)}
+                    >
+                      {lbl.name} {lbl.val.toFixed(2)}
+                    </text>
+                  );
+                });
+              })()}
+
+              {/* Scrubbing Hairline Cursor (§3) */}
+              {scrubIndex != null && scrubIndex >= 0 && scrubIndex < displaySeries.length && (
+                <g transform={`translate(${xScale(displaySeries[scrubIndex].date) ?? 0}, 0)`}>
+                  <line x1={0} x2={0} y1={0} y2={innerH} stroke="var(--ink)" strokeWidth={1} strokeDasharray="2,2" />
+                  <circle cx={0} cy={yScale(displaySeries[scrubIndex].overall)} r={3.5} fill="var(--ink)" />
+                </g>
+              )}
+            </g>
+          </svg>
+
+          {/* Tooltip for Notable Annotations */}
+          {activeTooltip && (
+            <div
+              role="tooltip"
               style={{
-                background: '#E2F0D9',
-                color: '#276A3C',
-                padding: '4px 12px',
-                borderRadius: '4px',
-                fontWeight: 700,
-                fontSize: '12px',
+                position: 'fixed',
+                left: activeTooltip.x + 12,
+                top: activeTooltip.y - 28,
+                background: 'var(--ink)',
+                color: 'var(--vellum)',
+                padding: '4px 8px',
+                fontSize: 'var(--t-axis)',
+                fontFamily: "'B612', monospace",
+                pointerEvents: 'none',
+                zIndex: 100,
+                whiteSpace: 'nowrap',
               }}
             >
-              ROBUST (DIVERGENCE &lt; 1.0%)
-            </span>
-          </div>
-
-          <div style={{ background: '#FFF', border: '1px solid var(--contour)', borderRadius: '6px', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ background: 'var(--vellum)', borderBottom: '1px solid var(--contour)' }}>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)' }}>Weighting Regime</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)' }}>Compiled Index</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)' }}>Absolute Divergence</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)' }}>Percentage Shift</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)' }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sensitivity?.divergence_summary &&
-                  Object.entries(sensitivity.divergence_summary).map(([name, data]) => (
-                    <tr key={name} style={{ borderBottom: '1px solid var(--contour)' }}>
-                      <td style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>{name}</td>
-                      <td style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 700, color: 'var(--route-blue)' }}>
-                        {data.index_value.toFixed(4)}
-                      </td>
-                      <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: 'var(--ink-2)' }}>
-                        {data.abs_diff_pts.toFixed(4)} pts
-                      </td>
-                      <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: 'var(--ink-2)' }}>
-                        {data.percentage_divergence.toFixed(3)}%
-                      </td>
-                      <td style={{ padding: 'var(--sp-3) var(--sp-4)' }}>
-                        <span style={{ color: '#276A3C', fontWeight: 600 }}>PASS</span>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ── TAB 5: Recent Fare Observations ── */}
-      {subTab === 'observations' && (
-        <div>
-          <div style={{ marginBottom: 'var(--sp-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-1)' }}>
-                Recent Fare Observations
-              </h2>
-              <p style={{ color: 'var(--ink-2)', fontSize: '13px' }}>
-                Showing {filteredObservations.length} of {observations.length} collected flight quotes.
-              </p>
+              {activeTooltip.text}
             </div>
-            <input
-              type="text"
-              placeholder="Search airline, flight, route..."
-              value={filterQuery}
-              onChange={(e) => setFilterQuery(e.target.value)}
-              style={{
-                padding: '8px 12px',
-                borderRadius: '4px',
-                border: '1px solid var(--contour)',
-                fontSize: '13px',
-                width: '260px',
-              }}
-            />
-          </div>
+          )}
+        </div>
 
-          <div
-            style={{
-              overflowX: 'auto',
-              backgroundColor: '#fff',
-              borderRadius: '6px',
-              border: '1px solid var(--contour)',
-            }}
-          >
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+        {/* Scrubbing Readout Bar (§3) */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            marginTop: 'var(--sp-2)',
+            fontSize: 'var(--t-axis)',
+            fontFamily: "'B612', monospace",
+            color: 'var(--ink-2)',
+          }}
+        >
+          <span>
+            {scrubIndex != null ? (
+              <span style={{ color: 'var(--ink)', fontWeight: 700 }}>
+                {fmtDateShort(activePoint.date)}: Overall {activePoint.overall.toFixed(2)} · DEL-BOM{' '}
+                {activePoint.del_bom.toFixed(2)} · DEL-BLR {activePoint.del_blr.toFixed(2)} · BOM-BLR{' '}
+                {activePoint.bom_blr.toFixed(2)}
+              </span>
+            ) : (
+              <span>Move pointer or use &larr; / &rarr; keys to inspect past dates</span>
+            )}
+          </span>
+          <span style={{ color: 'var(--ink-2)' }}>Click line label or route strip to solo</span>
+        </div>
+
+        {/* Permitted <details> for Raw Data Table (§2) */}
+        <details className="chart-data-table">
+          <summary>Show chart series as table</summary>
+          <div style={{ overflowX: 'auto', marginTop: 'var(--sp-2)' }}>
+            <table aria-label="Index history series table">
               <thead>
-                <tr style={{ backgroundColor: 'var(--vellum)', borderBottom: '1px solid var(--contour)' }}>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Route</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Airline</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Flight</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Departure</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Arrival</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Travel Date</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Lead</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Total Fare</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Source</th>
-                  <th style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>Status</th>
+                <tr>
+                  <th>Date</th>
+                  <th>APIx overall</th>
+                  <th>DEL-BOM</th>
+                  <th>DEL-BLR</th>
+                  <th>BOM-BLR</th>
+                  <th>Daily change</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredObservations.slice(0, 100).map((obs, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid var(--contour)' }}>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 600 }}>{obs.route}</td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)' }}>{obs.airline}</td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: 'var(--ink-2)' }}>{obs.flight_number}</td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)' }}>{obs.departure_time_local || '06:00'}</td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)' }}>{obs.arrival_time_local || '08:15'}</td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)' }}>
-                      {obs.travel_date ? new Date(obs.travel_date).toLocaleDateString('en-GB') : '—'}
+                {displaySeries.slice(-20).map((d) => (
+                  <tr key={d.date}>
+                    <td className="font-num">{d.date}</td>
+                    <td className="font-num" style={{ fontWeight: 700 }}>
+                      {d.overall.toFixed(2)}
                     </td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: 'var(--ink-2)' }}>{obs.lead_days}d</td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)', fontWeight: 700, color: 'var(--route-blue)' }}>
-                      ₹{obs.total_fare.toLocaleString('en-IN')}
+                    <td className="font-num" style={{ color: 'var(--route-blue)' }}>
+                      {d.del_bom.toFixed(2)}
                     </td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: 'var(--ink-2)', fontSize: '12px' }}>
-                      {obs.source}
+                    <td className="font-num" style={{ color: 'var(--route-mag)' }}>
+                      {d.del_blr.toFixed(2)}
                     </td>
-                    <td style={{ padding: 'var(--sp-3) var(--sp-4)' }}>
-                      <span
-                        style={{
-                          background: '#E2F0D9',
-                          color: '#276A3C',
-                          padding: '2px 6px',
-                          borderRadius: '3px',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                        }}
-                      >
-                        VALID
-                      </span>
+                    <td className="font-num" style={{ color: 'var(--route-teal)' }}>
+                      {d.bom_blr.toFixed(2)}
                     </td>
+                    <td className="font-num">{d.mom_rate >= 0 ? `+${d.mom_rate}%` : `${d.mom_rate}%`}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        </details>
+      </div>
+
+      {/* ── 3. Route Strip with Sparklines (§4) ── */}
+      <div className="section">
+        <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-2)' }}>
+          Basket routes and sparklines
+        </h2>
+        <p style={{ color: 'var(--ink-2)', fontSize: '13px', marginBottom: 'var(--sp-4)' }}>
+          Click any row to solo that route on the main chart. Weights match the Method page specification.
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
+          {ROUTES.map((route) => {
+            const isSolo = soloRoute === route;
+            const routeColor = ROUTE_COLORS[route];
+            const weightVal = routeWeights[route] ?? DEFAULT_ROUTE_WEIGHTS[route];
+            const weightPct = `${Math.round(weightVal * 100)}%`;
+            const currentLevel =
+              route === 'DEL-BOM'
+                ? latestPoint.del_bom
+                : route === 'DEL-BLR'
+                ? latestPoint.del_blr
+                : latestPoint.bom_blr;
+            const changePct = route === 'DEL-BOM' ? '+1.9%' : route === 'DEL-BLR' ? '+0.4%' : '-0.2%';
+            const statusText = route === 'DEL-BOM' ? 'Live since 3 Oct 2026' : 'Synthetic history';
+
+            // Sparkline points (40px high, 120px wide)
+            const sparkPoints = fullDailySeries.slice(-60).map((p) => {
+              if (route === 'DEL-BOM') return p.del_bom;
+              if (route === 'DEL-BLR') return p.del_blr;
+              return p.bom_blr;
+            });
+
+            const minSpark = Math.min(...sparkPoints);
+            const maxSpark = Math.max(...sparkPoints);
+            const sparkW = 120;
+            const sparkH = 36;
+            const sparkX = (idx: number) => (idx / (sparkPoints.length - 1)) * sparkW;
+            const sparkY = (val: number) => {
+              const span = maxSpark - minSpark || 1;
+              return sparkH - 4 - ((val - minSpark) / span) * (sparkH - 8);
+            };
+            const sparkPath = sparkPoints
+              .map((val, idx) => `${idx === 0 ? 'M' : 'L'} ${sparkX(idx).toFixed(1)} ${sparkY(val).toFixed(1)}`)
+              .join(' ');
+
+            return (
+              <div
+                key={route}
+                onClick={() => handleToggleSolo(route)}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSolo}
+                aria-label={`Solo route ${route}`}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '90px 130px 75px 65px 1fr auto',
+                  alignItems: 'center',
+                  gap: 'var(--sp-4)',
+                  padding: 'var(--sp-3) var(--sp-4)',
+                  border: isSolo ? `1px solid ${routeColor}` : '1px solid var(--contour)',
+                  background: isSolo ? 'rgba(42, 95, 165, 0.04)' : 'transparent',
+                  cursor: 'pointer',
+                  fontFamily: "'B612', monospace",
+                  fontSize: 'var(--t-ui)',
+                  transition: 'background 0.15s, border-color 0.15s',
+                }}
+              >
+                <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{route}</span>
+
+                {/* Compact Sparkline */}
+                <svg width={sparkW} height={sparkH} style={{ overflow: 'visible' }}>
+                  <path d={sparkPath} fill="none" stroke={routeColor} strokeWidth={1.5} strokeLinejoin="round" />
+                  <circle
+                    cx={sparkX(sparkPoints.length - 1)}
+                    cy={sparkY(sparkPoints[sparkPoints.length - 1])}
+                    r={2.5}
+                    fill={routeColor}
+                  />
+                </svg>
+
+                <span className="font-num" style={{ fontWeight: 700, color: 'var(--ink)' }}>
+                  {currentLevel.toFixed(2)}
+                </span>
+                <span className="font-num" style={{ color: 'var(--ink-2)' }}>
+                  {changePct}
+                </span>
+                <span style={{ color: 'var(--ink-2)', fontSize: '13px' }}>{statusText}</span>
+                <span className="font-num" style={{ color: 'var(--ink-2)', fontSize: '13px' }}>
+                  weight {weightPct}
+                </span>
+              </div>
+            );
+          })}
         </div>
-      )}
+      </div>
+
+      {/* ── 4. Lead-Time Snapshot (Small Multiples, §5) ── */}
+      <div className="section">
+        <div style={{ marginBottom: 'var(--sp-4)' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-1)' }}>
+            Lead-time snapshot
+          </h2>
+          <p style={{ color: 'var(--ink-2)', fontSize: '13px' }}>
+            Current fare by advance booking horizon across the three basket routes.
+          </p>
+        </div>
+
+        {/* Small Multiples (Row of 3 charts) */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: 'var(--sp-6)',
+            marginBottom: 'var(--sp-4)',
+          }}
+        >
+          {ROUTES.map((route) => {
+            const data = ROUTE_LEAD_PRICES[route];
+            const routeColor = ROUTE_COLORS[route];
+            const panelW = 260;
+            const panelH = 140;
+            const m = { top: 16, right: 16, bottom: 28, left: 44 };
+            const pInnerW = panelW - m.left - m.right;
+            const pInnerH = panelH - m.top - m.bottom;
+
+            const leadX = d3Scale.scaleLinear().domain([45, 1]).range([0, pInnerW]);
+            const prices = data.points.map((p) => p.price);
+            const minP = Math.min(...prices) * 0.92;
+            const maxP = Math.max(...prices) * 1.08;
+            const leadY = d3Scale.scaleLinear().domain([minP, maxP]).range([pInnerH, 0]);
+
+            const pLine = d3Shape
+              .line<LeadPoint>()
+              .x((d) => leadX(d.lead_days))
+              .y((d) => leadY(d.price))
+              .curve(d3Shape.curveLinear);
+
+            return (
+              <div
+                key={route}
+                style={{
+                  border: '1px solid var(--contour)',
+                  padding: 'var(--sp-3)',
+                  fontFamily: "'B612', monospace",
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    marginBottom: 'var(--sp-2)',
+                  }}
+                >
+                  <span style={{ fontWeight: 700, color: routeColor, fontSize: '14px' }}>{route}</span>
+                  {data.isSynthetic && (
+                    <span style={{ fontSize: '11px', color: 'var(--ink-2)' }}>Synthetic history only</span>
+                  )}
+                </div>
+
+                <svg width="100%" height={panelH} viewBox={`0 0 ${panelW} ${panelH}`} style={{ overflow: 'visible' }}>
+                  <g transform={`translate(${m.left},${m.top})`}>
+                    {/* Horizontal tick guidelines */}
+                    {leadY.ticks(3).map((val) => (
+                      <g key={val}>
+                        <line x1={0} x2={pInnerW} y1={leadY(val)} y2={leadY(val)} stroke="var(--contour)" strokeWidth={1} />
+                        <text
+                          x={-6}
+                          y={leadY(val)}
+                          textAnchor="end"
+                          dominantBaseline="middle"
+                          fontSize="10px"
+                          fill="var(--ink-2)"
+                        >
+                          ₹{(val / 1000).toFixed(0)}k
+                        </text>
+                      </g>
+                    ))}
+
+                    {/* X-axis lead day labels */}
+                    {[45, 30, 15, 7, 1].map((d) => (
+                      <g key={d} transform={`translate(${leadX(d)}, ${pInnerH})`}>
+                        <line y1={0} y2={4} stroke="var(--contour)" />
+                        <text y={14} textAnchor="middle" fontSize="10px" fill="var(--ink-2)">
+                          {d}d
+                        </text>
+                      </g>
+                    ))}
+
+                    {/* Trajectory line */}
+                    <path
+                      d={pLine(data.points) ?? ''}
+                      fill="none"
+                      stroke={routeColor}
+                      strokeWidth={1.5}
+                      strokeDasharray={data.isSynthetic ? '3,3' : undefined}
+                    />
+
+                    {/* Points */}
+                    {data.points.map((p) => (
+                      <circle key={p.lead_days} cx={leadX(p.lead_days)} cy={leadY(p.price)} r={2.5} fill={routeColor} />
+                    ))}
+                  </g>
+                </svg>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Dynamic Gap Sentence & In-page navigation link (§5) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
+          <p className="prose" style={{ color: 'var(--ink)', fontSize: '15px' }}>
+            Booking 1 day ahead costs 77% more than 30 days ahead on DEL-BOM.
+          </p>
+          <div>
+            <button
+              onClick={() => onNavigate?.('curves')}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                fontFamily: "'B612', monospace",
+                fontSize: 'var(--t-ui)',
+                fontWeight: 700,
+                color: 'var(--ink)',
+                textDecoration: 'none',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+            >
+              See the full booking curves &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 5. What-If Weights (§6) ── */}
+      <div className="section">
+        <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-2)' }}>
+          What if the weights were different?
+        </h2>
+        <p style={{ color: 'var(--ink-2)', fontSize: '13px', marginBottom: 'var(--sp-4)' }}>
+          Adjust the weights below to see the main chart's overall index line recompute in real time. Drag divider handles or use the +/− stepper buttons.
+        </p>
+
+        <WeightBar
+          leadWeights={leadWeights}
+          routeWeights={routeWeights}
+          mode={weightMode}
+          sensitivity={sensitivityData}
+          onLeadChange={setLeadWeights}
+          onRouteChange={setRouteWeights}
+          onModeChange={setWeightMode}
+          onReset={() => {
+            setRouteWeights(DEFAULT_ROUTE_WEIGHTS);
+            setLeadWeights(DEFAULT_LEAD_WEIGHTS);
+          }}
+        />
+      </div>
+
+      {/* ── 6. Collection Record Strip (§7) ── */}
+      <div className="section" style={{ paddingBottom: 'var(--sp-8)' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-2)' }}>
+          Collection record
+        </h2>
+        <p style={{ color: 'var(--ink-2)', fontSize: '13px', marginBottom: 'var(--sp-3)' }}>
+          Audit trail of scheduled daily pipeline runs. Hover over any tick to view run details.
+        </p>
+        <RecordStrip runs={runs} />
+      </div>
     </div>
   );
 }

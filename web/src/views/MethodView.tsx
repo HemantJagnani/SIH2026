@@ -3,7 +3,7 @@
  * Follows §7 of the revamp brief exactly.
  */
 import { useState, useEffect } from 'react';
-import { api, type Methodology, type Run, type Relative } from '../api';
+import { api, type Methodology, type Run, type Relative, type Observation } from '../api';
 
 const ROUTES = ['DEL-BOM', 'DEL-BLR', 'BOM-BLR'] as const;
 const LEAD_DAYS = [1, 7, 15, 30] as const;
@@ -144,10 +144,12 @@ interface Props { runs: Run[] }
 export default function MethodView({ runs }: Props) {
   const [method, setMethod] = useState<Methodology | null>(null);
   const [relatives, setRelatives] = useState<Relative[]>([]);
+  const [observations, setObservations] = useState<Observation[]>([]);
 
   useEffect(() => {
     api.methodology().then(setMethod).catch(() => {});
     api.relatives().then(setRelatives).catch(() => {});
+    api.observations().then(setObservations).catch(() => {});
   }, []);
 
   return (
@@ -228,9 +230,7 @@ export default function MethodView({ runs }: Props) {
                     <td>{r.id}</td>
                     <td className="font-num">{(r.weight * 100).toFixed(0)}%</td>
                     <td>
-                      {r.weight_assumption
-                        ? <span className="assumed-word">assumed</span>
-                        : 'DGCA city-pair data'}
+                      <span className="assumed-word">assumed (placeholder)</span>
                     </td>
                   </tr>
                 ))}
@@ -252,9 +252,7 @@ export default function MethodView({ runs }: Props) {
                     <td className="font-num">{ld.days === 1 ? '1 day' : `${ld.days} days`}</td>
                     <td className="font-num">{(ld.weight * 100).toFixed(0)}%</td>
                     <td>
-                      {ld.weight_assumption
-                        ? <span className="assumed-word">assumed</span>
-                        : 'measured'}
+                      <span className="assumed-word">assumed</span>
                     </td>
                   </tr>
                 ))}
@@ -275,6 +273,9 @@ export default function MethodView({ runs }: Props) {
         <p>
           This index measures displayed fares, not what travellers actually paid. Seat availability,
           loyalty pricing, and ancillary fees are all excluded.
+        </p>
+        <p>
+          Fares are currently recorded per carrier and stop-count rather than per individual flight.
         </p>
         <p>
           A short real history cannot be meaningfully compared with official monthly series such
@@ -325,6 +326,66 @@ export default function MethodView({ runs }: Props) {
                 ))}
               </tbody>
             </table>
+          )}
+        </details>
+
+        {/* §8 Raw recorded observations */}
+        <details className="run-log-details">
+          <summary>All recorded fares ({observations.length})</summary>
+          {observations.length === 0 ? (
+            <p style={{ marginTop: 'var(--sp-4)', color: 'var(--ink-2)', fontSize: 'var(--t-ui)' }}>
+              No observations recorded yet.
+            </p>
+          ) : (
+            <div style={{ overflowX: 'auto', marginTop: 'var(--sp-4)' }}>
+              <table className="run-log-table" aria-label="All recorded fare observations">
+                <thead>
+                  <tr>
+                    <th>Observed</th>
+                    <th>Travel date</th>
+                    <th>Lead (days)</th>
+                    <th>Route</th>
+                    <th>Airline</th>
+                    <th>Departs</th>
+                    <th>Arrives</th>
+                    <th>Stops</th>
+                    <th>Fare</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {observations.map((obs, idx) => {
+                    const lead = obs.lead_days != null
+                      ? obs.lead_days
+                      : (obs.travel_date && obs.collected_at)
+                      ? Math.max(0, Math.round((new Date(obs.travel_date).getTime() - new Date(obs.collected_at).getTime()) / 86400000))
+                      : 7;
+                    const departs = obs.departure_time_local
+                      ? (obs.departure_time_local.includes('T') ? obs.departure_time_local.split('T')[1].slice(0, 5) : obs.departure_time_local)
+                      : '—';
+                    const arrives = obs.arrival_time_local
+                      ? (obs.arrival_time_local.includes('T') ? obs.arrival_time_local.split('T')[1].slice(0, 5) : obs.arrival_time_local)
+                      : '—';
+                    const stopsLabel = obs.stops === 0 ? 'nonstop' : `${obs.stops} stop${obs.stops > 1 ? 's' : ''}`;
+
+                    return (
+                      <tr key={idx}>
+                        <td className="font-num">{fmtDateTime(obs.collected_at)}</td>
+                        <td className="font-num">{obs.travel_date}</td>
+                        <td className="font-num">{lead}d</td>
+                        <td>{obs.route}</td>
+                        <td>{obs.airline}</td>
+                        <td className="font-num">{departs}</td>
+                        <td className="font-num">{arrives}</td>
+                        <td>{stopsLabel}</td>
+                        <td className="font-num" style={{ fontWeight: 700, color: 'var(--ink)' }}>
+                          ₹{Math.round(obs.total_fare).toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </details>
       </div>
