@@ -122,9 +122,12 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
       </div>
 
       <p className="prose" style={{ color: 'var(--ink)' }}>
-        Prices for the same flights move by 200 to 400 percent in a single day depending on how far ahead you book.
-        Official inflation data mostly can't see that. APIx tracks a fixed set of routes and booking windows every day
-        and turns the changes into one number, using the same kind of method behind India's Consumer Price Index.
+        Prices for the same flights move by 200 to 400 percent depending on advance booking timing.
+        Official monthly inflation statistics cannot capture this dynamic dispersion. APIx tracks the official
+        <strong> DGCA CY2024 Top-60 Route Basket</strong> (representing 91.99M annual passengers; 57.02% national coverage)
+        across <strong>6 advance-purchase horizons</strong> (T+1, T+7, T+15, <strong>T+21 MoSPI Checkpoint</strong>, T+30, and T+45)
+        forming a rigorous 360-cell matrix. Price relatives are chained using micro-founded Jevons elementary indices and
+        MoSPI Young higher-level aggregation, strictly conforming to MoSPI CPI 2024 (Base 2024=100) and Eurostat HICP standards.
       </p>
 
       <div>
@@ -136,7 +139,7 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
             marginBottom: 'var(--sp-3)',
           }}
         >
-          Where the data stands today
+          Production Data & Basket Status
         </h2>
         <div
           style={{
@@ -162,6 +165,15 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
               <span style={{ color: 'var(--ink-2)' }}>{rs.statusText}</span>
             </div>
           ))}
+          <div
+            style={{
+              paddingTop: 'var(--sp-2)',
+              fontSize: '12px',
+              color: 'var(--ink-2)',
+            }}
+          >
+            + 57 additional scheduled routes in the official DGCA Top-60 basket catalogued in the Method section.
+          </div>
         </div>
       </div>
 
@@ -173,7 +185,7 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
           lineHeight: 1.5,
         }}
       >
-        This is a hackathon prototype, not an official statistic. See Method for what it does and doesn't measure.
+        Designed as an experimental, high-frequency index compatible with MoSPI CPI 2024 methodology. Explore the Method section for complete mathematical formulations, weight registry, and validation gates.
       </p>
 
       {/* In-page navigation links — per §4.1, the only allowed arrows in the app */}

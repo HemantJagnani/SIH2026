@@ -190,7 +190,7 @@ async def get_methodology():
     Returns the complete methodology specification, weight configuration,
     and official MoSPI CPI 2024 airfare expenditure weight metadata.
     """
-    registry = WeightRegistry()
+    registry = WeightRegistry(is_single_route_pilot=False)
     cpi_cfg = CPIAirfareWeightConfig()
     return {
         "base_value": 100.0,

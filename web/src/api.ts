@@ -173,15 +173,24 @@ export interface MethodologyResponse {
   weight_version: string;
 }
 
+import {
+  DGCA_TOP60_ROUTES,
+  LEAD_TIME_HORIZONS,
+  DGCA_TOP60_METADATA,
+  MOSPI_CPI_EXPENDITURE_WEIGHT,
+} from './data/dgcaTop60';
+
 export interface Methodology {
   base_value: number;
   base_date: string | null;
   min_coverage: number;
   item_rules: Record<string, unknown>;
-  routes: { id: string; origin: string; destination: string; weight: number; weight_assumption: boolean }[];
-  lead_days: { days: number; weight: number; weight_assumption: boolean }[];
+  routes: { id: string; origin: string; destination: string; weight: number; weight_assumption: boolean; rank?: number; annual_pax?: number; dgca_share_percent?: number }[];
+  lead_days: { days: number; weight: number; weight_assumption: boolean; is_mospi_checkpoint?: boolean; lead_class?: string; name?: string }[];
   aggregation: Record<string, string>;
   reference: string;
+  metadata?: typeof DGCA_TOP60_METADATA;
+  cpi_weight?: typeof MOSPI_CPI_EXPENDITURE_WEIGHT;
 }
 
 export interface IndexPoint {
@@ -272,62 +281,85 @@ export const api = {
   },
 
   methodology: async (): Promise<Methodology> => {
+    const fallbackRoutes = DGCA_TOP60_ROUTES.map(r => ({
+      id: r.route_id,
+      origin: r.origin_code,
+      destination: r.destination_code,
+      weight: r.route_weight,
+      weight_assumption: false,
+      rank: r.rank,
+      annual_pax: r.annual_passenger_volume,
+      dgca_share_percent: r.dgca_share_percent,
+    }));
+
+    const fallbackLeads = LEAD_TIME_HORIZONS.map(l => ({
+      days: l.days,
+      weight: l.empirical_weight_decimal,
+      weight_assumption: false,
+      is_mospi_checkpoint: l.is_mospi_checkpoint,
+      lead_class: l.lead_class,
+      name: l.name,
+    }));
+
     try {
       const res = await fetch(`${BASE}/methodology`);
       if (res.ok) {
         const raw = await res.json();
         const routes = Object.entries(raw.route_weights || {}).map(([r, w]) => {
           const [orig, dest] = r.split('-');
-          return { id: r, origin: orig || 'DEL', destination: dest || 'BOM', weight: Number(w), weight_assumption: false };
+          const match = DGCA_TOP60_ROUTES.find(x => x.route_id === r);
+          return {
+            id: r,
+            origin: orig || 'DEL',
+            destination: dest || 'BOM',
+            weight: Number(w),
+            weight_assumption: false,
+            rank: match?.rank,
+            annual_pax: match?.annual_passenger_volume,
+            dgca_share_percent: match?.dgca_share_percent,
+          };
         });
-        const lead_days = Object.entries(raw.lead_time_weights || {}).map(([lt, w]) => ({
-          days: parseInt(lt.replace('T+', '')) || 7,
-          weight: Number(w),
-          weight_assumption: false
-        }));
+        const lead_days = Object.entries(raw.lead_time_weights || {}).map(([lt, w]) => {
+          const days = parseInt(lt.replace('T+', '')) || 7;
+          const match = LEAD_TIME_HORIZONS.find(x => x.days === days);
+          return {
+            days,
+            weight: Number(w),
+            weight_assumption: false,
+            is_mospi_checkpoint: match?.is_mospi_checkpoint ?? (days === 21),
+            lead_class: lt,
+            name: match?.name,
+          };
+        });
         return {
           base_value: raw.base_value || 100,
           base_date: '2024-01-01',
           min_coverage: raw.min_coverage || 0.5,
           item_rules: {},
-          routes: routes.length > 0 ? routes : [
-            { id: 'DEL-BOM', origin: 'DEL', destination: 'BOM', weight: 0.35, weight_assumption: true },
-            { id: 'DEL-BLR', origin: 'DEL', destination: 'BLR', weight: 0.35, weight_assumption: true },
-            { id: 'BOM-BLR', origin: 'BOM', destination: 'BLR', weight: 0.30, weight_assumption: true },
-          ],
-          lead_days: lead_days.length > 0 ? lead_days : [
-            { days: 1, weight: 0.17, weight_assumption: true },
-            { days: 7, weight: 0.17, weight_assumption: true },
-            { days: 15, weight: 0.17, weight_assumption: true },
-            { days: 21, weight: 0.17, weight_assumption: true },
-            { days: 30, weight: 0.17, weight_assumption: true },
-            { days: 45, weight: 0.15, weight_assumption: true },
-          ],
+          routes: routes.length > 0 ? routes : fallbackRoutes,
+          lead_days: lead_days.length > 0 ? lead_days : fallbackLeads,
           aggregation: { elementary: raw.elementary_formula, higher: raw.higher_level_formula },
-          reference: raw.methodology_standard || 'MoSPI CPI 2024 / Eurostat HICP'
+          reference: raw.methodology_standard || 'MoSPI CPI 2024 / Eurostat HICP',
+          metadata: DGCA_TOP60_METADATA,
+          cpi_weight: MOSPI_CPI_EXPENDITURE_WEIGHT,
         };
       }
     } catch {}
+
     return {
       base_value: 100,
       base_date: '2024-01-01',
       min_coverage: 0.5,
       item_rules: {},
-      routes: [
-        { id: 'DEL-BOM', origin: 'DEL', destination: 'BOM', weight: 0.35, weight_assumption: true },
-        { id: 'DEL-BLR', origin: 'DEL', destination: 'BLR', weight: 0.35, weight_assumption: true },
-        { id: 'BOM-BLR', origin: 'BOM', destination: 'BLR', weight: 0.30, weight_assumption: true },
-      ],
-      lead_days: [
-        { days: 1, weight: 0.17, weight_assumption: true },
-        { days: 7, weight: 0.17, weight_assumption: true },
-        { days: 15, weight: 0.17, weight_assumption: true },
-        { days: 21, weight: 0.17, weight_assumption: true },
-        { days: 30, weight: 0.17, weight_assumption: true },
-        { days: 45, weight: 0.15, weight_assumption: true },
-      ],
-      aggregation: {},
-      reference: 'MoSPI CPI 2024 / Eurostat HICP'
+      routes: fallbackRoutes,
+      lead_days: fallbackLeads,
+      aggregation: {
+        elementary: 'Short-chain Jevons index across matched product strata (M(s,t))',
+        higher: 'Young/Laspeyres weighted aggregation across lead times and DGCA passenger share routes',
+      },
+      reference: 'MoSPI CPI 2024 (Base 2024=100) & Eurostat HICP Methodological Manual 2024',
+      metadata: DGCA_TOP60_METADATA,
+      cpi_weight: MOSPI_CPI_EXPENDITURE_WEIGHT,
     };
   },
 

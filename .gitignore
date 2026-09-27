@@ -36,3 +36,4 @@ test-results/
 data/*.db*
 storage/
 scratch/
+image.png

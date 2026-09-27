@@ -49,7 +49,17 @@ export default function App() {
   const [user, setUser] = useState<UserAccount | null>(() => {
     try {
       const saved = localStorage.getItem('apix_user');
-      return saved ? JSON.parse(saved) : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.name?.includes('Vraj')) {
+          parsed.name = 'Admin User';
+          parsed.email = 'admin@apix.gov.in';
+          parsed.role = 'System Administrator / Lead Analyst';
+          localStorage.setItem('apix_user', JSON.stringify(parsed));
+        }
+        return parsed;
+      }
+      return null;
     } catch {
       return null;
     }

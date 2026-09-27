@@ -58,12 +58,12 @@ export default function LandingView({ onEnterApp, onLogin, currentUser }: Landin
 
   const handleQuickDemo = () => {
     const demoUser: UserAccount = {
-      name: 'Vraj Verma',
-      email: 'vraj@aviation.gov.in',
+      name: 'Admin User',
+      email: 'admin@apix.gov.in',
       organization: 'MoSPI National Accounts',
-      role: 'Principal Aviation Analyst',
+      role: 'System Administrator / Lead Analyst',
     };
-    setStatusMessage('Access granted as Principal Aviation Analyst...');
+    setStatusMessage('Access granted as System Administrator...');
     setTimeout(() => {
       onLogin(demoUser);
       onEnterApp('overview');
@@ -512,7 +512,7 @@ export default function LandingView({ onEnterApp, onLogin, currentUser }: Landin
                       id={upNameId}
                       type="text"
                       className="akasa-input"
-                      placeholder="e.g. Vraj Verma"
+                      placeholder="e.g. Officer Name"
                       value={signUpName}
                       onChange={(e) => setSignUpName(e.target.value)}
                       required

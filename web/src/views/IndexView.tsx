@@ -33,10 +33,12 @@ const DEFAULT_ROUTE_WEIGHTS: Record<string, number> = {
 };
 
 const DEFAULT_LEAD_WEIGHTS: Record<number, number> = {
-  1: 0.17,
-  7: 0.17,
-  15: 0.17,
-  30: 0.49,
+  1: 0.0509,
+  7: 0.1350,
+  15: 0.1491,
+  21: 0.1519, // MoSPI CPI 2024 Official Checkpoint
+  30: 0.2588,
+  45: 0.2543,
 };
 
 interface DailyPoint {

@@ -7,14 +7,16 @@
  */
 import { useRef, useCallback, useEffect, useState } from 'react';
 
-const LEAD_DAYS = [1, 7, 15, 30] as const;
+const LEAD_DAYS = [1, 7, 15, 21, 30, 45] as const;
 const ROUTES = ['DEL-BOM', 'DEL-BLR', 'BOM-BLR'] as const;
 
 const SEGMENT_COLORS_LEAD: Record<number, string> = {
   1:  '#2A5FA5',
   7:  '#2F7D6D',
-  15: '#B0286A',
-  30: '#8A6D3B',
+  15: '#8A6D3B',
+  21: '#E65100', // MoSPI Official Checkpoint
+  30: '#B0286A',
+  45: '#5C4382',
 };
 
 const SEGMENT_COLORS_ROUTE: Record<string, string> = {
@@ -30,10 +32,12 @@ const ROUTE_DESCRIPTIONS: Record<string, string> = {
 };
 
 const LEAD_DESCRIPTIONS: Record<number, string> = {
-  1: 'Spot / Departure - 1d',
-  7: 'Short-range / 1 week',
-  15: 'Mid-range / Fortnight',
-  30: 'Advance / 30+ days',
+  1: 'Spot / Departure - 1d (5.09%)',
+  7: 'Short-range / 1 week (13.50%)',
+  15: 'Mid-range / Fortnight (14.91%)',
+  21: 'MoSPI Checkpoint / 3 weeks (15.19%)',
+  30: 'Standard Advance / 1 month (25.88%)',
+  45: 'Long-range / 45 days (25.43%)',
 };
 
 function dayLabel(d: number): string {
@@ -368,6 +372,23 @@ export default function WeightBar({
                 <div className="weight-clean-card-title-group">
                   <span className="weight-card-dot" style={{ backgroundColor: col }} />
                   <span className="weight-card-title">{segLabel(k)}</span>
+                  {mode === 'lead' && k === 21 && (
+                    <span style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      letterSpacing: '0.03em',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: 'rgba(230, 81, 0, 0.12)',
+                      color: '#E65100',
+                      border: '1px solid rgba(230, 81, 0, 0.28)',
+                      marginLeft: '6px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                    }}>
+                      MoSPI Checkpoint
+                    </span>
+                  )}
                 </div>
                 <div className="weight-card-steppers">
                   <button
