@@ -698,6 +698,15 @@ async def main():
         print(f"  {k:<30}: {v}")
     print("=" * 80)
 
+    # Automated GitHub Evidence Archiving & Release Sync
+    try:
+        from scripts.archive_and_sync_evidence import auto_archive_and_sync
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        logger.info(f"Triggering automated evidence archiving and release sync for {today_str}...")
+        auto_archive_and_sync(today_str)
+    except Exception as e:
+        logger.warning(f"Post-run evidence archiving note: {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

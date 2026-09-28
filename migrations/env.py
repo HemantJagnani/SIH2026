@@ -23,8 +23,8 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
-# Safely load the database URL from the environment, not from alembic.ini
-database_url = os.environ.get("DATABASE_URL")
+# Safely load the database URL from the environment, preferring direct unpooled URL for DDL
+database_url = os.environ.get("DATABASE_URL_DIRECT") or os.environ.get("DATABASE_URL")
 if not database_url:
     raise ValueError("DATABASE_URL environment variable must be set in .env")
 config.set_main_option("sqlalchemy.url", database_url)

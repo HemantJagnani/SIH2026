@@ -28,6 +28,7 @@ runtime/browser_profiles/
 runtime/session_states/
 runtime/evidence/
 *.state.json
+*.tar.gz
 playwright-report/
 test-results/
 *.db
