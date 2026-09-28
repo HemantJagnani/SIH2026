@@ -26,6 +26,13 @@ from .fingerprint import (
     normalize_time_str,
 )
 
+from .policy import (
+    INTERNATIONAL_CARRIERS,
+    HIGHER_FARE_FAMILY_KEYWORDS,
+    is_foreign_transit_carrier,
+    is_higher_fare_family,
+)
+
 __all__ = [
     "APIxProductObservation",
     "CanonicalOffer",
@@ -46,4 +53,8 @@ __all__ = [
     "compute_offer_fingerprint",
     "normalize_flight_number",
     "normalize_time_str",
+    "INTERNATIONAL_CARRIERS",
+    "HIGHER_FARE_FAMILY_KEYWORDS",
+    "is_foreign_transit_carrier",
+    "is_higher_fare_family",
 ]

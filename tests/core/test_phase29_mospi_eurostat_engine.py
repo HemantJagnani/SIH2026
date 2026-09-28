@@ -450,16 +450,16 @@ def test_gate15_reference_period_taxonomy_validation():
     # 4. Eurostat Chain-Linking Reference
     assert "December y-1" in r0.chain_link_period
 
-    # 5. Project Provisional Reference
+    # 5. Project Provisional Reference (Descriptive Diagnostic Only)
     assert r0.reference_type == "PROVISIONAL_PROJECT_REFERENCE"
-    assert r0.experimental_project_reference_price == Decimal("6632.67")
-    assert r0.experimental_reference_period == "2026-09-26"
-    assert r0.reference_price == Decimal("6632.67")
+    assert r0.experimental_project_reference_price == Decimal("8641.45")
+    assert r0.experimental_reference_period == "2026-09-27"
+    assert r0.reference_price == Decimal("8641.45")
     assert r0.reference_index_value == Decimal("100.00")
-    assert r0.reference_price_method == "Option B — first production run weighted representative price"
+    assert r0.reference_price_method == "Finalized 60-route x 6-lead-time basket reference price"
 
     # Backward compatibility aliases
-    assert r0.base_price == Decimal("6632.67")
-    assert r0.base_period == "2026-09-26"
+    assert r0.base_price == Decimal("8641.45")
+    assert r0.base_period == "2026-09-27"
     assert r0.base_value == Decimal("100.00")
 

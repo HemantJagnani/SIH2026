@@ -1,0 +1,102 @@
+{
+  "data_label": "SYNTHETIC_METHODOLOGY_DEMONSTRATION",
+  "description": "Weekly synthetic APIx index series for August 2026. SYNTHETIC — not real airfare data.",
+  "base_reference": {
+    "week": 1,
+    "period": "2026-08-01 to 2026-08-07",
+    "index_value": 100.0
+  },
+  "methodology": {
+    "intra_week_aggregation": "geometric_mean_per_product",
+    "inter_week_chaining": "short_chain_jevons_on_weekly_geometric_prices",
+    "p_ref_used_as_denominator": false
+  },
+  "weekly_series": [
+    {
+      "week_number": 1,
+      "week_label": "Week 1 (Aug 1 – Aug 7)",
+      "start_date": "2026-08-01",
+      "end_date": "2026-08-07",
+      "observations_count": 30218,
+      "canonical_products": 5973,
+      "matched_products": 5973,
+      "weekly_price_relative": 1.0,
+      "weekly_chain_index": 100.0,
+      "variance_index": 0.0,
+      "standard_error": 0.0,
+      "ci95_lower": 100.0,
+      "ci95_upper": 100.0,
+      "ci_available": true,
+      "aggregation_method": "Intra-week geometric mean per product; chain base = 100.0000",
+      "governance": {
+        "p_ref_used_as_denominator": false
+      }
+    },
+    {
+      "week_number": 2,
+      "week_label": "Week 2 (Aug 8 – Aug 14)",
+      "start_date": "2026-08-08",
+      "end_date": "2026-08-14",
+      "observations_count": 30082,
+      "canonical_products": 5971,
+      "matched_products": 5968,
+      "unmatched_products": 3,
+      "weekly_price_relative": 1.000105,
+      "weekly_chain_index": 100.0105,
+      "variance_index": 0.098267,
+      "standard_error": 0.3135,
+      "ci95_lower": 99.4,
+      "ci95_upper": 100.62,
+      "ci_available": true,
+      "aggregation_method": "Intra-week geometric mean per product; short-chain Jevons week-on-week relative; empirical lead-time weights + DGCA route weights.",
+      "governance": {
+        "p_ref_used_as_denominator": false,
+        "formula": "I_w = I_{w-1} * exp(mean_{r,L}(w_L * w_r * ln(GeomPrice_w / GeomPrice_{w-1})))"
+      }
+    },
+    {
+      "week_number": 3,
+      "week_label": "Week 3 (Aug 15 – Aug 21)",
+      "start_date": "2026-08-15",
+      "end_date": "2026-08-21",
+      "observations_count": 30139,
+      "canonical_products": 5973,
+      "matched_products": 5967,
+      "unmatched_products": 6,
+      "weekly_price_relative": 0.999702,
+      "weekly_chain_index": 99.9807,
+      "variance_index": 0.102548,
+      "standard_error": 0.3202,
+      "ci95_lower": 99.35,
+      "ci95_upper": 100.61,
+      "ci_available": true,
+      "aggregation_method": "Intra-week geometric mean per product; short-chain Jevons week-on-week relative; empirical lead-time weights + DGCA route weights.",
+      "governance": {
+        "p_ref_used_as_denominator": false,
+        "formula": "I_w = I_{w-1} * exp(mean_{r,L}(w_L * w_r * ln(GeomPrice_w / GeomPrice_{w-1})))"
+      }
+    },
+    {
+      "week_number": 4,
+      "week_label": "Week 4 (Aug 22 – Aug 31)",
+      "start_date": "2026-08-22",
+      "end_date": "2026-08-31",
+      "observations_count": 42709,
+      "canonical_products": 5975,
+      "matched_products": 5971,
+      "unmatched_products": 4,
+      "weekly_price_relative": 1.000357,
+      "weekly_chain_index": 100.0164,
+      "variance_index": 0.082684,
+      "standard_error": 0.2875,
+      "ci95_lower": 99.45,
+      "ci95_upper": 100.58,
+      "ci_available": true,
+      "aggregation_method": "Intra-week geometric mean per product; short-chain Jevons week-on-week relative; empirical lead-time weights + DGCA route weights.",
+      "governance": {
+        "p_ref_used_as_denominator": false,
+        "formula": "I_w = I_{w-1} * exp(mean_{r,L}(w_L * w_r * ln(GeomPrice_w / GeomPrice_{w-1})))"
+      }
+    }
+  ]
+}

@@ -282,3 +282,189 @@ class QualityAdjustmentEngine:
         )
 
         return audit_record, adjustments
+
+
+# ---------------------------------------------------------------------------
+# Full-Stratum Schedule-Churn Class-Mean Imputation Engine (§Roadmap Item 2)
+# ---------------------------------------------------------------------------
+
+class ImputationStatus(str, Enum):
+    OBSERVED_DIRECT = "OBSERVED_DIRECT"
+    IMPUTED_CLASS_MEAN = "IMPUTED_CLASS_MEAN"
+    UNIMPUTABLE_NO_DONORS = "UNIMPUTABLE_NO_DONORS"
+
+
+class ImputedClassMeanResult(BaseModel):
+    """
+    Provenance and calculation result for a full-stratum class-mean imputation event.
+    Conforms to Eurostat HICP Methodological Manual 2024 §7.3.
+    """
+    stratum_id: str
+    route: str
+    lead_time_class: str
+    airline: Optional[str] = None
+    period: str
+    is_imputed: bool
+    status: ImputationStatus
+    imputed_jevons_link: Optional[Decimal] = None
+    donor_hierarchy_level: Optional[str] = None  # ROUTE_CARRIER_LEADTIME, ROUTE_LEADTIME, ROUTE_ALL
+    donor_strata_count: int = 0
+    donor_matched_pairs_count: int = 0
+    provenance_note: str
+    imputed_at_utc: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class ClassMeanImputationEngine:
+    """
+    Handles 100% stratum attrition during bi-annual airline schedule shifts (IATA Summer/Winter).
+    Imputes Jevons link from parent hierarchy:
+    1. Route x Carrier x Lead Time (sibling departure bands)
+    2. Route x Lead Time (across all carriers)
+    3. Route Overall (across all lead times)
+    NEVER imputes zero.
+    """
+
+    def __init__(self, methodology_version: str = "Eurostat_HICP_ClassMean_v1.0"):
+        self.methodology_version = methodology_version
+        self.imputation_history: List[ImputedClassMeanResult] = []
+
+    def impute_stratum_link(
+        self,
+        stratum_id: str,
+        route: str,
+        lead_time_class: str,
+        period: str,
+        matched_by_stratum: Dict[str, Tuple[List[Any], int, float, bool]],
+        stratum_metadata: Optional[Dict[str, Dict[str, str]]] = None,
+        airline: Optional[str] = None,
+    ) -> ImputedClassMeanResult:
+        """
+        Evaluates 100% stratum attrition and computes class-mean geometric link from parent donors.
+        Never returns zero.
+        """
+        import math
+
+        # Step 1: Donor search level 1 (Route x Carrier x Lead Time)
+        donors_lvl1: List[Any] = []
+        donor_strata_lvl1: List[str] = []
+        meta = stratum_metadata or {}
+
+        if airline:
+            for s_key, (m_list, elig, cov, is_pub) in matched_by_stratum.items():
+                if s_key != stratum_id and m_list:
+                    s_meta = meta.get(s_key, {})
+                    if (
+                        s_meta.get("route") == route
+                        and s_meta.get("lead_time_class") == lead_time_class
+                        and s_meta.get("airline") == airline
+                    ):
+                        donors_lvl1.extend(m_list)
+                        donor_strata_lvl1.append(s_key)
+
+        if donors_lvl1:
+            mean_log = sum(m.log_price_relative for m in donors_lvl1) / len(donors_lvl1)
+            link_val = Decimal(str(round(math.exp(mean_log), 6)))
+            res = ImputedClassMeanResult(
+                stratum_id=stratum_id,
+                route=route,
+                lead_time_class=lead_time_class,
+                airline=airline,
+                period=period,
+                is_imputed=True,
+                status=ImputationStatus.IMPUTED_CLASS_MEAN,
+                imputed_jevons_link=link_val,
+                donor_hierarchy_level="ROUTE_CARRIER_LEADTIME",
+                donor_strata_count=len(donor_strata_lvl1),
+                donor_matched_pairs_count=len(donors_lvl1),
+                provenance_note=(
+                    f"Class-mean imputation applied: 100% stratum attrition in {stratum_id}. "
+                    f"Imputed from {len(donors_lvl1)} matched donor pairs across {len(donor_strata_lvl1)} sibling carrier strata."
+                ),
+            )
+            self.imputation_history.append(res)
+            return res
+
+        # Step 2: Donor search level 2 (Route x Lead Time across all carriers)
+        donors_lvl2: List[Any] = []
+        donor_strata_lvl2: List[str] = []
+        for s_key, (m_list, elig, cov, is_pub) in matched_by_stratum.items():
+            if s_key != stratum_id and m_list:
+                s_meta = meta.get(s_key, {})
+                if s_meta.get("route") == route and s_meta.get("lead_time_class") == lead_time_class:
+                    donors_lvl2.extend(m_list)
+                    donor_strata_lvl2.append(s_key)
+
+        if donors_lvl2:
+            mean_log = sum(m.log_price_relative for m in donors_lvl2) / len(donors_lvl2)
+            link_val = Decimal(str(round(math.exp(mean_log), 6)))
+            res = ImputedClassMeanResult(
+                stratum_id=stratum_id,
+                route=route,
+                lead_time_class=lead_time_class,
+                airline=airline,
+                period=period,
+                is_imputed=True,
+                status=ImputationStatus.IMPUTED_CLASS_MEAN,
+                imputed_jevons_link=link_val,
+                donor_hierarchy_level="ROUTE_LEADTIME",
+                donor_strata_count=len(donor_strata_lvl2),
+                donor_matched_pairs_count=len(donors_lvl2),
+                provenance_note=(
+                    f"Class-mean imputation applied: 100% stratum attrition in {stratum_id}. "
+                    f"Imputed from {len(donors_lvl2)} matched donor pairs across {len(donor_strata_lvl2)} route lead-time strata."
+                ),
+            )
+            self.imputation_history.append(res)
+            return res
+
+        # Step 3: Donor search level 3 (Route overall across all lead times)
+        donors_lvl3: List[Any] = []
+        donor_strata_lvl3: List[str] = []
+        for s_key, (m_list, elig, cov, is_pub) in matched_by_stratum.items():
+            if s_key != stratum_id and m_list:
+                s_meta = meta.get(s_key, {})
+                if s_meta.get("route") == route:
+                    donors_lvl3.extend(m_list)
+                    donor_strata_lvl3.append(s_key)
+
+        if donors_lvl3:
+            mean_log = sum(m.log_price_relative for m in donors_lvl3) / len(donors_lvl3)
+            link_val = Decimal(str(round(math.exp(mean_log), 6)))
+            res = ImputedClassMeanResult(
+                stratum_id=stratum_id,
+                route=route,
+                lead_time_class=lead_time_class,
+                airline=airline,
+                period=period,
+                is_imputed=True,
+                status=ImputationStatus.IMPUTED_CLASS_MEAN,
+                imputed_jevons_link=link_val,
+                donor_hierarchy_level="ROUTE_ALL",
+                donor_strata_count=len(donor_strata_lvl3),
+                donor_matched_pairs_count=len(donors_lvl3),
+                provenance_note=(
+                    f"Class-mean imputation applied: 100% stratum attrition in {stratum_id}. "
+                    f"Imputed from {len(donors_lvl3)} matched donor pairs across {len(donor_strata_lvl3)} route-wide strata."
+                ),
+            )
+            self.imputation_history.append(res)
+            return res
+
+        # If zero donors exist anywhere in the route: NEVER impute zero!
+        res_fail = ImputedClassMeanResult(
+            stratum_id=stratum_id,
+            route=route,
+            lead_time_class=lead_time_class,
+            airline=airline,
+            period=period,
+            is_imputed=False,
+            status=ImputationStatus.UNIMPUTABLE_NO_DONORS,
+            imputed_jevons_link=None,
+            donor_hierarchy_level=None,
+            donor_strata_count=0,
+            donor_matched_pairs_count=0,
+            provenance_note=f"No donor strata available in route {route} to impute stratum {stratum_id}. Null preserved; never zero.",
+        )
+        self.imputation_history.append(res_fail)
+        return res_fail
+

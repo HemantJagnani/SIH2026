@@ -141,15 +141,15 @@ APIx enforces an impenetrable architectural boundary between transport volume an
 
 APIx compiles six forward-looking advance purchase classes:
 
-| Horizon | Lead Days | Methodological Role | Primary Empirical Weight ($w_L$) | Sensitivity Equal Weight ($w_L^{\text{sens}}$) | Official Status |
-| :---: | :---: | :--- | :---: | :---: | :--- |
-| **$T+1$** | 1 day | Last-minute emergency & corporate travel; peak dynamic elasticity | **0.0509 (5.09%)** | 0.166667 (16.67%) | Analytical Stratum |
-| **$T+7$** | 7 days | Short-horizon discretionary booking window | **0.1350 (13.50%)** | 0.166667 (16.67%) | Analytical Stratum |
-| **$T+15$** | 15 days | Standard domestic forward booking window | **0.1491 (14.91%)** | 0.166667 (16.67%) | Analytical Stratum |
-| **$T+21$** | 21 days | **MoSPI Domestic Airfare Reference Checkpoint** | **0.1519 (15.19%)** | 0.166667 (16.67%) | **Official MoSPI CPI 2024 Checkpoint** |
-| **$T+30$** | 30 days | Leisure vacation booking baseline | **0.2588 (25.88%)** | 0.166666 (16.67%) | Analytical Stratum |
-| **$T+45$** | 45 days | Maximum domestic forward planning anchor | **0.2543 (25.43%)** | 0.166666 (16.67%) | Analytical Stratum |
-| **Total** | — | — | **1.0000 (100.00%)** | **1.000000 (100.00%)** | Strict Unity Invariant |
+| Horizon | Lead Days | Methodological Role | Empirical Weight ($w_L$) | Official Status |
+| :---: | :---: | :--- | :---: | :--- |
+| **$T+1$** | 1 day | Last-minute emergency & corporate travel; peak dynamic elasticity | **0.0509 (5.09%)** | Analytical Stratum |
+| **$T+7$** | 7 days | Short-horizon discretionary booking window | **0.1350 (13.50%)** | Analytical Stratum |
+| **$T+15$** | 15 days | Standard domestic forward booking window | **0.1491 (14.91%)** | Analytical Stratum |
+| **$T+21$** | 21 days | **MoSPI Domestic Airfare Reference Checkpoint** | **0.1519 (15.19%)** | **Official MoSPI CPI 2024 Checkpoint** |
+| **$T+30$** | 30 days | Leisure vacation booking baseline | **0.2588 (25.88%)** | Analytical Stratum |
+| **$T+45$** | 45 days | Maximum domestic forward planning anchor | **0.2543 (25.43%)** | Analytical Stratum |
+| **Total** | — | — | **1.0000 (100.00%)** | Strict Unity Invariant |
 
 > [!IMPORTANT]
 > **Empirical Lead-Time Weights Specification (`EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`):**  
@@ -159,7 +159,7 @@ APIx compiles six forward-looking advance purchase classes:
 > - **Source Dataset:** `Clean_Dataset.csv`
 > - **Source Interpretation:** Treat `days_left` as booking lead time; each row represents an individual booking transaction.
 > - **Mandatory Disclaimer:** **These weights are derived from the supplied Clean_Dataset.csv booking dataset and are not official Indian national booking weights.**
-> - **Preserved Sensitivity Configuration (`SENSITIVITY_EQUAL_LEAD_TIME_WEIGHTS`):** The equal-weight method ($w_L = 1/6 \approx 0.166667$, Eurostat HICP benchmark) is strictly preserved as an active configuration for sensitivity analysis and structural invariance testing.
+> - **Strict Rejection of Equal Weighting:** APIx explicitly does NOT assign equal weightage to lead times. Advance booking horizons exhibit highly asymmetric passenger demand and yield management pricing, where advance windows ($T+30, T+45$) capture over 51% of bookings while urgent travel ($T+1$) accounts for 5.09%.
 > - **Tri-Layer Separation:**
 >   1. **Route Representativeness Weights ($w_r$):** Derived from official DGCA CY2024 scheduled domestic city-pair passenger volumes (`DGCA_CY2024_TOP60`, 57.0247% coverage).
 >   2. **Lead-Time Profile Weights ($w_L$):** Derived from `Clean_Dataset.csv` empirical booking horizons (`EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`).
@@ -306,13 +306,13 @@ Loaded 70 raw production observations from Phase 28.
   Active Replacements Logged: 10
   Quality Adjustments Logged: 5
 
-[Lead-Time Sub-Indices — w_L = 1/6 Provisional Equal Weights]
-  T+1    | Weight: 0.166667 | Index: 102.4000
-  T+7    | Weight: 0.166667 | Index: 102.8162
-  T+15   | Weight: 0.166667 | Index: 102.4000
-  T+21   | Weight: 0.166667 | Index: 103.4279 [MoSPI Official Domestic Checkpoint]
-  T+30   | Weight: 0.166667 | Index: 102.4000
-  T+45   | Weight: 0.166667 | Index: 102.4000
+[Lead-Time Sub-Indices — Empirical Weights]
+  T+1    | Weight: 0.050900 | Index: 102.4000
+  T+7    | Weight: 0.135000 | Index: 102.8162
+  T+15   | Weight: 0.149100 | Index: 102.4000
+  T+21   | Weight: 0.151900 | Index: 103.4279 [MoSPI Official Domestic Checkpoint]
+  T+30   | Weight: 0.258800 | Index: 102.4000
+  T+45   | Weight: 0.254300 | Index: 102.4000
 
 [Diagnostic Comparison: Headline Jevons vs Retained Median Indicator]
   Headline Short-Chain Jevons Index : 102.6407

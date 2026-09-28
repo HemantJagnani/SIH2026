@@ -26,6 +26,8 @@ from .models import (
 )
 from .weights import WeightRegistry
 from .classification import CPIIntegrationLayer
+from .cpi_contribution import CPIContributionEngine
+
 
 
 class IndexAggregationEngine:
@@ -188,8 +190,15 @@ class IndexAggregationEngine:
         # CPI Contribution Calculation:
         # airfare_contribution_pp = APIx_percent_change * 0.02951 / 100
         contrib_pp = None
+        cpi_combined_pp = None
+        cpi_urban_pp = None
+        cpi_rural_pp = None
         if mom_pct is not None:
             contrib_pp = self.cpi_layer.calculate_cpi_contribution_pp(mom_pct)
+            sec = CPIContributionEngine.calculate_sectoral_contributions(mom_pct)
+            cpi_combined_pp = sec.cpi_combined_contribution_pp
+            cpi_urban_pp = sec.cpi_urban_contribution_pp
+            cpi_rural_pp = sec.cpi_rural_contribution_pp
 
         cpi_integration_meta = {
             "source": cfg.source,
@@ -209,6 +218,9 @@ class IndexAggregationEngine:
             "methodology_version": cfg.methodology_version,
             "disclaimer": cfg.disclaimer,
             "estimated_cpi_contribution_pp": float(contrib_pp) if contrib_pp is not None else None,
+            "cpi_combined_contribution_pp": float(cpi_combined_pp) if cpi_combined_pp is not None else None,
+            "cpi_urban_contribution_pp": float(cpi_urban_pp) if cpi_urban_pp is not None else None,
+            "cpi_rural_contribution_pp": float(cpi_rural_pp) if cpi_rural_pp is not None else None,
             "dgca_proxy_note": self.cpi_layer.dgca_traffic_proxy_note,
             "reference_taxonomy": ref_tax_meta,
         }
@@ -256,6 +268,9 @@ class IndexAggregationEngine:
             cpi_reference_year=cfg.reference_year,
             cpi_weight_source=cfg.source,
             estimated_cpi_contribution_pp=contrib_pp,
+            cpi_combined_contribution_pp=cpi_combined_pp,
+            cpi_urban_contribution_pp=cpi_urban_pp,
+            cpi_rural_contribution_pp=cpi_rural_pp,
             cpi_weight_disclaimer=cfg.disclaimer,
 
             methodology_version=self.methodology_version,

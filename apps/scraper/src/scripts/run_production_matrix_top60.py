@@ -42,6 +42,11 @@ from models.enums import AvailabilityStatus, CabinClass, TripType, WorkflowState
 from models.provenance import ExtractionMode
 from models.request import FareSearchRequest
 from sources.googleflights.adapter import GoogleFlightsAdapter
+from reconciliation.policy import (
+    INTERNATIONAL_CARRIERS,
+    is_foreign_transit_carrier,
+    is_higher_fare_family,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,12 +61,6 @@ REPORT_JSON_PATH = PROJECT_ROOT / "APIx_All60_Production_Coverage_Report.json"
 REPORT_MD_PATH = PROJECT_ROOT / "APIx_All60_Production_Coverage_Report.md"
 OBSERVATIONS_PATH = PROJECT_ROOT / "runtime" / "top60_fare_observations.json"
 CLASSIFICATION_PATH = PROJECT_ROOT / "runtime" / "top60_observation_classification.json"
-
-INTERNATIONAL_CARRIERS = {
-    "Kuwait Airways", "Emirates", "Etihad", "SriLankan", "Oman Air",
-    "Saudia", "Gulf Air", "Qatar Airways", "Air Arabia", "Flydubai",
-    "Malaysia Airlines", "Singapore Airlines", "Thai Airways", "Biman"
-}
 
 
 def load_top60_routes() -> List[Dict[str, Any]]:
@@ -529,11 +528,11 @@ async def main():
                     obs_id = o.get("id") or str(uuid4())
 
                     # 1. Foreign transit exclusion
-                    if airline in INTERNATIONAL_CARRIERS:
+                    if is_foreign_transit_carrier(airline):
                         status = "FOREIGN_TRANSIT"
                         total_foreign += 1
                     # 2. Higher fare family exclusion
-                    elif any(k in fare_fam for k in ["FLEX", "UPFRONT", "BUSINESS", "PREMIUM", "EXCLUSIVE", "MAX", "CLASSIC"]):
+                    elif is_higher_fare_family(fare_fam):
                         status = "HIGHER_FARE_FAMILY"
                         total_higher += 1
                     else:

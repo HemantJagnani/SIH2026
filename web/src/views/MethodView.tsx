@@ -247,8 +247,7 @@ export default function MethodView({ runs }: Props) {
                 <th>Horizon</th>
                 <th>Advance Window</th>
                 <th>Stratum Role</th>
-                <th>Clean_Dataset Empirical Weight</th>
-                <th>Eurostat Sensitivity Weight</th>
+                <th>Empirical Weight ($w_L$)</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -260,8 +259,7 @@ export default function MethodView({ runs }: Props) {
                   </td>
                   <td>{h.name}</td>
                   <td style={{ fontSize: '12px', color: 'var(--ink-2)' }}>{h.description}</td>
-                  <td className="font-num">{h.empirical_weight_percent.toFixed(2)}%</td>
-                  <td className="font-num">{h.sensitivity_weight_percent.toFixed(2)}%</td>
+                  <td className="font-num">{h.empirical_weight_percent.toFixed(2)}% ({h.empirical_weight_decimal.toFixed(4)})</td>
                   <td>
                     {h.is_mospi_checkpoint ? (
                       <span className="gate-badge" style={{ background: 'rgba(230, 81, 0, 0.12)', color: '#C2410C' }}>
@@ -278,7 +276,6 @@ export default function MethodView({ runs }: Props) {
               <tr style={{ fontWeight: 700, borderTop: '2px solid var(--contour)' }}>
                 <td colSpan={3}>Total Lead Weight Sum</td>
                 <td className="font-num">100.00% (1.0000)</td>
-                <td className="font-num">100.00% (1.0000)</td>
                 <td>Validated</td>
               </tr>
             </tfoot>
@@ -286,9 +283,7 @@ export default function MethodView({ runs }: Props) {
         </div>
 
         <p className="method-footnote">
-          <strong>Weight Source:</strong> Empirical lead-time weights are calculated from the verified <code>Clean_Dataset.csv</code> transaction
-          dataset (300,153 records) treating <code>days_left</code> as booking lead time. Equal weighting (1/6 = 16.67% each) is maintained
-          simultaneously as an invariant sensitivity benchmark per Eurostat guidelines.
+          <strong>Empirical Lead-Time Weighting:</strong> Lead-time weights are calculated from 300,153 verified transactions in <code>Clean_Dataset.csv</code> treating <code>days_left</code> as booking lead time. <strong>APIx explicitly does not assign equal weightage to lead times:</strong> advance booking horizons exhibit distinct demand profiles and yield elasticities, where early bookings (T+30, T+45) account for over 51% of domestic volume, whereas urgent travel (T+1) constitutes 5.09%. T+21 serves as the designated MoSPI CPI 2024 domestic reference checkpoint.
         </p>
       </section>
 
@@ -762,7 +757,7 @@ export default function MethodView({ runs }: Props) {
           Four-Regime Weighting Invariance Analysis
         </h3>
         <p style={{ fontSize: '13px', color: 'var(--ink-2)', marginBottom: '8px' }}>
-          Tested against 4 distinct structural weight variants: Baseline Empirical, Eurostat Equal Lead, Top-10 Trunk Concentrated, and Inverse Spot Heavy.
+          Tested against 4 distinct structural weight variants: Baseline Empirical, Equal Sensitivity Stress-Test, Top-10 Trunk Concentrated, and Inverse Spot Heavy.
         </p>
         <div className="step-card" style={{ borderLeftColor: 'var(--route-teal)', background: 'rgba(47, 125, 109, 0.04)' }}>
           <div className="step-title" style={{ color: 'var(--route-teal)' }}>MAXIMUM SENSITIVITY DIVERGENCE: ONLY 0.2625 POINTS</div>

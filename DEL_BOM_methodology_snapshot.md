@@ -123,18 +123,18 @@ In the APIx engine, both formulas are executed simultaneously. The maximum verif
 ### 4.1 Advance-Purchase Horizons
 The index tracks six forward-looking advance purchase classes:
 
-| Horizon | Lead Days | Methodological Role | Benchmark Weight ($w_L$) | Official Status |
+| Horizon | Lead Days | Methodological Role | Empirical Weight ($w_L$) | Official Status |
 | :---: | :---: | :--- | :---: | :--- |
-| **$T+1$** | 1 day | Last-minute emergency / business travel; peak volatility | $1/6 \approx 0.166667$ | Analytical Stratum |
-| **$T+7$** | 7 days | Short-horizon discretionary booking window | $1/6 \approx 0.166667$ | Analytical Stratum |
-| **$T+15$** | 15 days | Standard domestic forward booking window | $1/6 \approx 0.166667$ | Analytical Stratum |
-| **$T+21$** | 21 days | **MoSPI Domestic Airfare Reference Checkpoint** | $1/6 \approx 0.166667$ | **Official MoSPI CPI 2024 Checkpoint** |
-| **$T+30$** | 30 days | Leisure vacation booking baseline | $1/6 \approx 0.166666$ | Analytical Stratum |
-| **$T+45$** | 45 days | Maximum domestic forward planning anchor | $1/6 \approx 0.166666$ | Analytical Stratum |
-| **Total** | — | — | **1.000000 (100%)** | Strict Unity Invariant |
+| **$T+1$** | 1 day | Last-minute emergency / business travel; peak volatility | **0.0509 (5.09%)** | Analytical Stratum |
+| **$T+7$** | 7 days | Short-horizon discretionary booking window | **0.1350 (13.50%)** | Analytical Stratum |
+| **$T+15$** | 15 days | Standard domestic forward booking window | **0.1491 (14.91%)** | Analytical Stratum |
+| **$T+21$** | 21 days | **MoSPI Domestic Airfare Reference Checkpoint** | **0.1519 (15.19%)** | **Official MoSPI CPI 2024 Checkpoint** |
+| **$T+30$** | 30 days | Leisure vacation booking baseline | **0.2588 (25.88%)** | Analytical Stratum |
+| **$T+45$** | 45 days | Maximum domestic forward planning anchor | **0.2543 (25.43%)** | Analytical Stratum |
+| **Total** | — | — | **1.0000 (100%)** | Strict Unity Invariant |
 
 > [!IMPORTANT]
-> **T+21 Isolation Rule:** As stipulated in the MoSPI CPI 2024 Expert Group documentation, 21 days prior to departure is the domestic airfare collection reference. However, per Phase 29 instructions, $T+21$ receives **no artificial statistical bias** ($w_{T+21} = 1/6$). The weights are formally labeled `PROVISIONAL EQUAL LEAD-TIME WEIGHTS` until empirical airline booking-share transaction data can be integrated.
+> **Empirical Weighting & T+21 Isolation:** APIx strictly rejects equal weighting across lead times. Weights are empirically derived from 300,153 verified transactions (`Clean_Dataset.csv`). In addition, as stipulated in the MoSPI CPI 2024 Expert Group documentation, 21 days prior to departure is the domestic airfare collection reference, captured and isolated as an independent stratum.
 
 ### 4.2 Lead-Time Aggregation Formula
 For route $r$ in period $t$:

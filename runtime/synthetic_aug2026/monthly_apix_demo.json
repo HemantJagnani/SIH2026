@@ -1,0 +1,1940 @@
+{
+  "data_label": "SYNTHETIC_METHODOLOGY_DEMONSTRATION",
+  "description": "Monthly synthetic APIx representative price for August 2026. SYNTHETIC — not real airfare data.",
+  "month": "2026-08",
+  "total_canonical_products": 5977,
+  "qualified_products": 5967,
+  "disqualified_products": 10,
+  "active_day_threshold": 0.3,
+  "scheduled_collection_days": 31,
+  "populated_cells": 360,
+  "total_cells": 360,
+  "synthetic_august_representative_price_inr": 5769.64,
+  "route_contributions": [
+    {
+      "route": "DEL-BOM",
+      "route_weight": 0.07484135033105548,
+      "route_representative_price_inr": 6466.75,
+      "weighted_contribution": 483.980302253353,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 6503.59
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 6399.51
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 6495.14
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 6391.96
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 6490.7
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 6498.74
+        }
+      ]
+    },
+    {
+      "route": "BLR-DEL",
+      "route_weight": 0.051759401161626646,
+      "route_representative_price_inr": 9954.63,
+      "weighted_contribution": 515.2456875855635,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 10893.67
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 9995.84
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 9326.76
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 10875.55
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 9697.32
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 9824.71
+        }
+      ]
+    },
+    {
+      "route": "BLR-BOM",
+      "route_weight": 0.04615148466214695,
+      "route_representative_price_inr": 8018.24,
+      "weighted_contribution": 370.0536803774132,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 10416.23
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 8632.41
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 6895.62
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 7392.12
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 7494.65
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 8777.28
+        }
+      ]
+    },
+    {
+      "route": "DEL-HYD",
+      "route_weight": 0.03566176478980607,
+      "route_representative_price_inr": 10537.5,
+      "weighted_contribution": 375.78584647258145,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 10585.1
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 13019.46
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 9412.92
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 10345.22
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 9663.43
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 10874.11
+        }
+      ]
+    },
+    {
+      "route": "DEL-PNQ",
+      "route_weight": 0.031591426723539276,
+      "route_representative_price_inr": 9577.94,
+      "weighted_contribution": 302.5807896724558,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 10913.55
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 11751.67
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 7192.66
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 8868.13
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 8258.94
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 11321.48
+        }
+      ]
+    },
+    {
+      "route": "DEL-CCU",
+      "route_weight": 0.029979105347189068,
+      "route_representative_price_inr": 11320.52,
+      "weighted_contribution": 339.3790616649608,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 9277.24
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 9263.44
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 9527.31
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 13198.11
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 13431.51
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 10603.05
+        }
+      ]
+    },
+    {
+      "route": "AMD-DEL",
+      "route_weight": 0.02706170652813844,
+      "route_representative_price_inr": 7506.85,
+      "weighted_contribution": 203.14817165075604,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 7382.97
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 6752.83
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 6125.84
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 6158.15
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 6292.09
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 10783.52
+        }
+      ]
+    },
+    {
+      "route": "DEL-MAA",
+      "route_weight": 0.026357442342140346,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "BOM-HYD",
+      "route_weight": 0.026069786364210947,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "DEL-SXR",
+      "route_weight": 0.026021294760177276,
+      "route_representative_price_inr": 9189.97,
+      "weighted_contribution": 239.13491820718636,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 17908.09
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 6846.32
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 7234.51
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 11332.47
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 7032.95
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 10751.09
+        }
+      ]
+    },
+    {
+      "route": "BLR-CCU",
+      "route_weight": 0.025388153767452508,
+      "route_representative_price_inr": 11457.56,
+      "weighted_contribution": 290.8862950798131,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 10959.62
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 13424.41
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 14694.69
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 12141.85
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 9688.82
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 10006.41
+        }
+      ]
+    },
+    {
+      "route": "BOM-MAA",
+      "route_weight": 0.024495314744696704,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "BLR-HYD",
+      "route_weight": 0.024483140210619658,
+      "route_representative_price_inr": 7096.27,
+      "weighted_contribution": 173.73897338241395,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 9262.81
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 9317.54
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 6800.21
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 8406.59
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 6281.49
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 5703.51
+        }
+      ]
+    },
+    {
+      "route": "AMD-BOM",
+      "route_weight": 0.023347093129435396,
+      "route_representative_price_inr": 7793.79,
+      "weighted_contribution": 181.9623409612623,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 9852.02
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 6389.65
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 6579.5
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 6789.78
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 6440.51
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 10816.15
+        }
+      ]
+    },
+    {
+      "route": "BOM-CCU",
+      "route_weight": 0.022396175057060246,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "BLR-PNQ",
+      "route_weight": 0.0208540746540473,
+      "route_representative_price_inr": 6255.58,
+      "weighted_contribution": 130.4543323243652,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 7566.87
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 9073.73
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 4514.05
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 4417.23
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 5994.42
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 6882.01
+        }
+      ]
+    },
+    {
+      "route": "DEL-GOI",
+      "route_weight": 0.017476684979158774,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "HYD-MAA",
+      "route_weight": 0.016839717704295504,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "DEL-GAU",
+      "route_weight": 0.016651729854002227,
+      "route_representative_price_inr": 9874.77,
+      "weighted_contribution": 164.43200241040557,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 10078.66
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 8559.84
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 8870.86
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 10208.11
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 10024.51
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 10769.11
+        }
+      ]
+    },
+    {
+      "route": "BLR-COK",
+      "route_weight": 0.016305212177834247,
+      "route_representative_price_inr": 6927.2,
+      "weighted_contribution": 112.94946579829339,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 4318.35
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 8566.91
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 5960.38
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 10212.24
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 4276.07
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 7881.59
+        }
+      ]
+    },
+    {
+      "route": "DEL-LKO",
+      "route_weight": 0.016193739100191274,
+      "route_representative_price_inr": 4427.49,
+      "weighted_contribution": 71.69761792870587,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 4746.52
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 4352.58
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 4209.94
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 4318.08
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 4252.83
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 4774.07
+        }
+      ]
+    },
+    {
+      "route": "BOM-GOI",
+      "route_weight": 0.015959151046694153,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "BLR-MAA",
+      "route_weight": 0.01553382500261671,
+      "route_representative_price_inr": 5438.19,
+      "weighted_contribution": 84.47589179098016,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 4252.7
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 7859.0
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 6657.91
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 5590.0
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 4092.84
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 4953.66
+        }
+      ]
+    },
+    {
+      "route": "DEL-PAT",
+      "route_weight": 0.015024364231971093,
+      "route_representative_price_inr": 9117.75,
+      "weighted_contribution": 136.98839697605445,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 8470.84
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 7896.32
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 6822.02
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 7914.14
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 6804.88
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 14314.41
+        }
+      ]
+    },
+    {
+      "route": "BOM-JAI",
+      "route_weight": 0.013626836421123091,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "ATQ-DEL",
+      "route_weight": 0.013460186615823783,
+      "route_representative_price_inr": 7181.42,
+      "weighted_contribution": 96.66325336660924,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 4107.44
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 14476.46
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 4788.61
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 7361.15
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 5734.15
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 6692.45
+        }
+      ]
+    },
+    {
+      "route": "BOM-COK",
+      "route_weight": 0.012936409897517924,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "CCU-HYD",
+      "route_weight": 0.012604045117214512,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "BBI-DEL",
+      "route_weight": 0.012202492024946446,
+      "route_representative_price_inr": 12721.36,
+      "weighted_contribution": 155.23229394647274,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 13729.28
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 18606.09
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 10601.73
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 16416.6
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 10762.3
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 10424.82
+        }
+      ]
+    },
+    {
+      "route": "BLR-GOI",
+      "route_weight": 0.012053408333101166,
+      "route_representative_price_inr": 5051.72,
+      "weighted_contribution": 60.89044394449382,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 13438.99
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 3661.82
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 4035.17
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 6645.65
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 4578.44
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 4236.39
+        }
+      ]
+    },
+    {
+      "route": "CCU-GAU",
+      "route_weight": 0.011836549444853746,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "BOM-GOX",
+      "route_weight": 0.011594602320311839,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "DEL-IXB",
+      "route_weight": 0.01147484621144859,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "COK-DEL",
+      "route_weight": 0.011015605393870798,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "CCU-MAA",
+      "route_weight": 0.010969809579525617,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "DEL-GOX",
+      "route_weight": 0.010324831026434859,
+      "route_representative_price_inr": 8917.42,
+      "weighted_contribution": 92.07085469175074,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 8472.88
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 8153.01
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 9175.87
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 9013.63
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 7647.49
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 10495.59
+        }
+      ]
+    },
+    {
+      "route": "BOM-LKO",
+      "route_weight": 0.010123831642846737,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "DEL-IXR",
+      "route_weight": 0.01008714498881992,
+      "route_representative_price_inr": 8942.16,
+      "weighted_contribution": 90.20086443322593,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 7328.98
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 8083.39
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 8274.96
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 8803.86
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 8761.66
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 10378.44
+        }
+      ]
+    },
+    {
+      "route": "GOI-HYD",
+      "route_weight": 0.01002029375259327,
+      "route_representative_price_inr": 9331.05,
+      "weighted_contribution": 93.49986202013544,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 15597.28
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 21618.47
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 9345.69
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 7965.89
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 6018.24
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 5732.12
+        }
+      ]
+    },
+    {
+      "route": "AMD-BLR",
+      "route_weight": 0.009920593014598016,
+      "route_representative_price_inr": 9854.98,
+      "weighted_contribution": 97.76724574700316,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 9342.35
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 8661.63
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 7857.44
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 8375.99
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 8513.91
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 14010.52
+        }
+      ]
+    },
+    {
+      "route": "DEL-IDR",
+      "route_weight": 0.00979260822511305,
+      "route_representative_price_inr": 6892.03,
+      "weighted_contribution": 67.49094966572588,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 8168.1
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 7365.98
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 6677.98
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 6696.49
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 6694.58
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 6828.24
+        }
+      ]
+    },
+    {
+      "route": "DEL-IXC",
+      "route_weight": 0.009621055995823786,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "DEL-IXL",
+      "route_weight": 0.009449742909168182,
+      "route_representative_price_inr": 5913.04,
+      "weighted_contribution": 55.876707811627824,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 8127.83
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 6969.96
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 5244.85
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 7037.56
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 5105.46
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 5450.57
+        }
+      ]
+    },
+    {
+      "route": "CJB-MAA",
+      "route_weight": 0.009315909995278347,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "BLR-TRV",
+      "route_weight": 0.009222579147434119,
+      "route_representative_price_inr": 8118.82,
+      "weighted_contribution": 74.87646003377107,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 9738.67
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 6665.18
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 7780.38
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 10209.37
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 7216.57
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 8434.21
+        }
+      ]
+    },
+    {
+      "route": "HYD-VTZ",
+      "route_weight": 0.009129672234258646,
+      "route_representative_price_inr": 7273.25,
+      "weighted_contribution": 66.4023885778217,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 5353.0
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 6698.68
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 4852.49
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 6450.26
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 10605.72
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 6482.11
+        }
+      ]
+    },
+    {
+      "route": "BBI-BLR",
+      "route_weight": 0.008977360116859005,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "DEL-VNS",
+      "route_weight": 0.008715466322646219,
+      "route_representative_price_inr": 7236.22,
+      "weighted_contribution": 63.06703171325903,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 9124.64
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 6843.37
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 6343.91
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 8004.96
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 6193.91
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 8191.55
+        }
+      ]
+    },
+    {
+      "route": "CCU-IXA",
+      "route_weight": 0.008585927106042486,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "DEL-RPR",
+      "route_weight": 0.008394428207082347,
+      "route_representative_price_inr": 7593.94,
+      "weighted_contribution": 63.74678413889091,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 10227.36
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 8379.57
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 7517.57
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 7483.75
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 7235.03
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 7125.62
+        }
+      ]
+    },
+    {
+      "route": "BOM-VNS",
+      "route_weight": 0.008153187640321696,
+      "route_representative_price_inr": 8329.39,
+      "weighted_contribution": 67.91107959941912,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 11121.17
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 5881.53
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 7255.97
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 7630.69
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 7639.84
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 10818.55
+        }
+      ]
+    },
+    {
+      "route": "BLR-VNS",
+      "route_weight": 0.008145719868079793,
+      "route_representative_price_inr": 10018.65,
+      "weighted_contribution": 81.60911635633761,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 12914.04
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 9312.78
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 10218.58
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 10461.2
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 9032.42
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 10435.96
+        }
+      ]
+    },
+    {
+      "route": "BLR-GAU",
+      "route_weight": 0.008116403155217472,
+      "route_representative_price_inr": 13072.92,
+      "weighted_contribution": 106.1050891359056,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 14170.55
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 12773.41
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 12649.29
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 16939.13
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 11623.31
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 12426.48
+        }
+      ]
+    },
+    {
+      "route": "BLR-LKO",
+      "route_weight": 0.00802086567307178,
+      "route_representative_price_inr": 10558.81,
+      "weighted_contribution": 84.69079667748704,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 8663.25
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 10199.97
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 11392.08
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 12218.44
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 10585.88
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 9621.27
+        }
+      ]
+    },
+    {
+      "route": "BOM-CJB",
+      "route_weight": 0.007828486294414997,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "BOM-IDR",
+      "route_weight": 0.00776197203189941,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "BLR-JAI",
+      "route_weight": 0.007658336310568538,
+      "route_representative_price_inr": 9738.53,
+      "weighted_contribution": 74.58093791056102,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 9538.86
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 9488.25
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 9530.99
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 9992.02
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 10182.19
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 9430.11
+        }
+      ]
+    },
+    {
+      "route": "HYD-TIR",
+      "route_weight": 0.007582234602467276,
+      "route_representative_price_inr": 6943.84,
+      "weighted_contribution": 52.64982392199637,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 10194.98
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 6021.87
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 6326.97
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 6505.93
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 7258.22
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 7085.87
+        }
+      ]
+    },
+    {
+      "route": "COK-HYD",
+      "route_weight": 0.007488740702827373,
+      "route_representative_price_inr": 0.0,
+      "weighted_contribution": 0.0,
+      "lead_time_detail": []
+    },
+    {
+      "route": "BOM-NAG",
+      "route_weight": 0.0073446790062888755,
+      "route_representative_price_inr": 6455.29,
+      "weighted_contribution": 47.412032942506514,
+      "lead_time_detail": [
+        {
+          "lead_time": "T+1",
+          "weight": 0.0509,
+          "cell_price": 6574.26
+        },
+        {
+          "lead_time": "T+7",
+          "weight": 0.135,
+          "cell_price": 6430.02
+        },
+        {
+          "lead_time": "T+15",
+          "weight": 0.1491,
+          "cell_price": 6104.4
+        },
+        {
+          "lead_time": "T+21",
+          "weight": 0.1519,
+          "cell_price": 6154.98
+        },
+        {
+          "lead_time": "T+30",
+          "weight": 0.2588,
+          "cell_price": 6279.98
+        },
+        {
+          "lead_time": "T+45",
+          "weight": 0.2543,
+          "cell_price": 7008.41
+        }
+      ]
+    }
+  ],
+  "governance": {
+    "p_ref_used_as_denominator": false,
+    "p_ref_descriptive_value_inr": 8641.45,
+    "formula": "P_national = sum_r(W_r * sum_L(w_L * GeomMean_monthly(P_{i,r,L})))",
+    "note": "P_ref INR 8641.45 is strictly descriptive. It does not enter this formula as a denominator."
+  },
+  "product_diagnostics_sample": [
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00000",
+      "active_days": 17,
+      "active_ratio": 0.5484,
+      "qualified": true,
+      "geometric_price": 6588.4
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00001",
+      "active_days": 23,
+      "active_ratio": 0.7419,
+      "qualified": true,
+      "geometric_price": 6547.64
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00003",
+      "active_days": 23,
+      "active_ratio": 0.7419,
+      "qualified": true,
+      "geometric_price": 6543.61
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00004",
+      "active_days": 18,
+      "active_ratio": 0.5806,
+      "qualified": true,
+      "geometric_price": 6566.71
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00005",
+      "active_days": 17,
+      "active_ratio": 0.5484,
+      "qualified": true,
+      "geometric_price": 6562.23
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00007",
+      "active_days": 18,
+      "active_ratio": 0.5806,
+      "qualified": true,
+      "geometric_price": 6579.86
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00009",
+      "active_days": 26,
+      "active_ratio": 0.8387,
+      "qualified": true,
+      "geometric_price": 6558.3
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00010",
+      "active_days": 26,
+      "active_ratio": 0.8387,
+      "qualified": true,
+      "geometric_price": 6581.19
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00011",
+      "active_days": 15,
+      "active_ratio": 0.4839,
+      "qualified": true,
+      "geometric_price": 6577.16
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00012",
+      "active_days": 24,
+      "active_ratio": 0.7742,
+      "qualified": true,
+      "geometric_price": 6566.23
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00014",
+      "active_days": 17,
+      "active_ratio": 0.5484,
+      "qualified": true,
+      "geometric_price": 6550.44
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00015",
+      "active_days": 18,
+      "active_ratio": 0.5806,
+      "qualified": true,
+      "geometric_price": 6613.59
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00016",
+      "active_days": 14,
+      "active_ratio": 0.4516,
+      "qualified": true,
+      "geometric_price": 6544.4
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00018",
+      "active_days": 20,
+      "active_ratio": 0.6452,
+      "qualified": true,
+      "geometric_price": 6557.64
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00019",
+      "active_days": 21,
+      "active_ratio": 0.6774,
+      "qualified": true,
+      "geometric_price": 6585.55
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00020",
+      "active_days": 27,
+      "active_ratio": 0.871,
+      "qualified": true,
+      "geometric_price": 6575.02
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00021",
+      "active_days": 17,
+      "active_ratio": 0.5484,
+      "qualified": true,
+      "geometric_price": 6554.28
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00022",
+      "active_days": 22,
+      "active_ratio": 0.7097,
+      "qualified": true,
+      "geometric_price": 6579.64
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00024",
+      "active_days": 29,
+      "active_ratio": 0.9355,
+      "qualified": true,
+      "geometric_price": 6532.09
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00025",
+      "active_days": 19,
+      "active_ratio": 0.6129,
+      "qualified": true,
+      "geometric_price": 6627.23
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00026",
+      "active_days": 28,
+      "active_ratio": 0.9032,
+      "qualified": true,
+      "geometric_price": 6559.4
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00027",
+      "active_days": 26,
+      "active_ratio": 0.8387,
+      "qualified": true,
+      "geometric_price": 6572.64
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00028",
+      "active_days": 30,
+      "active_ratio": 0.9677,
+      "qualified": true,
+      "geometric_price": 6571.14
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00029",
+      "active_days": 20,
+      "active_ratio": 0.6452,
+      "qualified": true,
+      "geometric_price": 6567.84
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00032",
+      "active_days": 29,
+      "active_ratio": 0.9355,
+      "qualified": true,
+      "geometric_price": 6531.58
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00035",
+      "active_days": 16,
+      "active_ratio": 0.5161,
+      "qualified": true,
+      "geometric_price": 6619.39
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00036",
+      "active_days": 21,
+      "active_ratio": 0.6774,
+      "qualified": true,
+      "geometric_price": 6558.35
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00037",
+      "active_days": 22,
+      "active_ratio": 0.7097,
+      "qualified": true,
+      "geometric_price": 6605.04
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00038",
+      "active_days": 16,
+      "active_ratio": 0.5161,
+      "qualified": true,
+      "geometric_price": 6553.57
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00039",
+      "active_days": 29,
+      "active_ratio": 0.9355,
+      "qualified": true,
+      "geometric_price": 6568.49
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00040",
+      "active_days": 23,
+      "active_ratio": 0.7419,
+      "qualified": true,
+      "geometric_price": 6568.1
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00042",
+      "active_days": 26,
+      "active_ratio": 0.8387,
+      "qualified": true,
+      "geometric_price": 6571.5
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00043",
+      "active_days": 24,
+      "active_ratio": 0.7742,
+      "qualified": true,
+      "geometric_price": 6575.8
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00044",
+      "active_days": 26,
+      "active_ratio": 0.8387,
+      "qualified": true,
+      "geometric_price": 6589.04
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00045",
+      "active_days": 25,
+      "active_ratio": 0.8065,
+      "qualified": true,
+      "geometric_price": 6560.02
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00046",
+      "active_days": 23,
+      "active_ratio": 0.7419,
+      "qualified": true,
+      "geometric_price": 6585.21
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00047",
+      "active_days": 20,
+      "active_ratio": 0.6452,
+      "qualified": true,
+      "geometric_price": 6570.73
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+1_00048",
+      "active_days": 18,
+      "active_ratio": 0.5806,
+      "qualified": true,
+      "geometric_price": 6560.06
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+7_00050",
+      "active_days": 25,
+      "active_ratio": 0.8065,
+      "qualified": true,
+      "geometric_price": 6511.86
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+7_00051",
+      "active_days": 25,
+      "active_ratio": 0.8065,
+      "qualified": true,
+      "geometric_price": 6563.91
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+7_00053",
+      "active_days": 30,
+      "active_ratio": 0.9677,
+      "qualified": true,
+      "geometric_price": 6589.12
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+7_00054",
+      "active_days": 22,
+      "active_ratio": 0.7097,
+      "qualified": true,
+      "geometric_price": 6579.86
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+7_00055",
+      "active_days": 25,
+      "active_ratio": 0.8065,
+      "qualified": true,
+      "geometric_price": 6550.24
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+7_00057",
+      "active_days": 24,
+      "active_ratio": 0.7742,
+      "qualified": true,
+      "geometric_price": 6585.78
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+7_00060",
+      "active_days": 27,
+      "active_ratio": 0.871,
+      "qualified": true,
+      "geometric_price": 6605.43
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+7_00061",
+      "active_days": 22,
+      "active_ratio": 0.7097,
+      "qualified": true,
+      "geometric_price": 6554.51
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+7_00062",
+      "active_days": 28,
+      "active_ratio": 0.9032,
+      "qualified": true,
+      "geometric_price": 6585.14
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+7_00063",
+      "active_days": 19,
+      "active_ratio": 0.6129,
+      "qualified": true,
+      "geometric_price": 6539.86
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+7_00064",
+      "active_days": 29,
+      "active_ratio": 0.9355,
+      "qualified": true,
+      "geometric_price": 6573.65
+    },
+    {
+      "product_id": "CANON_DEL-BOM_T+7_00065",
+      "active_days": 25,
+      "active_ratio": 0.8065,
+      "qualified": true,
+      "geometric_price": 6572.13
+    }
+  ]
+}

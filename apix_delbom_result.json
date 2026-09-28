@@ -34,7 +34,7 @@
     "formula": "Short-Chain Jevons: I_t = I_t-1 * exp(1/N * sum(ln p_t - ln p_t-1))",
     "classification": "UN COICOP 2018 Subclass 07.3.3.1 (Passenger Air Transport)",
     "elementary_index_type": "Short-Chain Jevons Geometric Mean (log-formulation)",
-    "lead_time_weights_type": "PROVISIONAL EQUAL LEAD-TIME WEIGHTS (w_L = 1/6)",
+    "lead_time_weights_type": "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS",
     "cpi_alignment_checkpoint": "T+21 (MoSPI domestic 21-day advance purchase reference)",
     "disclaimer": "Experimental Airfare Price Index designed for potential CPI augmentation. Not an official MoSPI publication."
   },
@@ -93,74 +93,74 @@
   "lead_time_breakdown": {
     "T+1": {
       "lead_days": 1,
-      "weight": 0.166667,
+      "weight": 0.0509,
       "elementary_index": 102.4,
       "median_fare_inr": 6686.21,
       "geometric_mean_fare_inr": 6652.78,
       "n_itineraries": 10,
       "min_fare_inr": 6351.9,
       "max_fare_inr": 7689.14,
-      "contribution_inr": 1114.37,
+      "contribution_inr": 340.33,
       "is_mospi_checkpoint": false
     },
     "T+7": {
       "lead_days": 7,
-      "weight": 0.166667,
+      "weight": 0.135,
       "elementary_index": 102.8162,
       "median_fare_inr": 6579.2,
       "geometric_mean_fare_inr": 6546.3,
       "n_itineraries": 10,
       "min_fare_inr": 6250.24,
       "max_fare_inr": 7566.08,
-      "contribution_inr": 1096.54,
+      "contribution_inr": 888.19,
       "is_mospi_checkpoint": false
     },
     "T+15": {
       "lead_days": 15,
-      "weight": 0.166667,
+      "weight": 0.1491,
       "elementary_index": 102.4,
       "median_fare_inr": 6633.48,
       "geometric_mean_fare_inr": 6600.31,
       "n_itineraries": 10,
       "min_fare_inr": 6301.81,
       "max_fare_inr": 7628.5,
-      "contribution_inr": 1105.58,
+      "contribution_inr": 989.05,
       "is_mospi_checkpoint": false
     },
     "T+21": {
       "lead_days": 21,
-      "weight": 0.166667,
+      "weight": 0.1519,
       "elementary_index": 103.4279,
       "median_fare_inr": 6906.88,
       "geometric_mean_fare_inr": 6872.35,
       "n_itineraries": 10,
       "min_fare_inr": 6561.54,
       "max_fare_inr": 7942.91,
-      "contribution_inr": 1151.15,
+      "contribution_inr": 1049.16,
       "is_mospi_checkpoint": true
     },
     "T+30": {
       "lead_days": 30,
-      "weight": 0.166667,
+      "weight": 0.2588,
       "elementary_index": 102.4,
       "median_fare_inr": 6952.96,
       "geometric_mean_fare_inr": 6918.2,
       "n_itineraries": 10,
       "min_fare_inr": 6605.31,
       "max_fare_inr": 7995.9,
-      "contribution_inr": 1158.83,
+      "contribution_inr": 1799.43,
       "is_mospi_checkpoint": false
     },
     "T+45": {
       "lead_days": 45,
-      "weight": 0.166667,
+      "weight": 0.2543,
       "elementary_index": 102.4,
       "median_fare_inr": 7524.86,
       "geometric_mean_fare_inr": 7487.24,
       "n_itineraries": 10,
       "min_fare_inr": 7148.62,
       "max_fare_inr": 8653.59,
-      "contribution_inr": 1254.15,
+      "contribution_inr": 1913.57,
       "is_mospi_checkpoint": false
     }
   },
@@ -172,32 +172,32 @@
         "T+1": {
           "median_fare": 6686.21,
           "n_obs": 10,
-          "weight": 0.1667
+          "weight": 0.0509
         },
         "T+7": {
           "median_fare": 6579.2,
           "n_obs": 10,
-          "weight": 0.1667
+          "weight": 0.135
         },
         "T+15": {
           "median_fare": 6633.48,
           "n_obs": 10,
-          "weight": 0.1667
+          "weight": 0.1491
         },
         "T+21": {
           "median_fare": 6906.88,
           "n_obs": 10,
-          "weight": 0.1667
+          "weight": 0.1519
         },
         "T+30": {
           "median_fare": 6952.96,
           "n_obs": 10,
-          "weight": 0.1667
+          "weight": 0.2588
         },
         "T+45": {
           "median_fare": 7524.86,
           "n_obs": 10,
-          "weight": 0.1667
+          "weight": 0.2543
         }
       }
     },

@@ -1,6 +1,6 @@
 import pytest
 from uuid import uuid4
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from models.request import FareSearchRequest
 from models.observation import FareObservation
 from sources.easemytrip.adapter import EaseMyTripAdapter
@@ -8,7 +8,7 @@ from sources.easemytrip.navigation import NavigationState
 
 @pytest.fixture
 def dummy_request():
-    today = date.today()
+    today = datetime.now(timezone.utc).date()
     return FareSearchRequest(
         source="easemytrip",
         collection_mode="BROWSER",

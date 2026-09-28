@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from .fingerprint import (
@@ -39,7 +39,32 @@ class ReconciliationDiagnostics:
         self.unmatched_observations: int = 0
         self.insufficient_data_observations: int = 0
         self.price_conflicts: int = 0
+        self.price_variances_aggregated: int = 0
+        self.unresolved_conflicts: int = 0
+        self.foreign_transit_exclusions: int = 0
+        self.higher_fare_family_exclusions: int = 0
         self.missing_fields_by_source: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+
+    def merge(self, other: "ReconciliationDiagnostics") -> None:
+        """Merges telemetry metrics from another stratum's diagnostics."""
+        for k, v in other.observations_by_source.items():
+            self.observations_by_source[k] += v
+        for k, v in other.duplicates_by_source.items():
+            self.duplicates_by_source[k] += v
+        for k, v in other.canonical_offers_by_source.items():
+            self.canonical_offers_by_source[k] += v
+        self.exact_cross_source_matches += other.exact_cross_source_matches
+        self.probable_matches += other.probable_matches
+        self.unmatched_observations += other.unmatched_observations
+        self.insufficient_data_observations += other.insufficient_data_observations
+        self.price_conflicts += other.price_conflicts
+        self.price_variances_aggregated += other.price_variances_aggregated
+        self.unresolved_conflicts += other.unresolved_conflicts
+        self.foreign_transit_exclusions += other.foreign_transit_exclusions
+        self.higher_fare_family_exclusions += other.higher_fare_family_exclusions
+        for src, fields in other.missing_fields_by_source.items():
+            for f, cnt in fields.items():
+                self.missing_fields_by_source[src][f] += cnt
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -51,6 +76,10 @@ class ReconciliationDiagnostics:
             "unmatched_observations": self.unmatched_observations,
             "insufficient_data_observations": self.insufficient_data_observations,
             "price_conflicts": self.price_conflicts,
+            "price_variances_aggregated": self.price_variances_aggregated,
+            "unresolved_conflicts": self.unresolved_conflicts,
+            "foreign_transit_exclusions": self.foreign_transit_exclusions,
+            "higher_fare_family_exclusions": self.higher_fare_family_exclusions,
             "missing_fields_by_source": {k: dict(v) for k, v in self.missing_fields_by_source.items()},
         }
 
@@ -61,8 +90,9 @@ class CrossSourceReconciliationEngine:
     Converts multi-source observations into canonical offers without hardcoded source branches.
     """
 
-    def __init__(self, registry: Optional[SourceRegistry] = None):
+    def __init__(self, registry: Optional[SourceRegistry] = None, price_tolerance: Decimal = Decimal("1.00")):
         self.registry = registry or SourceRegistry.get_registry()
+        self.price_tolerance = price_tolerance
 
     def reconcile(
         self,
@@ -75,7 +105,7 @@ class CrossSourceReconciliationEngine:
         1. Track diagnostics and missing fields.
         2. Deduplicate same-source duplicates (§10A).
         3. Match cross-source offers on primary dimensions (§5).
-        4. Detect price conflicts without averaging or silent selection (§7).
+        4. Detect price variance & aggregate valid comparable source prices using arithmetic mean (§7).
         5. Merge field depth with complete provenance (§6).
         6. Return unified canonical offers with complete lineage (§12).
         """
@@ -93,12 +123,14 @@ class CrossSourceReconciliationEngine:
                     diag.missing_fields_by_source[src][field_name] += 1
 
         # ── 2. Same-Source Deduplication (§10A) ──
-        # Group by (source, canonical_offer_fingerprint, total_fare)
+        # Group by (source, stratum, canonical_offer_fingerprint, total_fare)
+        # Stratum (route, lead_time) guarantees independent sampling strata are protected
         unique_source_offers: List[CanonicalOffer] = []
-        seen_source_fingerprints: Set[Tuple[str, str, Optional[Decimal]]] = set()
+        seen_source_fingerprints: Set[Tuple[str, Tuple[str, str], str, Optional[Decimal]]] = set()
 
         for o in offers:
-            key = (o.source, o.canonical_offer_fingerprint, o.total_fare)
+            stratum = ((o.route or "").upper(), (o.lead_time or "T+0").upper())
+            key = (o.source, stratum, o.canonical_offer_fingerprint, o.total_fare)
             if key in seen_source_fingerprints:
                 diag.duplicates_by_source[o.source] += 1
                 continue
@@ -126,19 +158,21 @@ class CrossSourceReconciliationEngine:
 
         # ── 4. Cross-Source Matching (§5, §6, §7, §8) ──
         # Primary matching key:
-        # (route, travel_date, airline_normalized, flight_number_normalized, departure_time_normalized, stops, cabin, fare_family_normalized)
+        # (route, travel_date, airline_normalized, flight_number_normalized, departure_time_normalized, stops, cabin, fare_family_normalized, baggage_tier, passenger_type)
         def build_match_key(o: CanonicalOffer) -> Tuple[Any, ...]:
             norm_fn = normalize_flight_number(o.flight_number)
             norm_dep = normalize_time_str(o.departure_time)
             # Group fare family: standard/saver are considered the baseline tier across sources
-            fam = o.fare_family.upper()
+            fam = (o.fare_family or "").upper()
             base_tier = (
                 "BASELINE_SAVER"
                 if any(k in fam for k in ["SAVER", "VALUE", "STANDARD", "SPICESAVER", "NOT_PROVIDED", "UNKNOWN"])
                 else fam
             )
+            bag_tier = f"{o.checkin_baggage_kg}KG" if o.checkin_baggage_kg and o.checkin_baggage_kg > 15 else "STD_BAGGAGE"
             return (
                 o.route.upper(),
+                (o.lead_time or "T+0").upper(),
                 o.travel_date,
                 normalize_flight_number(o.airline),  # normalize carrier name
                 norm_fn,
@@ -146,6 +180,7 @@ class CrossSourceReconciliationEngine:
                 o.stops,
                 o.cabin.upper(),
                 base_tier,
+                bag_tier,
                 o.passenger_type.upper(),
             )
 
@@ -160,6 +195,9 @@ class CrossSourceReconciliationEngine:
                 single.match_status = MatchStatus.NO_MATCH
                 single.match_confidence = 1.0
                 single.reconciliation_timestamp = now_utc
+                single.aggregation_method = "SINGLE_SOURCE"
+                single.aggregation_source_count = 1
+                single.source_count = 1
                 diag.unmatched_observations += 1
                 diag.canonical_offers_by_source[single.source] += 1
                 final_canonical_offers.append(single)
@@ -173,6 +211,9 @@ class CrossSourceReconciliationEngine:
                 for item in group:
                     item.match_status = MatchStatus.NO_MATCH
                     item.reconciliation_timestamp = now_utc
+                    item.aggregation_method = "SINGLE_SOURCE"
+                    item.aggregation_source_count = 1
+                    item.source_count = 1
                     diag.unmatched_observations += 1
                     diag.canonical_offers_by_source[item.source] += 1
                     final_canonical_offers.append(item)
@@ -180,37 +221,56 @@ class CrossSourceReconciliationEngine:
 
             # Check price semantics compatibility (§11)
             semantics_set = set(o.price_semantics for o in group)
-            if any(s in (PriceSemantics.UNKNOWN_PRICE_DEFINITION, PriceSemantics.DISPLAYED_FROM) for s in semantics_set):
-                # Price semantics incompatible or uncertain
+            incompatible_semantics = (
+                any(s in (PriceSemantics.UNKNOWN_PRICE_DEFINITION, PriceSemantics.DISPLAYED_FROM) for s in semantics_set)
+                or len(semantics_set) > 1
+            )
+            if incompatible_semantics:
+                # Price semantics incompatible or uncertain: do not average
                 for item in group:
-                    item.match_status = MatchStatus.PROBABLE_MATCH
+                    item.match_status = MatchStatus.PRICE_CONFLICT_UNRESOLVED
                     item.match_confidence = 0.5
                     item.reconciliation_timestamp = now_utc
                     diag.probable_matches += 1
+                    diag.unresolved_conflicts += 1
                     diag.canonical_offers_by_source[item.source] += 1
                     final_canonical_offers.append(item)
                 continue
 
             # Check prices across sources (§7)
+            # Collect one price per source (same-source DOM duplicates deduplicated in step 2)
             price_map: Dict[str, Decimal] = {}
             for item in group:
-                if item.total_fare is not None:
-                    price_map[item.source] = item.total_fare
+                if item.total_fare is not None and item.total_fare > 0:
+                    if item.source not in price_map:
+                        price_map[item.source] = item.total_fare
 
-            unique_prices = set(price_map.values())
-            has_price_conflict = len(unique_prices) > 1
+            valid_prices = list(price_map.values())
+            if not valid_prices:
+                for item in group:
+                    item.match_status = MatchStatus.INSUFFICIENT_DATA
+                    diag.insufficient_data_observations += 1
+                    diag.canonical_offers_by_source[item.source] += 1
+                    final_canonical_offers.append(item)
+                continue
 
-            if has_price_conflict:
+            price_delta = max(valid_prices) - min(valid_prices)
+            has_price_variance = price_delta > self.price_tolerance
+
+            if has_price_variance:
                 diag.price_conflicts += 1
-                match_status = MatchStatus.PRICE_CONFLICT_REVIEW
-                match_confidence = 0.8
+                diag.price_variances_aggregated += 1
+                match_status = MatchStatus.PRICE_VARIANCE_AGGREGATED
+                match_confidence = 0.95
             else:
                 diag.exact_cross_source_matches += 1
-                match_status = MatchStatus.EXACT_MATCH
+                match_status = MatchStatus.PRICE_CONSISTENT
                 match_confidence = 1.0
 
-            # Merge information, NOT observations (§6)
-            merged_offer = self._merge_canonical_offers(group, match_status, match_confidence, price_map, has_price_conflict, now_utc)
+            # Merge information and aggregate source prices via arithmetic mean (§6, §7)
+            merged_offer = self._merge_canonical_offers(
+                group, match_status, match_confidence, price_map, has_price_variance, now_utc
+            )
             for src in sources_in_group:
                 diag.canonical_offers_by_source[src] += 1
             final_canonical_offers.append(merged_offer)
@@ -223,7 +283,7 @@ class CrossSourceReconciliationEngine:
         match_status: MatchStatus,
         match_confidence: float,
         price_map: Dict[str, Decimal],
-        has_price_conflict: bool,
+        has_price_variance: bool,
         reconciled_at: datetime,
     ) -> CanonicalOffer:
         """Merges multiple source offers of the exact same product into a single CanonicalOffer."""
@@ -233,6 +293,7 @@ class CrossSourceReconciliationEngine:
         all_source_obs_ids: List[str] = []
         all_sources: List[str] = []
         merged_provenance: Dict[str, str] = {}
+        source_timestamps: Dict[str, str] = {}
         
         # Best fields from any source with richer data
         best_arrival = base.arrival_time
@@ -245,10 +306,16 @@ class CrossSourceReconciliationEngine:
         best_duration = base.duration_minutes
 
         for o in offers:
-            all_source_obs_ids.extend(o.source_observation_ids)
+            for oid in o.source_observation_ids:
+                if oid not in all_source_obs_ids:
+                    all_source_obs_ids.append(oid)
             for s in o.source_names:
                 if s not in all_sources:
                     all_sources.append(s)
+            
+            if o.source and o.source not in source_timestamps:
+                ts_str = o.search_timestamp.isoformat() if hasattr(o.search_timestamp, "isoformat") else str(o.search_timestamp)
+                source_timestamps[o.source] = ts_str
             
             # Merge richer arrival time
             if best_arrival in ("UNKNOWN", "NOT_PROVIDED") and o.arrival_time not in ("UNKNOWN", "NOT_PROVIDED"):
@@ -277,11 +344,21 @@ class CrossSourceReconciliationEngine:
                 if k not in merged_provenance:
                     merged_provenance[k] = v
 
-        # If price conflict: do NOT average and do NOT silently pick. Total fare = None or first if exact match
-        if has_price_conflict:
-            canonical_fare = None
+        # Calculate canonical fare: arithmetic mean of all valid source prices
+        valid_prices = [p for p in price_map.values() if p is not None and p > 0]
+        if len(valid_prices) > 1:
+            mean_fare = sum(valid_prices) / Decimal(str(len(valid_prices)))
+            canonical_fare = mean_fare.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            aggregation_method = "ARITHMETIC_MEAN"
+            aggregation_source_count = len(valid_prices)
+        elif len(valid_prices) == 1:
+            canonical_fare = valid_prices[0]
+            aggregation_method = "SINGLE_SOURCE"
+            aggregation_source_count = 1
         else:
-            canonical_fare = base.total_fare
+            canonical_fare = None
+            aggregation_method = "NO_VALID_PRICE"
+            aggregation_source_count = 0
 
         return CanonicalOffer(
             canonical_offer_id=f"can_reconciled_{base.flight_number}_{base.departure_time.replace(':', '')}_{len(all_sources)}src",
@@ -312,12 +389,17 @@ class CrossSourceReconciliationEngine:
             source=",".join(all_sources),
             source_observation_ids=all_source_obs_ids,
             source_names=all_sources,
+            source_ids=all_sources,
             source_count=len(all_sources),
             match_status=match_status,
             match_confidence=match_confidence,
             field_provenance=merged_provenance,
             price_by_source=price_map,
-            price_conflict=has_price_conflict,
+            source_prices=price_map,
+            source_timestamps=source_timestamps,
+            aggregation_method=aggregation_method,
+            aggregation_source_count=aggregation_source_count,
+            price_conflict=False,
             reconciliation_timestamp=reconciled_at,
             itinerary_fingerprint=base.itinerary_fingerprint,
             offer_fingerprint=base.offer_fingerprint,

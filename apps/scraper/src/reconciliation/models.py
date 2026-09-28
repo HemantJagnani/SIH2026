@@ -26,13 +26,16 @@ class PriceSemantics(str, enum.Enum):
 
 class MatchStatus(str, enum.Enum):
     """
-    Cross-source reconciliation matching status per §5 and §7.
+    Cross-source reconciliation matching status per §5, §7, and §12.
     """
     EXACT_MATCH = "EXACT_MATCH"
     PROBABLE_MATCH = "PROBABLE_MATCH"
     NO_MATCH = "NO_MATCH"
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
     PRICE_CONFLICT_REVIEW = "PRICE_CONFLICT_REVIEW"
+    PRICE_CONSISTENT = "PRICE_CONSISTENT"
+    PRICE_VARIANCE_AGGREGATED = "PRICE_VARIANCE_AGGREGATED"
+    PRICE_CONFLICT_UNRESOLVED = "PRICE_CONFLICT_UNRESOLVED"
 
 
 class RawSourceObservation(BaseModel):
@@ -93,11 +96,16 @@ class CanonicalOffer(BaseModel):
     source: str
     source_observation_ids: List[str] = Field(default_factory=list)
     source_names: List[str] = Field(default_factory=list)
+    source_ids: List[str] = Field(default_factory=list)
     source_count: int = 1
     match_status: MatchStatus = MatchStatus.NO_MATCH
     match_confidence: float = 1.0
     field_provenance: Dict[str, str] = Field(default_factory=dict)
     price_by_source: Dict[str, Decimal] = Field(default_factory=dict)
+    source_prices: Dict[str, Decimal] = Field(default_factory=dict)
+    source_timestamps: Dict[str, str] = Field(default_factory=dict)
+    aggregation_method: str = "SINGLE_SOURCE"
+    aggregation_source_count: int = 1
     price_conflict: bool = False
     reconciliation_timestamp: Optional[datetime] = None
 
@@ -108,14 +116,27 @@ class CanonicalOffer(BaseModel):
 
     @model_validator(mode="after")
     def populate_defaults_and_provenance(self) -> CanonicalOffer:
-        # Standardize source_names
+        # Standardize source_names and source_ids
         if not self.source_names and self.source:
-            self.source_names = [self.source]
+            self.source_names = [s.strip() for s in self.source.split(",") if s.strip()]
+        if not self.source_ids:
+            self.source_ids = list(self.source_names)
         self.source_count = len(self.source_names)
         
-        # Populate initial price_by_source if empty
+        # Populate initial price_by_source and source_prices if empty
         if not self.price_by_source and self.source and self.total_fare is not None:
             self.price_by_source = {self.source: self.total_fare}
+        if not self.source_prices and self.price_by_source:
+            self.source_prices = dict(self.price_by_source)
+
+        # Populate source_timestamps if empty
+        if not self.source_timestamps and self.source:
+            ts_str = self.search_timestamp.isoformat() if hasattr(self.search_timestamp, "isoformat") else str(self.search_timestamp)
+            self.source_timestamps = {s: ts_str for s in self.source_names}
+
+        # Set default aggregation method and source count
+        if self.source_count == 1 and self.aggregation_method == "SINGLE_SOURCE":
+            self.aggregation_source_count = 1
             
         # Ensure field_provenance has entries for populated fields
         for field_name in [
@@ -131,7 +152,7 @@ class CanonicalOffer(BaseModel):
 class APIxProductObservation(BaseModel):
     """
     Finalized canonical product observation post-reconciliation, deduplication,
-    and product comparability assessment per §8 and §14.
+    and product comparability assessment per §8, §12, and §14.
     """
     apix_observation_id: str = Field(default_factory=lambda: f"apix_{uuid.uuid4().hex[:12]}")
     canonical_offer_id: str
@@ -154,6 +175,13 @@ class APIxProductObservation(BaseModel):
     is_comparable_baseline: bool = True
     non_comparable_reason: Optional[str] = None
     sources_contributing: List[str]
+    source_ids: List[str] = Field(default_factory=list)
+    source_observation_ids: List[str] = Field(default_factory=list)
+    source_count: int = 1
     price_by_source: Dict[str, Decimal]
+    source_prices: Dict[str, Decimal] = Field(default_factory=dict)
+    source_timestamps: Dict[str, str] = Field(default_factory=dict)
+    aggregation_method: str = "SINGLE_SOURCE"
+    aggregation_source_count: int = 1
     field_provenance: Dict[str, str] = Field(default_factory=dict)
     match_status: MatchStatus

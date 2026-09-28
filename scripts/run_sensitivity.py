@@ -331,8 +331,8 @@ Methodology §63 requires testing index sensitivity to alternative economic weig
    Weights routes by total expenditure ($E_r = \\text{{Pax}}_r \\times \\bar{{P}}_r$), accounting for higher yields on longer trunk routes.
 3. **Variant C (Equal Route Weights - $1/R$):**  
    Agnostic benchmark assigning equal weight to every monitored route ($10.0\\%$ per route).
-4. **Variant D (Equal Lead-Time Weights - $1/L$):**  
-   Agnostic advance-purchase benchmark assigning equal weight to each lead-time horizon ($16.67\\%$ per window).
+4. **Variant D (Hypothetical Equal Lead-Time Stress-Test - $1/L$):**  
+   Hypothetical sensitivity benchmark assigning equal weight to each lead-time horizon solely to stress-test index sensitivity. Production APIx strictly rejects equal weighting across lead times.
 
 ---
 
@@ -353,7 +353,7 @@ Methodology §63 requires testing index sensitivity to alternative economic weig
 1. **Bounded Divergence ($< 1.0\\%$):**  
    The maximum divergence between any two weighting variants is **{max_div_pts:.4f} index points** ({analysis_output['maximum_divergence_percent']:.3f}%). This confirms that APIx is structurally robust and does not suffer from index instability due to reasonable changes in weighting parameters.
 2. **Lead-Time vs Route Sensitivity:**  
-   Index variation is slightly higher under **Variant D (Equal Lead Times)** because giving equal weight ($16.67\\%$) to late-booking surges ($T+1$) slightly increases index responsiveness relative to the baseline ($10\\%$ weight on $T+1$).
+   Index variation is slightly higher under **Variant D (Hypothetical Equal Lead Times)** because giving equal weight in the stress test to late-booking surges ($T+1$) slightly increases index responsiveness relative to the baseline empirical weight ($5.09\\%$ on $T+1$). Production APIx uses empirical weights to prevent this distortion.
 3. **Expenditure vs Passenger Volume (Variant B vs A):**  
    Route expenditure weighting (Variant B) shifts weight towards high-fare trunk sectors (e.g. DEL-BOM, DEL-BLR) but changes the all-India index by less than $0.15$ points.
 4. **MoSPI CPI 2024 Compatibility:**  

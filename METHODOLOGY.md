@@ -46,15 +46,15 @@ All-India Airfare Price Index (APIx_t = ∑ W_r I_(r,t))
 
 Air travel pricing is characterized by dynamic yield management: ticket prices escalate as the departure date approaches. APIx monitors six advance-purchase horizons:
 
-| Horizon | Days to Departure | Analytical Role | Primary Empirical Weight ($W_l$) | Sensitivity Equal Weight ($W_l^{\text{sens}}$) |
-| :---: | :---: | :--- | :---: | :---: |
-| **$T+1$** | 1 day | Last-minute business & emergency travel; peak price volatility | **0.0509 (5.09%)** | 0.166667 (16.67%) |
-| **$T+7$** | 7 days | Short-horizon discretionary booking window | **0.1350 (13.50%)** | 0.166667 (16.67%) |
-| **$T+15$** | 15 days | Standard domestic advance booking window | **0.1491 (14.91%)** | 0.166667 (16.67%) |
-| **$T+21$** | 21 days | **MoSPI CPI 2024 Official Alignment Checkpoint** | **0.1519 (15.19%)** | 0.166667 (16.67%) |
-| **$T+30$** | 30 days | Early booking vacation/leisure baseline | **0.2588 (25.88%)** | 0.166666 (16.67%) |
-| **$T+45$** | 45 days | Maximum domestic forward planning anchor | **0.2543 (25.43%)** | 0.166666 (16.67%) |
-| **Total** | — | — | **1.0000 (100.00%)** | **1.000000 (100.00%)** |
+| Horizon | Days to Departure | Analytical Role | Empirical Weight ($W_l$) | Statistical Classification |
+| :---: | :---: | :--- | :---: | :--- |
+| **$T+1$** | 1 day | Last-minute business & emergency travel; peak price volatility | **0.0509 (5.09%)** | Analytical Stratum |
+| **$T+7$** | 7 days | Short-horizon discretionary booking window | **0.1350 (13.50%)** | Analytical Stratum |
+| **$T+15$** | 15 days | Standard domestic advance booking window | **0.1491 (14.91%)** | Analytical Stratum |
+| **$T+21$** | 21 days | **MoSPI CPI 2024 Official Alignment Checkpoint** | **0.1519 (15.19%)** | **Official MoSPI CPI 2024 Checkpoint** |
+| **$T+30$** | 30 days | Early booking vacation/leisure baseline | **0.2588 (25.88%)** | Analytical Stratum |
+| **$T+45$** | 45 days | Maximum domestic forward planning anchor | **0.2543 (25.43%)** | Analytical Stratum |
+| **Total** | — | — | **1.0000 (100.00%)** | Strict Unity Invariant |
 
 > [!IMPORTANT]
 > **Empirical Lead-Time Weights Specification (`EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`):**  
@@ -64,7 +64,7 @@ Air travel pricing is characterized by dynamic yield management: ticket prices e
 > - **Source Dataset:** `Clean_Dataset.csv`
 > - **Source Interpretation:** Treat `days_left` as booking lead time; each row represents an individual booking transaction.
 > - **Official Status Disclaimer:** **These weights are derived from the supplied booking dataset and are not official Indian national booking weights.**
-> - **Preserved Sensitivity Configuration (`SENSITIVITY_EQUAL_LEAD_TIME_WEIGHTS`):** The equal-weight method ($w_L = 1/6 \approx 0.166667$, Eurostat HICP benchmark) is strictly preserved as an active configuration for sensitivity analysis and structural invariance testing.
+> - **Rejection of Equal Weighting:** APIx explicitly does NOT assign equal weights to lead times. Advance booking windows have vastly different passenger volumes and dynamic price elasticity. Equal weighting ($1/6 \approx 16.67\%$) distorts the index by over-weighting volatile last-minute travel ($T+1$) and under-weighting common advance bookings ($T+30, T+45$).
 > - **Tri-Layer Weight Separation:**
 >   1. **Route Representativeness Weights ($w_r$):** Derived from official DGCA CY2024 scheduled domestic city-pair passenger volumes (`DGCA_CY2024_TOP60`, 57.0247% coverage).
 >   2. **Lead-Time Profile Weights ($w_L$):** Derived from `Clean_Dataset.csv` empirical booking horizons (`EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`).

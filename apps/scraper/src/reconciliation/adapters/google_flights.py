@@ -36,8 +36,8 @@ class GoogleFlightsReconciliationAdapter(BaseReconciliationAdapter):
         if not origin and "route" in data and "-" in str(data["route"]):
             origin, dest = str(data["route"]).split("-")[:2]
 
-        lead_days = data.get("lead_days", 7)
-        lead_time = f"T+{lead_days}" if not str(lead_days).startswith("T+") else str(lead_days)
+        lead_val = data.get("lead_time") or data.get("lead_days", 7)
+        lead_time = f"T+{lead_val}" if not str(lead_val).startswith("T+") else str(lead_val)
 
         return self._build_canonical_offer(
             raw_id=raw_id,

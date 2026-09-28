@@ -220,9 +220,9 @@ def get_lead_time_weight_config(mode: str = "empirical") -> LeadTimeWeightConfig
     if mode in ("equal", "sensitivity", "provisional"):
         weights = get_equal_lead_time_weights()
         status = METHODOLOGY_STATUS_SENSITIVITY
-        source = "Equal weighting (Eurostat HICP sensitivity benchmark)"
+        source = "Hypothetical equal-weight benchmark (sensitivity stress-test only; not production)"
         interp = "Equal provisional weighting (w_L = 1/6) across 6 lead-time horizons"
-        disclaimer = "Sensitivity-analysis configuration: equal lead-time weights (w_L = 1/6)."
+        disclaimer = "Sensitivity-analysis configuration: equal lead-time weights (w_L = 1/6) used solely for robustness stress testing. Production APIx does not assign equal lead-time weights."
     else:
         weights = get_empirical_lead_time_weights()
         status = METHODOLOGY_STATUS_EMPIRICAL

@@ -1,0 +1,26 @@
+{
+  "dataset_name": "APIx_Synthetic_August_2026_Longitudinal_Demonstration",
+  "source_real_dataset": "11,716-observation production baseline (runtime/top60_observation_classification.json)",
+  "data_status": "SYNTHETIC",
+  "synthetic": true,
+  "synthetic_generation_version": "AUG2026_DEMO_V1",
+  "random_seed": 42,
+  "generation_date_utc": "2026-09-28T00:21:26.560599+00:00",
+  "number_of_collection_days": 31,
+  "number_of_synthetic_observations": 133148,
+  "route_count": 60,
+  "lead_time_count": 6,
+  "cell_count": 360,
+  "canonical_product_pool_size": 5977,
+  "average_daily_observations": 4295.1,
+  "price_generation_methodology": "Log-price perturbation around empirical baseline fares: ln(P_{i,d}) = ln(P_i^0) + mu_r(d) + gamma_L(d) + delta_day(d) + epsilon_{i,d} with route-level AR(1) persistence (rho=0.7), lead-time class shocks, weekend travel premiums, and realistic product schedule churn (p_i in [0.50, 0.94]).",
+  "assumptions": [
+    "Log-normal multiplicative perturbations preserve empirical relative price structure.",
+    "Route common shocks follow an AR(1) process with 0.7 autocorrelation and sigma=0.008.",
+    "Weekend travel premium (+1.5%) applied to Friday and Sunday departure dates.",
+    "Product presence sampled from empirical schedule frequencies between 0.50 and 0.94.",
+    "Plausibility constraint: all fares strictly positive with hard minimum of \u20b91,200.00.",
+    "Zero fabrication of real historical observations; generated exclusively for pipeline demonstration."
+  ],
+  "disclaimer": "CRITICAL WARNING: THIS DATASET IS SYNTHETIC AND IS GENERATED SOLELY FOR METHODOLOGY VALIDATION AND DEMONSTRATION OF THE APIx INDEX PIPELINE. IT MUST NEVER BE PRESENTED OR CITED AS OBSERVED HISTORICAL INDIAN AIRFARE DATA. IT MUST NEVER BE COMBINED WITH REAL OBSERVATIONS TO PUBLISH INFLATION CLAIMS."
+}

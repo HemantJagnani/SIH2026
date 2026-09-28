@@ -1,0 +1,372 @@
+{
+  "data_label": "SYNTHETIC_METHODOLOGY_DEMONSTRATION",
+  "uncertainty_method": "Delta method (first-order Taylor approximation on log-price relatives)",
+  "variance_estimator": "Pooled cell-level sampling variance: s^2_cell / n_cell",
+  "ci_coverage_level": "95% (z = 1.96)",
+  "note": "Uncertainty estimates are valid only for SYNTHETIC demonstration purposes.",
+  "daily_uncertainty": [
+    {
+      "day": 1,
+      "date": "2026-08-01",
+      "chain_index": 100.0,
+      "standard_error": 0.0,
+      "ci95_lower": 100.0,
+      "ci95_upper": 100.0,
+      "ci_available": true,
+      "ci_width": 0.0
+    },
+    {
+      "day": 2,
+      "date": "2026-08-02",
+      "chain_index": 100.1874,
+      "standard_error": 0.7881,
+      "ci95_lower": 98.64,
+      "ci95_upper": 101.73,
+      "ci_available": true,
+      "ci_width": 3.09
+    },
+    {
+      "day": 3,
+      "date": "2026-08-03",
+      "chain_index": 99.6431,
+      "standard_error": 0.7811,
+      "ci95_lower": 98.11,
+      "ci95_upper": 101.17,
+      "ci_available": true,
+      "ci_width": 3.06
+    },
+    {
+      "day": 4,
+      "date": "2026-08-04",
+      "chain_index": 100.4444,
+      "standard_error": 0.7956,
+      "ci95_lower": 98.88,
+      "ci95_upper": 102.0,
+      "ci_available": true,
+      "ci_width": 3.12
+    },
+    {
+      "day": 5,
+      "date": "2026-08-05",
+      "chain_index": 100.1203,
+      "standard_error": 0.8524,
+      "ci95_lower": 98.45,
+      "ci95_upper": 101.79,
+      "ci_available": true,
+      "ci_width": 3.34
+    },
+    {
+      "day": 6,
+      "date": "2026-08-06",
+      "chain_index": 100.53,
+      "standard_error": 0.7617,
+      "ci95_lower": 99.04,
+      "ci95_upper": 102.02,
+      "ci_available": true,
+      "ci_width": 2.98
+    },
+    {
+      "day": 7,
+      "date": "2026-08-07",
+      "chain_index": 100.5107,
+      "standard_error": 0.8063,
+      "ci95_lower": 98.93,
+      "ci95_upper": 102.09,
+      "ci_available": true,
+      "ci_width": 3.16
+    },
+    {
+      "day": 8,
+      "date": "2026-08-08",
+      "chain_index": 100.1202,
+      "standard_error": 0.7992,
+      "ci95_lower": 98.55,
+      "ci95_upper": 101.69,
+      "ci_available": true,
+      "ci_width": 3.14
+    },
+    {
+      "day": 9,
+      "date": "2026-08-09",
+      "chain_index": 100.1305,
+      "standard_error": 0.8456,
+      "ci95_lower": 98.47,
+      "ci95_upper": 101.79,
+      "ci_available": true,
+      "ci_width": 3.32
+    },
+    {
+      "day": 10,
+      "date": "2026-08-10",
+      "chain_index": 100.0455,
+      "standard_error": 0.7985,
+      "ci95_lower": 98.48,
+      "ci95_upper": 101.61,
+      "ci_available": true,
+      "ci_width": 3.13
+    },
+    {
+      "day": 11,
+      "date": "2026-08-11",
+      "chain_index": 100.2671,
+      "standard_error": 0.8065,
+      "ci95_lower": 98.69,
+      "ci95_upper": 101.85,
+      "ci_available": true,
+      "ci_width": 3.16
+    },
+    {
+      "day": 12,
+      "date": "2026-08-12",
+      "chain_index": 100.0273,
+      "standard_error": 0.8426,
+      "ci95_lower": 98.38,
+      "ci95_upper": 101.68,
+      "ci_available": true,
+      "ci_width": 3.3
+    },
+    {
+      "day": 13,
+      "date": "2026-08-13",
+      "chain_index": 100.892,
+      "standard_error": 0.8764,
+      "ci95_lower": 99.17,
+      "ci95_upper": 102.61,
+      "ci_available": true,
+      "ci_width": 3.44
+    },
+    {
+      "day": 14,
+      "date": "2026-08-14",
+      "chain_index": 100.4836,
+      "standard_error": 0.8368,
+      "ci95_lower": 98.84,
+      "ci95_upper": 102.12,
+      "ci_available": true,
+      "ci_width": 3.28
+    },
+    {
+      "day": 15,
+      "date": "2026-08-15",
+      "chain_index": 100.0418,
+      "standard_error": 0.7514,
+      "ci95_lower": 98.57,
+      "ci95_upper": 101.51,
+      "ci_available": true,
+      "ci_width": 2.94
+    },
+    {
+      "day": 16,
+      "date": "2026-08-16",
+      "chain_index": 100.314,
+      "standard_error": 0.8202,
+      "ci95_lower": 98.71,
+      "ci95_upper": 101.92,
+      "ci_available": true,
+      "ci_width": 3.21
+    },
+    {
+      "day": 17,
+      "date": "2026-08-17",
+      "chain_index": 99.776,
+      "standard_error": 0.8358,
+      "ci95_lower": 98.14,
+      "ci95_upper": 101.41,
+      "ci_available": true,
+      "ci_width": 3.27
+    },
+    {
+      "day": 18,
+      "date": "2026-08-18",
+      "chain_index": 100.054,
+      "standard_error": 0.7794,
+      "ci95_lower": 98.53,
+      "ci95_upper": 101.58,
+      "ci_available": true,
+      "ci_width": 3.05
+    },
+    {
+      "day": 19,
+      "date": "2026-08-19",
+      "chain_index": 100.4403,
+      "standard_error": 0.7642,
+      "ci95_lower": 98.94,
+      "ci95_upper": 101.94,
+      "ci_available": true,
+      "ci_width": 3.0
+    },
+    {
+      "day": 20,
+      "date": "2026-08-20",
+      "chain_index": 100.9524,
+      "standard_error": 0.8187,
+      "ci95_lower": 99.35,
+      "ci95_upper": 102.56,
+      "ci_available": true,
+      "ci_width": 3.21
+    },
+    {
+      "day": 21,
+      "date": "2026-08-21",
+      "chain_index": 100.425,
+      "standard_error": 0.8024,
+      "ci95_lower": 98.85,
+      "ci95_upper": 102.0,
+      "ci_available": true,
+      "ci_width": 3.15
+    },
+    {
+      "day": 22,
+      "date": "2026-08-22",
+      "chain_index": 100.4012,
+      "standard_error": 0.7626,
+      "ci95_lower": 98.91,
+      "ci95_upper": 101.9,
+      "ci_available": true,
+      "ci_width": 2.99
+    },
+    {
+      "day": 23,
+      "date": "2026-08-23",
+      "chain_index": 100.159,
+      "standard_error": 0.8403,
+      "ci95_lower": 98.51,
+      "ci95_upper": 101.81,
+      "ci_available": true,
+      "ci_width": 3.3
+    },
+    {
+      "day": 24,
+      "date": "2026-08-24",
+      "chain_index": 99.9372,
+      "standard_error": 0.8315,
+      "ci95_lower": 98.31,
+      "ci95_upper": 101.57,
+      "ci_available": true,
+      "ci_width": 3.26
+    },
+    {
+      "day": 25,
+      "date": "2026-08-25",
+      "chain_index": 100.1992,
+      "standard_error": 0.8011,
+      "ci95_lower": 98.63,
+      "ci95_upper": 101.77,
+      "ci_available": true,
+      "ci_width": 3.14
+    },
+    {
+      "day": 26,
+      "date": "2026-08-26",
+      "chain_index": 100.4283,
+      "standard_error": 0.7842,
+      "ci95_lower": 98.89,
+      "ci95_upper": 101.97,
+      "ci_available": true,
+      "ci_width": 3.08
+    },
+    {
+      "day": 27,
+      "date": "2026-08-27",
+      "chain_index": 100.3633,
+      "standard_error": 0.8,
+      "ci95_lower": 98.8,
+      "ci95_upper": 101.93,
+      "ci_available": true,
+      "ci_width": 3.13
+    },
+    {
+      "day": 28,
+      "date": "2026-08-28",
+      "chain_index": 101.024,
+      "standard_error": 0.794,
+      "ci95_lower": 99.47,
+      "ci95_upper": 102.58,
+      "ci_available": true,
+      "ci_width": 3.11
+    },
+    {
+      "day": 29,
+      "date": "2026-08-29",
+      "chain_index": 100.4536,
+      "standard_error": 0.8448,
+      "ci95_lower": 98.8,
+      "ci95_upper": 102.11,
+      "ci_available": true,
+      "ci_width": 3.31
+    },
+    {
+      "day": 30,
+      "date": "2026-08-30",
+      "chain_index": 100.6854,
+      "standard_error": 0.8415,
+      "ci95_lower": 99.04,
+      "ci95_upper": 102.33,
+      "ci_available": true,
+      "ci_width": 3.29
+    },
+    {
+      "day": 31,
+      "date": "2026-08-31",
+      "chain_index": 100.4097,
+      "standard_error": 0.8328,
+      "ci95_lower": 98.78,
+      "ci95_upper": 102.04,
+      "ci_available": true,
+      "ci_width": 3.26
+    }
+  ],
+  "weekly_uncertainty": [
+    {
+      "week": 1,
+      "week_label": "Week 1 (Aug 1 – Aug 7)",
+      "chain_index": 100.0,
+      "standard_error": 0.0,
+      "ci95_lower": 100.0,
+      "ci95_upper": 100.0,
+      "ci_available": true,
+      "ci_width": 0.0
+    },
+    {
+      "week": 2,
+      "week_label": "Week 2 (Aug 8 – Aug 14)",
+      "chain_index": 100.0105,
+      "standard_error": 0.3135,
+      "ci95_lower": 99.4,
+      "ci95_upper": 100.62,
+      "ci_available": true,
+      "ci_width": 1.22
+    },
+    {
+      "week": 3,
+      "week_label": "Week 3 (Aug 15 – Aug 21)",
+      "chain_index": 99.9807,
+      "standard_error": 0.3202,
+      "ci95_lower": 99.35,
+      "ci95_upper": 100.61,
+      "ci_available": true,
+      "ci_width": 1.26
+    },
+    {
+      "week": 4,
+      "week_label": "Week 4 (Aug 22 – Aug 31)",
+      "chain_index": 100.0164,
+      "standard_error": 0.2875,
+      "ci95_lower": 99.45,
+      "ci95_upper": 100.58,
+      "ci_available": true,
+      "ci_width": 1.13
+    }
+  ],
+  "summary": {
+    "days_with_ci": 31,
+    "days_without_ci": 0,
+    "mean_daily_standard_error": 0.7837,
+    "mean_daily_ci_width": 3.0716,
+    "weeks_with_ci": 4
+  },
+  "governance": {
+    "p_ref_used_in_uncertainty": false,
+    "ci_not_manufactured_for_n_lt_2": true
+  }
+}

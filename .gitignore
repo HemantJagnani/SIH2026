@@ -37,3 +37,16 @@ data/*.db*
 storage/
 scratch/
 image.png
+
+# Large runtime observation files (>25 MB — too large for GitHub)
+runtime/top60_fare_observations.json
+runtime/top10_fare_observations.json
+runtime/top60_observation_classification.json
+runtime/top60_observation_classification_11430_immutable.json
+runtime/top10_observation_classification.json
+runtime/recollection_gau_12cells_observations.json
+runtime/recollection_idr_bom_t7_result.json
+
+# Large synthetic observation file (138 MB — too large for GitHub)
+# Reports, metadata, and demo outputs are still committed
+runtime/synthetic_aug2026/synthetic_aug2026_observations.json

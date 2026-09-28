@@ -49,6 +49,7 @@ from index import (
     ObservationStatus,
     PRODUCT_DEFINITION_VERSION,
     SELECTION_RULE,
+    EMPIRICAL_LEAD_TIME_WEIGHTS,
 )
 
 
@@ -259,12 +260,13 @@ def main():
     print(f"  Quality Adjustments Logged: {len(engine.quality_adjustment_history)}")
 
     # 4. Lead-Time Sub-Indices
-    print("\n[Lead-Time Sub-Indices — w_L = 1/6 Provisional Equal Weights]")
+    print("\n[Lead-Time Sub-Indices — Empirical Lead-Time Weights]")
     for lt in ["T+1", "T+7", "T+15", "T+21", "T+30", "T+45"]:
         key = f"DEL-BOM_{lt}"
         idx_val = res_eval.lead_time_indices.get(key, Decimal("100.0000"))
         is_chk = " [MoSPI Official Domestic Checkpoint]" if lt == "T+21" else ""
-        print(f"  {lt:6s} | Weight: 0.166667 | Index: {idx_val:.4f}{is_chk}")
+        emp_w = float(EMPIRICAL_LEAD_TIME_WEIGHTS[lt])
+        print(f"  {lt:6s} | Weight: {emp_w:.4f} ({emp_w*100:.2f}%) | Index: {idx_val:.4f}{is_chk}")
 
     # 5. Diagnostic Comparison
     proto = res_eval.prototype_median_indicator or {}
@@ -340,13 +342,13 @@ def main():
         "headline_route_index_value": float(res_eval.index_value),
         "mom_inflation_rate_percent": float(res_eval.mom_percent) if res_eval.mom_percent else 0.0,
         "lead_times_included": ["T+1", "T+7", "T+15", "T+21", "T+30", "T+45"],
-        "lead_time_weights_type": "PROVISIONAL EQUAL LEAD-TIME WEIGHTS",
-        "weight_t1": 0.166667,
-        "weight_t7": 0.166667,
-        "weight_t15": 0.166667,
-        "weight_t21": 0.166667,
-        "weight_t30": 0.166666,
-        "weight_t45": 0.166666,
+        "lead_time_weights_type": "EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS",
+        "weight_t1": float(EMPIRICAL_LEAD_TIME_WEIGHTS["T+1"]),
+        "weight_t7": float(EMPIRICAL_LEAD_TIME_WEIGHTS["T+7"]),
+        "weight_t15": float(EMPIRICAL_LEAD_TIME_WEIGHTS["T+15"]),
+        "weight_t21": float(EMPIRICAL_LEAD_TIME_WEIGHTS["T+21"]),
+        "weight_t30": float(EMPIRICAL_LEAD_TIME_WEIGHTS["T+30"]),
+        "weight_t45": float(EMPIRICAL_LEAD_TIME_WEIGHTS["T+45"]),
         "index_t1": float(res_eval.lead_time_indices.get("DEL-BOM_T+1", 100.0)),
         "index_t7": float(res_eval.lead_time_indices.get("DEL-BOM_T+7", 100.0)),
         "index_t15": float(res_eval.lead_time_indices.get("DEL-BOM_T+15", 100.0)),
@@ -448,16 +450,17 @@ def main():
         ld = int(lt.replace("T+", ""))
         elem_idx = float(res_eval.lead_time_indices.get(f"DEL-BOM_{lt}", 100.0))
         m_fare = float(proto.get("lead_time_medians", {}).get(lt, 6632.67))
+        w_lt = float(EMPIRICAL_LEAD_TIME_WEIGHTS[lt])
         lead_breakdown_full[lt] = {
             "lead_days": ld,
-            "weight": 0.166667,
+            "weight": w_lt,
             "elementary_index": elem_idx,
             "median_fare_inr": m_fare,
             "geometric_mean_fare_inr": round(m_fare * 0.995, 2),
             "n_itineraries": 10,
             "min_fare_inr": round(m_fare * 0.95, 2),
             "max_fare_inr": round(m_fare * 1.15, 2),
-            "contribution_inr": round(0.166667 * m_fare, 2),
+            "contribution_inr": round(w_lt * m_fare, 2),
             "is_mospi_checkpoint": lt == "T+21",
         }
 
@@ -465,7 +468,7 @@ def main():
         "STANDARD_SAVER": {
             "weighted_price": 6627.50,
             "index_value": float(res_eval.index_value),
-            "lead_breakdown": {lt: {"median_fare": lead_breakdown_full[lt]["median_fare_inr"], "n_obs": 10, "weight": 0.1667} for lt in lead_breakdown_full},
+            "lead_breakdown": {lt: {"median_fare": lead_breakdown_full[lt]["median_fare_inr"], "n_obs": 10, "weight": float(EMPIRICAL_LEAD_TIME_WEIGHTS[lt])} for lt in lead_breakdown_full},
         },
         "OTA_EXCLUSIVE": {
             "weighted_price": 6416.00,

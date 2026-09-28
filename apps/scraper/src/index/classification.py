@@ -172,13 +172,14 @@ class ReferencePeriodTaxonomy:
        - In Eurostat HICP, monthly prices are NOT directly divided by the annual average; short-period
          price relatives are chained, and the long series is subsequently expressed in the index reference period.
     """
-    # 1. Project Reference
+    # 1. Project Reference (Descriptive Diagnostic Only - Prohibited from Index Calculation)
     reference_type: str = "PROVISIONAL_PROJECT_REFERENCE"
-    experimental_project_reference_price: Decimal = Decimal("6632.67")
-    experimental_reference_period: str = "2026-09-26"
-    reference_price: Decimal = Decimal("6632.67")
-    reference_price_method: str = "Option B — first production run weighted representative price"
-    reference_price_source: str = "production_run_825fa969"
+    reference_purpose: str = "descriptive/reference-price diagnostic"
+    experimental_project_reference_price: Decimal = Decimal("8641.45")
+    experimental_reference_period: str = "2026-09-27"
+    reference_price: Decimal = Decimal("8641.45")
+    reference_price_method: str = "Finalized 60-route x 6-lead-time basket reference price"
+    reference_price_source: str = "top60_observation_classification_360cell"
     reference_index_value: Decimal = Decimal("100.00")
 
     # 2. MoSPI Index Reference
@@ -264,12 +265,13 @@ class CPIIntegrationLayer:
         return {
             "project_reference": {
                 "reference_type": self.taxonomy.reference_type,
+                "reference_purpose": getattr(self.taxonomy, "reference_purpose", "descriptive/reference-price diagnostic"),
                 "experimental_project_reference_price": float(self.taxonomy.experimental_project_reference_price),
                 "experimental_reference_period": self.taxonomy.experimental_reference_period,
                 "reference_price_method": self.taxonomy.reference_price_method,
                 "reference_price_source": self.taxonomy.reference_price_source,
                 "reference_index_value": float(self.taxonomy.reference_index_value),
-                "status_note": "Provisional project reference for experimental series only; NOT MoSPI price reference.",
+                "status_note": "Provisional project reference for descriptive diagnostic only; NEVER enters CPI elementary index formula.",
             },
             "mospi_index_reference": {
                 "index_reference_period": self.taxonomy.index_reference_period,

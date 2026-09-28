@@ -323,6 +323,7 @@ class APIxEngine:
                 "route": "DEL-BOM",
                 "indicator_name": "DEL_BOM_PROTOTYPE_MEDIAN_INDICATOR",
                 "status": "DIAGNOSTIC_ONLY_NOT_CPI_METHODOLOGY",
+                "purpose": "descriptive/reference-price diagnostic",
                 "reference_type": ref_tax.reference_type,
                 "experimental_project_reference_price": proto_ref_price,
                 "experimental_reference_period": ref_tax.experimental_reference_period,
@@ -331,7 +332,7 @@ class APIxEngine:
                 "weighted_representative_price_inr": round(weighted_med_price, 2),
                 "route_index": proto_index_val,
                 "lead_time_medians": med_breakdown,
-                "institutional_disclaimer": "DEL-BOM prototype reference price ₹6,632.67 is strictly PROVISIONAL_PROJECT_REFERENCE; NOT MoSPI 2024 price reference.",
+                "institutional_disclaimer": "Provisional reference price ₹8,641.45 is strictly PROVISIONAL_PROJECT_REFERENCE (descriptive diagnostic only); NEVER used as CPI elementary index denominator.",
             }
 
         # Step 7: Route Aggregation
@@ -350,24 +351,23 @@ class APIxEngine:
             src_leads = sorted(lt_map.keys())
             w_src = 1.0 / len(src_leads) if src_leads else 1.0
             src_price = sum(w_src * statistics.median(fares) for fares in lt_map.values())
-            src_index = round((src_price / 6632.67) * 100.0, 2)
             source_diagnostics[src] = {
                 "source": src,
                 "observation_count": sum(len(f) for f in lt_map.values()),
                 "lead_times_covered": src_leads,
                 "weighted_representative_price_inr": round(src_price, 2),
-                "diagnostic_index": src_index,
+                "methodological_status": "DIAGNOSTIC_ONLY (Scraper counts are not statistical weights; prices are not normalized against reference price)",
                 "weight_used_for_headline": "NONE (Diagnostic only; scrapers are NOT statistical weights)",
             }
 
         # Add divergence metric if multiple sources present
         if len(source_diagnostics) >= 2:
             src_names = list(source_diagnostics.keys())
-            idx1 = source_diagnostics[src_names[0]]["diagnostic_index"]
-            idx2 = source_diagnostics[src_names[1]]["diagnostic_index"]
-            divergence_pts = round(abs(idx1 - idx2), 2)
-            source_diagnostics["cross_source_divergence_points"] = divergence_pts
-            source_diagnostics["cross_source_divergence_pct"] = round((divergence_pts / 100.0) * 100, 2)
+            p1 = source_diagnostics[src_names[0]]["weighted_representative_price_inr"]
+            p2 = source_diagnostics[src_names[1]]["weighted_representative_price_inr"]
+            divergence_inr = round(abs(p1 - p2), 2)
+            source_diagnostics["cross_source_divergence_inr"] = divergence_inr
+            source_diagnostics["cross_source_divergence_pct"] = round((divergence_inr / ((p1 + p2) / 2.0)) * 100, 2) if (p1 + p2) > 0 else 0.0
 
         # Step 9: Final All-India APIx Aggregation
         prev_apix = self.apix_history[prev_period].index_value if prev_period and prev_period in self.apix_history else None
@@ -398,5 +398,33 @@ class APIxEngine:
         }
         apix_series.diagnostics_meta = diagnostics_meta
 
+        # Enforce governance invariant: P_ref never enters index calculation
+        self.assert_no_reference_price_in_index(apix_series, elementary_results)
+
         self.apix_history[period] = apix_series
         return apix_series
+
+    def assert_no_reference_price_in_index(
+        self,
+        series: APIxSeriesResult,
+        elementary_results: List[ElementaryIndexResult],
+    ) -> None:
+        """
+        Governance Invariant (§Methodology Governance):
+        The provisional P_ref (₹8,641.45) must NEVER enter index calculation:
+        1. APIx_t != 100 * P_t / P_ref.
+        2. No elementary index is computed using P_ref as a denominator.
+        3. No individual observation is normalized to 100 using P_ref.
+        4. Elementary index is chained strictly from Jevons links of price relatives: r_(i,t) = P_(i,t) / P_(i,t-1).
+        5. P_ref is preserved strictly as descriptive reference price diagnostic (PROVISIONAL_PROJECT_REFERENCE).
+        """
+        ref_price = self.cpi_layer.taxonomy.experimental_project_reference_price
+        assert ref_price == Decimal("8641.45"), f"Expected provisional reference price 8641.45, got {ref_price}"
+        assert series.reference_type == "PROVISIONAL_PROJECT_REFERENCE"
+        assert getattr(series, "reference_purpose", None) == "descriptive/reference-price diagnostic"
+
+        # Verify elementary indices are chained from Jevons links, never from P_t / P_ref
+        for el in elementary_results:
+            assert el.chained_index > Decimal("0"), f"Chained index for stratum {el.stratum_id} must be > 0"
+            assert el.jevons_link is not None, f"Jevons link must exist for stratum {el.stratum_id}"
+

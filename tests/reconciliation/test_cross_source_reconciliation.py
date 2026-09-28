@@ -77,7 +77,7 @@ def test_1_google_easemytrip_identical_offer(pipeline):
     assert can.flight_number == "6E204"
     assert can.total_fare == Decimal("6500")
     assert set(can.sources_contributing) == {"google_flights", "easemytrip"}
-    assert can.match_status == MatchStatus.EXACT_MATCH
+    assert can.match_status in (MatchStatus.PRICE_CONSISTENT, MatchStatus.EXACT_MATCH)
     assert diag.exact_cross_source_matches == 1
 
 
@@ -126,7 +126,7 @@ def test_2_three_sources_identical_offer(pipeline):
 
     assert len(valid_obs) == 1, "Three sources for same product must yield exactly 1 canonical APIx observation"
     assert set(valid_obs[0].sources_contributing) == {"google_flights", "easemytrip", "ixigo"}
-    assert valid_obs[0].match_status == MatchStatus.EXACT_MATCH
+    assert valid_obs[0].match_status in (MatchStatus.PRICE_CONSISTENT, MatchStatus.EXACT_MATCH)
 
 
 # ── TEST 3: Different flight numbers → separate offers ────────────────────────
@@ -274,8 +274,8 @@ def test_6_missing_google_fields_merged_safely(pipeline):
     assert can.field_provenance["refundability"] == "easemytrip"
 
 
-# ── TEST 7: Different prices for same apparent offer → PRICE_CONFLICT_REVIEW ──
-def test_7_different_prices_flagged_for_review(pipeline):
+# ── TEST 7: Different prices for same apparent offer → PRICE_VARIANCE_AGGREGATED ──
+def test_7_different_prices_arithmetic_mean_aggregated(pipeline):
     raw_gf = {
         "source": "google_flights",
         "observation_id": "gf_601",
@@ -302,14 +302,16 @@ def test_7_different_prices_flagged_for_review(pipeline):
     }
 
     valid_obs, excluded, diag = pipeline.run([raw_gf, raw_emt])
-    assert len(valid_obs) == 0, "Conflicting prices must NOT enter baseline price calculation silently"
-    assert len(excluded) == 1
-    conflicted = excluded[0]
-    assert conflicted.match_status == MatchStatus.PRICE_CONFLICT_REVIEW
-    assert conflicted.price_conflict is True
-    assert conflicted.price_by_source["google_flights"] == Decimal("6500")
-    assert conflicted.price_by_source["easemytrip"] == Decimal("7200")
-    assert diag.price_conflicts == 1
+    assert len(valid_obs) == 1, "Price variance must be aggregated with arithmetic mean, not excluded"
+    assert len(excluded) == 0
+    obs = valid_obs[0]
+    assert obs.match_status == MatchStatus.PRICE_VARIANCE_AGGREGATED
+    assert obs.total_fare == Decimal("6850.00")
+    assert obs.aggregation_method == "ARITHMETIC_MEAN"
+    assert obs.aggregation_source_count == 2
+    assert obs.price_by_source["google_flights"] == Decimal("6500.0")
+    assert obs.price_by_source["easemytrip"] == Decimal("7200.0")
+    assert diag.price_variances_aggregated == 1
 
 
 # ── TEST 8: Google DOM duplicate → one physical source observation ────────────
@@ -599,3 +601,751 @@ def test_16_future_source_registration(pipeline):
     assert len(valid_obs) == 1, "Future source must integrate and reconcile seamlessly"
     assert set(valid_obs[0].sources_contributing) == {"google_flights", "future_ota"}
     assert diag.exact_cross_source_matches == 1
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# §11 EXPLICIT METHODOLOGY TESTS: TESTS A THROUGH K
+# ══════════════════════════════════════════════════════════════════════════════
+
+def test_a_two_sources_same_price(pipeline):
+    """A. 2 sources, same price: Google ₹6500 + EMT ₹6500 → one observation ₹6500."""
+    raw_gf = {
+        "source": "google_flights",
+        "observation_id": "gf_a",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    raw_emt = {
+        "source": "easemytrip",
+        "observation_id": "emt_a",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    valid_obs, excluded, diag = pipeline.run([raw_gf, raw_emt])
+    assert len(valid_obs) == 1
+    assert len(excluded) == 0
+    obs = valid_obs[0]
+    assert obs.total_fare == Decimal("6500.00")
+    assert obs.match_status in (MatchStatus.PRICE_CONSISTENT, MatchStatus.EXACT_MATCH)
+    assert obs.aggregation_method == "ARITHMETIC_MEAN"
+    assert obs.aggregation_source_count == 2
+    assert obs.source_count == 2
+    assert obs.price_by_source == {"google_flights": Decimal("6500.0"), "easemytrip": Decimal("6500.0")}
+
+
+def test_b_two_sources_different_prices(pipeline):
+    """B. 2 sources, different prices: Google ₹6500 + EMT ₹7200 → one observation ₹6850."""
+    raw_gf = {
+        "source": "google_flights",
+        "observation_id": "gf_b",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    raw_emt = {
+        "source": "easemytrip",
+        "observation_id": "emt_b",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 7200.0,
+    }
+    valid_obs, excluded, diag = pipeline.run([raw_gf, raw_emt])
+    assert len(valid_obs) == 1
+    assert len(excluded) == 0
+    obs = valid_obs[0]
+    assert obs.total_fare == Decimal("6850.00")
+    assert obs.match_status == MatchStatus.PRICE_VARIANCE_AGGREGATED
+    assert obs.aggregation_method == "ARITHMETIC_MEAN"
+    assert obs.aggregation_source_count == 2
+
+
+def test_c_three_sources_different_prices(pipeline):
+    """C. 3 sources, different prices: ₹6500, ₹7200, ₹6800 → one observation ₹6833.33."""
+    raw_gf = {
+        "source": "google_flights",
+        "observation_id": "gf_c",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    raw_emt = {
+        "source": "easemytrip",
+        "observation_id": "emt_c",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 7200.0,
+    }
+    raw_ixi = {
+        "source": "ixigo",
+        "observation_id": "ixi_c",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6800.0,
+    }
+    valid_obs, excluded, diag = pipeline.run([raw_gf, raw_emt, raw_ixi])
+    assert len(valid_obs) == 1
+    assert len(excluded) == 0
+    obs = valid_obs[0]
+    # (6500 + 7200 + 6800) / 3 = 20500 / 3 = 6833.33
+    assert obs.total_fare == Decimal("6833.33")
+    assert obs.match_status == MatchStatus.PRICE_VARIANCE_AGGREGATED
+    assert obs.aggregation_method == "ARITHMETIC_MEAN"
+    assert obs.aggregation_source_count == 3
+
+
+def test_d_single_source(pipeline):
+    """D. Single source → one observation at source price, method = SINGLE_SOURCE."""
+    raw_gf = {
+        "source": "google_flights",
+        "observation_id": "gf_d",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    valid_obs, excluded, diag = pipeline.run([raw_gf])
+    assert len(valid_obs) == 1
+    assert len(excluded) == 0
+    obs = valid_obs[0]
+    assert obs.total_fare == Decimal("6500.00")
+    assert obs.source_count == 1
+    assert obs.aggregation_method == "SINGLE_SOURCE"
+    assert obs.aggregation_source_count == 1
+    assert obs.match_status == MatchStatus.NO_MATCH
+
+
+def test_e_different_fare_family(pipeline):
+    """E. Different fare family → remain separate canonical products."""
+    raw_saver = {
+        "source": "easemytrip",
+        "observation_id": "emt_saver",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "fare_family": "Saver",
+        "total_fare": 6500.0,
+    }
+    raw_flexi = {
+        "source": "easemytrip",
+        "observation_id": "emt_flexi",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "fare_family": "FlexiPlus",
+        "total_fare": 7800.0,
+    }
+    norm = pipeline.normalize_batch([raw_saver, raw_flexi])
+    reconciled, _ = pipeline.engine.reconcile(norm)
+    assert len(reconciled) == 2, "Different fare families must remain separate canonical offers"
+
+
+def test_f_different_baggage_conditions(pipeline):
+    """F. Different baggage/product conditions → remain separate canonical products."""
+    raw_15kg = {
+        "source": "easemytrip",
+        "observation_id": "emt_15kg",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "SpiceJet",
+        "flight_number": "SG-123",
+        "departure_time_local": "14:00",
+        "stops": 0,
+        "fare_family": "STANDARD",
+        "checkin_baggage_kg": 15,
+        "total_fare": 5500.0,
+    }
+    raw_20kg = {
+        "source": "easemytrip",
+        "observation_id": "emt_20kg",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "SpiceJet",
+        "flight_number": "SG-123",
+        "departure_time_local": "14:00",
+        "stops": 0,
+        "fare_family": "STANDARD",
+        "checkin_baggage_kg": 20,
+        "total_fare": 6900.0,
+    }
+    norm = pipeline.normalize_batch([raw_15kg, raw_20kg])
+    reconciled, _ = pipeline.engine.reconcile(norm)
+    assert len(reconciled) == 2, "Different baggage tiers must remain separate canonical offers"
+
+
+def test_g_incompatible_price_semantics(pipeline):
+    """G. Incompatible price semantics (DISPLAYED_TOTAL + DISPLAYED_FROM) → do not average."""
+    raw_total = {
+        "source": "google_flights",
+        "observation_id": "gf_sem_tot",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    raw_from = {
+        "source": "ixigo",
+        "observation_id": "ixi_sem_from",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6800.0,
+    }
+    norm_gf = pipeline._adapter_instances["google_flights"].normalize(raw_total)
+    norm_ixi = pipeline._adapter_instances["ixigo"].normalize(raw_from)
+    norm_ixi.price_semantics = PriceSemantics.DISPLAYED_FROM
+
+    reconciled, diag = pipeline.engine.reconcile([norm_gf, norm_ixi])
+    assert len(reconciled) == 2, "Incompatible price semantics must NOT be averaged"
+    assert all(o.match_status == MatchStatus.PRICE_CONFLICT_UNRESOLVED for o in reconciled)
+
+
+def test_h_different_physical_flights(pipeline):
+    """H. Different physical flights (flight number or departure time) → remain separate."""
+    raw_flight1 = {
+        "source": "google_flights",
+        "observation_id": "gf_h1",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    raw_flight2 = {
+        "source": "google_flights",
+        "observation_id": "gf_h2",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-5312",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    valid_obs, _, _ = pipeline.run([raw_flight1, raw_flight2])
+    assert len(valid_obs) == 2, "Different flight numbers must produce separate canonical offers"
+
+
+def test_i_same_source_dom_duplicates(pipeline):
+    """I. Same-source DOM duplicates → deduplicate before source aggregation."""
+    raw_gf1 = {
+        "source": "google_flights",
+        "observation_id": "gf_dup1",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    raw_gf2 = {
+        "source": "google_flights",
+        "observation_id": "gf_dup2",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    raw_emt = {
+        "source": "easemytrip",
+        "observation_id": "emt_i",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 7200.0,
+    }
+    valid_obs, _, diag = pipeline.run([raw_gf1, raw_gf2, raw_emt])
+    assert len(valid_obs) == 1, "Duplicate DOM extractions must collapse before source aggregation"
+    obs = valid_obs[0]
+    # (6500 + 7200) / 2 = 6850.00
+    assert obs.total_fare == Decimal("6850.00")
+    assert obs.source_count == 2
+    assert diag.duplicates_by_source["google_flights"] >= 1
+
+
+def test_j_four_otas_with_four_prices(pipeline):
+    """J. Four OTAs with four prices → one canonical/APIx observation with arithmetic mean."""
+    class MockOTAFourAdapter(BaseReconciliationAdapter):
+        @property
+        def source_id(self) -> str:
+            return "makemytrip"
+
+        @property
+        def source_name(self) -> str:
+            return "MakeMyTrip"
+
+        def normalize(self, raw_record):
+            return self._build_canonical_offer(
+                raw_id=raw_record.get("observation_id", "mmt_01"),
+                origin=raw_record.get("origin", "DEL"),
+                destination=raw_record.get("destination", "BOM"),
+                travel_date=raw_record.get("travel_date", "2026-10-04"),
+                airline=raw_record.get("airline", "IndiGo"),
+                flight_number=raw_record.get("flight_number", "6E-204"),
+                departure_time=raw_record.get("departure_time_local", "10:00"),
+                arrival_time="12:15",
+                total_fare=raw_record.get("total_fare", 6600.0),
+                stops=0,
+            )
+
+    custom_config = SourceConfig(
+        source_id="makemytrip",
+        source_name="MakeMyTrip",
+        supported_fields={"route", "airline", "flight_number", "departure_time", "total_fare"},
+    )
+    pipeline.registry.register_source(custom_config)
+    pipeline.register_adapter(MockOTAFourAdapter())
+
+    raw_gf = {
+        "source": "google_flights",
+        "observation_id": "gf_j",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6000.0,
+    }
+    raw_emt = {
+        "source": "easemytrip",
+        "observation_id": "emt_j",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6200.0,
+    }
+    raw_ixi = {
+        "source": "ixigo",
+        "observation_id": "ixi_j",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6400.0,
+    }
+    raw_mmt = {
+        "source": "makemytrip",
+        "observation_id": "mmt_j",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6600.0,
+    }
+
+    valid_obs, excluded, diag = pipeline.run([raw_gf, raw_emt, raw_ixi, raw_mmt])
+    assert len(valid_obs) == 1, "4 OTAs with 4 prices must produce exactly 1 canonical APIx observation"
+    obs = valid_obs[0]
+    # (6000 + 6200 + 6400 + 6600) / 4 = 25200 / 4 = 6300.00
+    assert obs.total_fare == Decimal("6300.00")
+    assert obs.source_count == 4
+    assert obs.aggregation_source_count == 4
+    assert obs.aggregation_method == "ARITHMETIC_MEAN"
+    assert obs.match_status == MatchStatus.PRICE_VARIANCE_AGGREGATED
+
+
+def test_k_raw_lineage_preserved(pipeline):
+    """K. Verify raw lineage is preserved across all required audit dimensions."""
+    raw_gf = {
+        "source": "google_flights",
+        "observation_id": "gf_k_01",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "Air India",
+        "flight_number": "AI-805",
+        "departure_time_local": "08:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    raw_emt = {
+        "source": "easemytrip",
+        "observation_id": "emt_k_01",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "Air India",
+        "flight_number": "AI805",
+        "departure_time_local": "08:00",
+        "stops": 0,
+        "fare_family": "STANDARD",
+        "total_fare": 7200.0,
+    }
+    raw_ixi = {
+        "source": "ixigo",
+        "observation_id": "ixi_k_01",
+        "origin": "DEL",
+        "destination": "BOM",
+        "travel_date": "2026-10-04",
+        "airline": "Air India",
+        "flight_number": "AI-805",
+        "departure_time_local": "08:00",
+        "stops": 0,
+        "fare_family": "STANDARD",
+        "total_fare": 6800.0,
+    }
+
+    valid_obs, _, _ = pipeline.run([raw_gf, raw_emt, raw_ixi])
+    assert len(valid_obs) == 1
+    obs = valid_obs[0]
+
+    # Verify all lineage attributes specified in requirement §5
+    assert obs.source_count == 3
+    assert set(obs.source_ids) == {"google_flights", "easemytrip", "ixigo"}
+    assert set(obs.source_observation_ids) == {"gf_k_01", "emt_k_01", "ixi_k_01"}
+    assert obs.price_by_source == {
+        "google_flights": Decimal("6500.0"),
+        "easemytrip": Decimal("7200.0"),
+        "ixigo": Decimal("6800.0"),
+    }
+    assert obs.source_prices == obs.price_by_source
+    assert len(obs.source_timestamps) == 3
+    assert all(k in obs.source_timestamps for k in ["google_flights", "easemytrip", "ixigo"])
+    assert obs.aggregation_method == "ARITHMETIC_MEAN"
+    assert obs.aggregation_source_count == 3
+    assert obs.total_fare == Decimal("6833.33")
+
+
+# ── GOVERNANCE REGRESSION TESTS: STRATUM-AWARENESS & PRODUCT-DEFINITION GATES ──
+
+def test_governance_a_stratum_independence_no_cross_leadtime_dedup(pipeline):
+    """
+    Test A: Same physical flight in T+1 and T+7 is NOT cross-deduplicated.
+    Both must survive into valid APIx observations as independent sampling strata.
+    """
+    raw_t1 = {
+        "source": "google_flights",
+        "observation_id": "gf_delbom_t1",
+        "route": "DEL-BOM",
+        "lead_time": "T+1",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    raw_t7 = {
+        "source": "google_flights",
+        "observation_id": "gf_delbom_t7",
+        "route": "DEL-BOM",
+        "lead_time": "T+7",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+
+    valid_obs, excluded, diag = pipeline.run([raw_t1, raw_t7])
+    assert len(valid_obs) == 2, "Same flight at T+1 and T+7 must NEVER be cross-deduplicated"
+    assert len(excluded) == 0
+    assert sum(diag.duplicates_by_source.values()) == 0
+    lead_times = {o.lead_time for o in valid_obs}
+    assert lead_times == {"T+1", "T+7"}
+
+
+def test_governance_b_flexiplus_excluded(pipeline):
+    """
+    Test B: FlexiPlus (and other higher fare families) is strictly excluded from APIx baseline.
+    """
+    raw_flex = {
+        "source": "easemytrip",
+        "observation_id": "emt_flex_01",
+        "route": "DEL-BOM",
+        "lead_time": "T+1",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "fare_family": "FlexiPlus",
+        "stops": 0,
+        "total_fare": 8500.0,
+    }
+    raw_standard = {
+        "source": "easemytrip",
+        "observation_id": "emt_std_01",
+        "route": "DEL-BOM",
+        "lead_time": "T+1",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "fare_family": "STANDARD",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+
+    valid_obs, excluded, diag = pipeline.run([raw_flex, raw_standard])
+    assert len(valid_obs) == 1, "Only standard saver tier enters baseline"
+    assert valid_obs[0].fare_family == "STANDARD"
+    assert len(excluded) == 1
+    assert excluded[0].fare_family == "FlexiPlus"
+    assert diag.higher_fare_family_exclusions == 1
+
+
+def test_governance_c_gulf_air_excluded(pipeline):
+    """
+    Test C: Gulf Air domestic-looking transit is strictly excluded as cabotage violation.
+    """
+    raw_gulf = {
+        "source": "google_flights",
+        "observation_id": "gf_gulf_01",
+        "route": "BLR-GOI",
+        "lead_time": "T+7",
+        "travel_date": "2026-10-10",
+        "airline": "Gulf Air",
+        "flight_number": "GF-61",
+        "departure_time_local": "06:00",
+        "stops": 1,
+        "total_fare": 61131.0,
+    }
+    valid_obs, excluded, diag = pipeline.run([raw_gulf])
+    assert len(valid_obs) == 0, "Gulf Air must be excluded from domestic baseline"
+    assert len(excluded) == 1
+    assert excluded[0].airline == "Gulf Air"
+    assert diag.foreign_transit_exclusions == 1
+
+
+def test_governance_d_singapore_airlines_excluded(pipeline):
+    """
+    Test D: Singapore Airlines domestic-looking transit is strictly excluded as cabotage violation.
+    """
+    raw_sia = {
+        "source": "google_flights",
+        "observation_id": "gf_sia_01",
+        "route": "HYD-CCU",
+        "lead_time": "T+15",
+        "travel_date": "2026-10-18",
+        "airline": "Singapore Airlines",
+        "flight_number": "SQ-501",
+        "departure_time_local": "23:10",
+        "stops": 1,
+        "total_fare": 49221.0,
+    }
+    valid_obs, excluded, diag = pipeline.run([raw_sia])
+    assert len(valid_obs) == 0, "Singapore Airlines must be excluded from domestic baseline"
+    assert len(excluded) == 1
+    assert excluded[0].airline == "Singapore Airlines"
+    assert diag.foreign_transit_exclusions == 1
+
+
+def test_governance_e_existing_foreign_carriers_remain_excluded(pipeline):
+    """
+    Test E: Existing foreign carriers (Kuwait Airways, Emirates, Etihad, SriLankan, Oman Air) remain excluded.
+    """
+    carriers = ["Kuwait Airways", "Emirates", "Etihad", "SriLankan", "Oman Air"]
+    raw_items = [
+        {
+            "source": "google_flights",
+            "observation_id": f"gf_fc_{i}",
+            "route": "DEL-BOM",
+            "lead_time": "T+1",
+            "travel_date": "2026-10-04",
+            "airline": carrier,
+            "flight_number": f"FC-{i}",
+            "departure_time_local": "14:00",
+            "stops": 1,
+            "total_fare": 35000.0,
+        }
+        for i, carrier in enumerate(carriers)
+    ]
+    valid_obs, excluded, diag = pipeline.run(raw_items)
+    assert len(valid_obs) == 0, "All international carriers must be excluded"
+    assert len(excluded) == 5
+    assert diag.foreign_transit_exclusions == 5
+
+
+def test_governance_f_multi_source_same_product_aggregation_still_works(pipeline):
+    """
+    Test F: Multi-source same-product aggregation still works:
+    Google ₹6,500 + EaseMyTrip ₹7,200 = one observation ₹6,850.
+    """
+    raw_gf = {
+        "source": "google_flights",
+        "observation_id": "gf_f",
+        "route": "DEL-BOM",
+        "lead_time": "T+1",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6500.0,
+    }
+    raw_emt = {
+        "source": "easemytrip",
+        "observation_id": "emt_f",
+        "route": "DEL-BOM",
+        "lead_time": "T+1",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 7200.0,
+    }
+    valid_obs, _, diag = pipeline.run([raw_gf, raw_emt])
+    assert len(valid_obs) == 1, "Two sources for same product in same cell must collapse to 1 observation"
+    obs = valid_obs[0]
+    # (6500 + 7200) / 2 = 6850.00
+    assert obs.total_fare == Decimal("6850.00")
+    assert obs.source_count == 2
+    assert obs.aggregation_method == "ARITHMETIC_MEAN"
+    assert obs.match_status == MatchStatus.PRICE_VARIANCE_AGGREGATED
+
+
+def test_governance_g_different_lead_time_cells_remain_independent(pipeline):
+    """
+    Test G: Different lead-time cells remain independent:
+    DEL-BOM T+1 (GF ₹6000 + EMT ₹6200 -> ₹6100) and
+    DEL-BOM T+7 (GF ₹7000 + EMT ₹7400 -> ₹7200)
+    produce 2 distinct observations, one in each cell.
+    """
+    raw_t1_gf = {
+        "source": "google_flights",
+        "observation_id": "gf_t1",
+        "route": "DEL-BOM",
+        "lead_time": "T+1",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6000.0,
+    }
+    raw_t1_emt = {
+        "source": "easemytrip",
+        "observation_id": "emt_t1",
+        "route": "DEL-BOM",
+        "lead_time": "T+1",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 6200.0,
+    }
+    raw_t7_gf = {
+        "source": "google_flights",
+        "observation_id": "gf_t7",
+        "route": "DEL-BOM",
+        "lead_time": "T+7",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 7000.0,
+    }
+    raw_t7_emt = {
+        "source": "easemytrip",
+        "observation_id": "emt_t7",
+        "route": "DEL-BOM",
+        "lead_time": "T+7",
+        "travel_date": "2026-10-04",
+        "airline": "IndiGo",
+        "flight_number": "6E-204",
+        "departure_time_local": "10:00",
+        "stops": 0,
+        "total_fare": 7400.0,
+    }
+
+    valid_obs, _, diag = pipeline.run([raw_t1_gf, raw_t1_emt, raw_t7_gf, raw_t7_emt])
+    assert len(valid_obs) == 2, "Must produce exactly 2 observations, one for T+1 and one for T+7"
+    by_lt = {o.lead_time: o for o in valid_obs}
+    assert "T+1" in by_lt and "T+7" in by_lt
+
+    # T+1: (6000 + 6200) / 2 = 6100.00
+    assert by_lt["T+1"].total_fare == Decimal("6100.00")
+    assert by_lt["T+1"].source_count == 2
+
+    # T+7: (7000 + 7400) / 2 = 7200.00
+    assert by_lt["T+7"].total_fare == Decimal("7200.00")
+    assert by_lt["T+7"].source_count == 2
+

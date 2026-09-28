@@ -23,7 +23,6 @@ export interface LeadTimeHorizon {
   description: string;
   empirical_weight_percent: number;
   empirical_weight_decimal: number;
-  sensitivity_weight_percent: number;
   is_mospi_checkpoint: boolean;
 }
 
@@ -889,7 +888,6 @@ export const LEAD_TIME_HORIZONS: LeadTimeHorizon[] = [
     description: "Last-minute business and emergency departures; highest yield-management fare volatility.",
     empirical_weight_percent: 5.09,
     empirical_weight_decimal: 0.0509,
-    sensitivity_weight_percent: 16.67,
     is_mospi_checkpoint: false,
   },
   {
@@ -899,7 +897,6 @@ export const LEAD_TIME_HORIZONS: LeadTimeHorizon[] = [
     description: "Short-horizon discretionary booking window across metro and holiday corridors.",
     empirical_weight_percent: 13.50,
     empirical_weight_decimal: 0.1350,
-    sensitivity_weight_percent: 16.67,
     is_mospi_checkpoint: false,
   },
   {
@@ -909,7 +906,6 @@ export const LEAD_TIME_HORIZONS: LeadTimeHorizon[] = [
     description: "Standard domestic advance planning window before yield penalties activate.",
     empirical_weight_percent: 14.91,
     empirical_weight_decimal: 0.1491,
-    sensitivity_weight_percent: 16.67,
     is_mospi_checkpoint: false,
   },
   {
@@ -919,7 +915,6 @@ export const LEAD_TIME_HORIZONS: LeadTimeHorizon[] = [
     description: "Official MoSPI CPI 2024 designated standard domestic advance-purchase specification. Captured and isolated as an independent stratum.",
     empirical_weight_percent: 15.19,
     empirical_weight_decimal: 0.1519,
-    sensitivity_weight_percent: 16.67,
     is_mospi_checkpoint: true,
   },
   {
@@ -929,7 +924,6 @@ export const LEAD_TIME_HORIZONS: LeadTimeHorizon[] = [
     description: "Leisure, vacation, and conference baseline booking anchor.",
     empirical_weight_percent: 25.88,
     empirical_weight_decimal: 0.2588,
-    sensitivity_weight_percent: 16.67,
     is_mospi_checkpoint: false,
   },
   {
@@ -939,7 +933,6 @@ export const LEAD_TIME_HORIZONS: LeadTimeHorizon[] = [
     description: "Maximum domestic advance booking window; lowest average tariffs.",
     empirical_weight_percent: 25.43,
     empirical_weight_decimal: 0.2543,
-    sensitivity_weight_percent: 16.67,
     is_mospi_checkpoint: false,
   },
 ];

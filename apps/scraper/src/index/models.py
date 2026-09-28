@@ -105,14 +105,15 @@ class RouteIndexResult(BaseModel):
     weight_reference_period: str = Field(default="HCES 2023-24", description="Household Consumption Expenditure Survey 2023-24")
     chain_link_period: str = Field(default="December y-1 (Eurostat) / Month-over-Month (MoSPI)", description="Annual linking point")
 
-    # Project Experimental Reference (PROVISIONAL_PROJECT_REFERENCE)
+    # Project Experimental Reference (PROVISIONAL_PROJECT_REFERENCE - Descriptive Diagnostic Only)
     reference_type: str = Field(default="PROVISIONAL_PROJECT_REFERENCE", description="Reference classification type")
-    experimental_project_reference_price: Decimal = Field(default=Decimal("6632.67"), description="First complete production run weighted representative price")
-    experimental_reference_period: str = Field(default="2026-09-26", description="First complete production run collection date")
+    reference_purpose: str = Field(default="descriptive/reference-price diagnostic", description="Preserved strictly as descriptive reference price; does not enter elementary index")
+    experimental_project_reference_price: Decimal = Field(default=Decimal("8641.45"), description="Provisional 360-cell reference price (descriptive diagnostic only)")
+    experimental_reference_period: str = Field(default="2026-09-27", description="First complete production run collection date")
 
-    reference_price: Decimal = Field(default=Decimal("6632.67"), description="Active reference price")
-    reference_price_method: str = Field(default="Option B — first production run weighted representative price", description="Calculation methodology")
-    reference_price_source: str = Field(default="production_run_825fa969", description="Source run ID or dataset")
+    reference_price: Decimal = Field(default=Decimal("8641.45"), description="Active reference price (descriptive diagnostic only)")
+    reference_price_method: str = Field(default="Finalized 60-route x 6-lead-time basket reference price", description="Calculation methodology")
+    reference_price_source: str = Field(default="top60_observation_classification_360cell", description="Source run ID or dataset")
     reference_index_value: Decimal = Field(default=Decimal("100.00"), description="Index value at reference period")
     # MoSPI CPI 2024 Weight Specification (Annexure 5.3d Item 07.3.3.1.2.01)
     cpi_item_code: str = Field(default="07.3.3.1.2.01", description="Official MoSPI CPI 2024 item code")
@@ -139,19 +140,20 @@ class APIxSeriesResult(BaseModel):
 
     # Project Experimental Reference (Clearly distinguished from official MoSPI price reference)
     reference_type: str = Field(default="PROVISIONAL_PROJECT_REFERENCE", description="Reference classification type")
-    experimental_project_reference_price: Decimal = Field(default=Decimal("6632.67"), description="First complete production run weighted representative price")
-    experimental_reference_period: str = Field(default="2026-09-26", description="First complete production run collection date")
+    reference_purpose: str = Field(default="descriptive/reference-price diagnostic", description="Preserved strictly as descriptive reference price; does not enter elementary index")
+    experimental_project_reference_price: Decimal = Field(default=Decimal("8641.45"), description="Provisional 360-cell reference price (descriptive diagnostic only)")
+    experimental_reference_period: str = Field(default="2026-09-27", description="First complete production run collection date")
 
-    reference_price: Decimal = Field(default=Decimal("6632.67"), description="Active reference price")
-    reference_price_method: str = Field(default="Option B — first production run weighted representative price", description="Calculation methodology")
-    reference_price_source: str = Field(default="production_run_825fa969", description="Source run ID or dataset")
+    reference_price: Decimal = Field(default=Decimal("8641.45"), description="Active reference price (descriptive diagnostic only)")
+    reference_price_method: str = Field(default="Finalized 60-route x 6-lead-time basket reference price", description="Calculation methodology")
+    reference_price_source: str = Field(default="top60_observation_classification_360cell", description="Source run ID or dataset")
     reference_index_value: Decimal = Field(default=Decimal("100.00"), description="Index value at reference period")
 
     # Backward compatibility aliases (Explicit aliases only)
     reference_period: str = "2026-09"
     base_value: Decimal = Field(default=Decimal("100.00"), description="Explicit alias for reference_index_value")
-    base_price: Optional[Decimal] = Field(default=Decimal("6632.67"), description="Explicit alias for experimental_project_reference_price")
-    base_period: Optional[str] = Field(default="2026-09-26", description="Explicit alias for experimental_reference_period")
+    base_price: Optional[Decimal] = Field(default=Decimal("8641.45"), description="Explicit alias for experimental_project_reference_price (descriptive diagnostic only)")
+    base_period: Optional[str] = Field(default="2026-09-27", description="Explicit alias for experimental_reference_period")
 
     index_value: Decimal
     mom_percent: Optional[Decimal] = None
@@ -199,6 +201,18 @@ class APIxSeriesResult(BaseModel):
     estimated_cpi_contribution_pp: Optional[Decimal] = Field(
         default=None,
         description="Estimated CPI contribution in percentage points: APIx_percent_change * 0.02951 / 100"
+    )
+    cpi_combined_contribution_pp: Optional[Decimal] = Field(
+        default=None,
+        description="Combined All-India airfare contribution in percentage points: APIx_percent_change * 0.02951 / 100"
+    )
+    cpi_urban_contribution_pp: Optional[Decimal] = Field(
+        default=None,
+        description="Urban sector airfare contribution in percentage points: APIx_percent_change * 0.017843 / 100"
+    )
+    cpi_rural_contribution_pp: Optional[Decimal] = Field(
+        default=None,
+        description="Rural sector airfare contribution in percentage points: APIx_percent_change * 0.011666 / 100"
     )
     cpi_weight_disclaimer: str = Field(
         default="The MoSPI CPI 2024 airfare expenditure weight is used only for the optional integration of the experimental Airfare Price Index into CPI. It is not used to construct the Airfare Price Index itself.",

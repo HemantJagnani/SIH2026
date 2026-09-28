@@ -30,6 +30,67 @@ def test_url_builder(mock_request):
     assert "oneway" in url
     assert "curr=INR" in url
 
+def test_url_builder_gau_destination_resolution_del_gau():
+    """
+    Regression test: DEL -> GAU must construct a valid Google Flights query with
+    'Guwahati' rather than bare 'GAU' to prevent Google Flights Explore page fallback.
+    """
+    req = FareSearchRequest(
+        origin="DEL",
+        destination="GAU",
+        travel_date=date(2026, 10, 5),
+        trip_type=TripType.ONE_WAY,
+        cabin=CabinClass.ECONOMY,
+        source="google_flights",
+        collection_mode="BROWSER",
+        lead_days=7
+    )
+    url = GoogleFlightsUrlBuilder.build_url(req)
+    assert "https://www.google.com/travel/flights" in url
+    assert "curr=INR" in url
+    assert "oneway" in url
+    assert "DEL" in url
+    
+    # Crucial: Query must resolve destination to 'Guwahati', NOT bare 'GAU'
+    assert "Guwahati" in url
+    assert "Flights+to+Guwahati+from+DEL" in url
+    assert "Flights+to+GAU+from" not in url
+
+def test_url_builder_gau_destination_resolution_blr_gau():
+    """
+    Regression test: BLR -> GAU must construct a valid Google Flights query with
+    'Guwahati' rather than bare 'GAU'.
+    """
+    req = FareSearchRequest(
+        origin="BLR",
+        destination="GAU",
+        travel_date=date(2026, 10, 5),
+        trip_type=TripType.ONE_WAY,
+        cabin=CabinClass.ECONOMY,
+        source="google_flights",
+        collection_mode="BROWSER",
+        lead_days=7
+    )
+    url = GoogleFlightsUrlBuilder.build_url(req)
+    assert "https://www.google.com/travel/flights" in url
+    assert "curr=INR" in url
+    assert "oneway" in url
+    assert "BLR" in url
+    
+    # Crucial: Query must resolve destination to 'Guwahati', NOT bare 'GAU'
+    assert "Guwahati" in url
+    assert "Flights+to+Guwahati+from+BLR" in url
+    assert "Flights+to+GAU+from" not in url
+
+def test_url_builder_resolve_destination_method():
+    """Test resolve_destination unit behavior across standard and mapped codes."""
+    assert GoogleFlightsUrlBuilder.resolve_destination("GAU") == "Guwahati"
+    assert GoogleFlightsUrlBuilder.resolve_destination("gau") == "Guwahati"
+    assert GoogleFlightsUrlBuilder.resolve_destination(" GAU ") == "Guwahati"
+    assert GoogleFlightsUrlBuilder.resolve_destination("BOM") == "BOM"
+    assert GoogleFlightsUrlBuilder.resolve_destination("DEL") == "DEL"
+    assert GoogleFlightsUrlBuilder.resolve_destination("BLR") == "BLR"
+
 def test_parser_normal_results(mock_request):
     run_id = uuid.uuid4()
     # A mock DOM representing Google Flights structural response

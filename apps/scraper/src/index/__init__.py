@@ -78,6 +78,9 @@ from .quality_adjustment import (
     QualityAdjustmentRecord,
     ObservationStatus,
     ReplacementTreatment,
+    ImputationStatus,
+    ImputedClassMeanResult,
+    ClassMeanImputationEngine,
 )
 from .flight_schedule import (
     DGCAScheduledFlight,
@@ -95,6 +98,63 @@ from .flight_schedule import (
     get_schedule_registry,
     assert_no_schedule_weight_contamination,
 )
+from .longitudinal import (
+    LongitudinalTargetCell,
+    LongitudinalMatchingResult,
+    LongitudinalCollectionWorkflow,
+    LongitudinalMatchingEngine,
+)
+from .hedonic import (
+    HedonicModelStatus,
+    HedonicCoefficient,
+    HedonicModelDiagnostics,
+    HedonicAdjustmentResult,
+    HedonicRegressionEngine,
+)
+from .monthly_aggregation import (
+    MultiDayProductQuote,
+    MonthlyAggregatedProduct,
+    MonthlyAggregationEngine,
+)
+from .uncertainty import (
+    UncertaintyMetrics,
+    UncertaintyEstimationEngine,
+)
+from .checkout import (
+    CheckoutVerificationStatus,
+    HarmonizedCheckoutPrice,
+    CheckoutHarmonizationEngine,
+)
+from .chain_linking import (
+    AnnualLinkRecord,
+    AnnualChainSeries,
+    AnnualChainLinkingEngine,
+)
+from .seasonal_adjustment import (
+    SeasonalAdjustmentResult,
+    SeasonalAdjustmentEngine,
+)
+from .cpi_contribution import (
+    SectoralCPIContribution,
+    CPIContributionEngine,
+)
+from .dgca_weights import (
+    AnnualRouteBasket,
+    RouteTransitionStatus,
+    RouteWeightTransitionRecord,
+    DGCARouteWeightRegistry,
+)
+from .synthetic import (
+    SYNTHETIC_DATA_STATUS,
+    SYNTHETIC_GENERATION_VERSION,
+    SyntheticFareObservation,
+    SyntheticDailyIndexPoint,
+    SyntheticWeeklyIndexPoint,
+    SyntheticAugustMetadata,
+    SyntheticAugustGenerator,
+    SyntheticDemonstrationPipeline,
+)
+
 
 __all__ = [
     "MonthlyProductPrice",
@@ -174,4 +234,43 @@ __all__ = [
     "evaluate_scraper_coverage",
     "get_schedule_registry",
     "assert_no_schedule_weight_contamination",
+    "ImputationStatus",
+    "ImputedClassMeanResult",
+    "ClassMeanImputationEngine",
+    "LongitudinalTargetCell",
+    "LongitudinalMatchingResult",
+    "LongitudinalCollectionWorkflow",
+    "LongitudinalMatchingEngine",
+    "HedonicModelStatus",
+    "HedonicCoefficient",
+    "HedonicModelDiagnostics",
+    "HedonicAdjustmentResult",
+    "HedonicRegressionEngine",
+    "MultiDayProductQuote",
+    "MonthlyAggregatedProduct",
+    "MonthlyAggregationEngine",
+    "UncertaintyMetrics",
+    "UncertaintyEstimationEngine",
+    "CheckoutVerificationStatus",
+    "HarmonizedCheckoutPrice",
+    "CheckoutHarmonizationEngine",
+    "AnnualLinkRecord",
+    "AnnualChainSeries",
+    "AnnualChainLinkingEngine",
+    "SeasonalAdjustmentResult",
+    "SeasonalAdjustmentEngine",
+    "SectoralCPIContribution",
+    "CPIContributionEngine",
+    "AnnualRouteBasket",
+    "RouteTransitionStatus",
+    "RouteWeightTransitionRecord",
+    "DGCARouteWeightRegistry",
+    "SYNTHETIC_DATA_STATUS",
+    "SYNTHETIC_GENERATION_VERSION",
+    "SyntheticFareObservation",
+    "SyntheticDailyIndexPoint",
+    "SyntheticWeeklyIndexPoint",
+    "SyntheticAugustMetadata",
+    "SyntheticAugustGenerator",
+    "SyntheticDemonstrationPipeline",
 ]
