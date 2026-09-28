@@ -16,11 +16,42 @@ from typing import Optional
 import urllib.request
 import urllib.error
 
+import subprocess
+
 ROOT = Path(__file__).resolve().parent.parent
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env")
+except ImportError:
+    pass
 
 DEFAULT_REPO_OWNER = "HemantJagnani"
 DEFAULT_REPO_NAME = "SIH2026"
 DEFAULT_TAG = "v1.0-evidence"
+
+
+def get_github_token() -> Optional[str]:
+    """Retrieve GitHub token from env or automatically query git credential manager."""
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if token:
+        return token
+    try:
+        proc = subprocess.run(
+            ["git", "credential", "fill"],
+            input="protocol=https\nhost=github.com\n",
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        for line in proc.stdout.splitlines():
+            if line.startswith("password="):
+                val = line.split("=", 1)[1].strip()
+                if val:
+                    return val
+    except Exception:
+        pass
+    return None
 
 
 def get_repo_info() -> tuple[str, str]:
@@ -55,10 +86,10 @@ def upload_to_github_release(
     release_title: Optional[str] = None,
     github_token: Optional[str] = None
 ) -> bool:
-    token = github_token or os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    token = github_token or get_github_token()
     if not token:
         print(
-            "GITHUB_TOKEN not found in environment. Evidence is compressed locally at "
+            "GITHUB_TOKEN not found in environment or git credentials. Evidence is compressed locally at "
             f"{archive_path}, but not uploaded to GitHub. Set GITHUB_TOKEN in .env or run in GitHub Actions to enable auto-upload."
         )
         return False
