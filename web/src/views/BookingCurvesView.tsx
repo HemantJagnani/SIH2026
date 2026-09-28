@@ -432,6 +432,7 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
   const [routes, setRoutes] = useState<string[]>([]);
   const [allCurves, setAllCurves] = useState<Record<string, LeadCurve[]>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('rupees');
   const [searchQuery, setSearchQuery] = useState('');
   const [hubFilter, setHubFilter] = useState<HubFilter>('ALL');
@@ -453,6 +454,7 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     // Instant comprehensive loading from Matrix API and Coverage API
     Promise.allSettled([
       api.getCoverage(),
@@ -496,10 +498,17 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
         }
       }
 
+      if (routesList.length === 0 && Object.keys(data).length === 0) {
+        setError('Data unavailable — unable to retrieve the latest result.');
+      }
+
       setRoutes(routesList.sort());
       setAllCurves(data);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {
+      setError('Data unavailable — unable to retrieve the latest result.');
+      setLoading(false);
+    });
   }, []);
 
   // Shared y scale across loaded routes
@@ -650,11 +659,21 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
               <strong>{Object.keys(allCurves).length}</strong> routes with verified lead curves &nbsp;·&nbsp;{' '}
               6 advance lead windows (T+1 to T+45)
             </>
-          ) : (
+          ) : loading ? (
             'Loading booking curves from matrix…'
+          ) : (
+            'Data unavailable — unable to retrieve the latest result.'
           )}
         </div>
       </div>
+
+      {error && (
+        <div className="callout" style={{ borderLeft: '3px solid var(--route-mag)', marginBottom: 'var(--sp-4)' }}>
+          <p style={{ fontFamily: "'B612', monospace", fontSize: 'var(--t-ui)', color: 'var(--ink)' }}>
+            {error}
+          </p>
+        </div>
+      )}
 
       {/* Mode Toggle & Search Controls */}
       <div

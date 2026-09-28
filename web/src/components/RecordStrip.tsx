@@ -25,14 +25,32 @@ interface Tooltip {
   run: Run;
 }
 
+export function isRunSuccess(status: string | null | undefined): boolean {
+  if (!status) return false;
+  const s = status.trim().toLowerCase();
+  return s === 'ok' || s === 'completed' || s === 'success';
+}
+
+export function isRunPartial(status: string | null | undefined): boolean {
+  if (!status) return false;
+  const s = status.trim().toLowerCase();
+  return s === 'partial';
+}
+
+export function isRunFailed(status: string | null | undefined): boolean {
+  if (!status) return false;
+  const s = status.trim().toLowerCase();
+  return s === 'failed' || s === 'error';
+}
+
 export default function RecordStrip({ runs }: Props) {
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
 
   if (runs.length === 0) return null;
 
   const sorted = [...runs].sort((a, b) => a.run_date.localeCompare(b.run_date));
-  const okCount = sorted.filter(r => r.status === 'ok').length;
-  const exceptions = sorted.filter(r => r.status !== 'ok');
+  const okCount = sorted.filter(r => isRunSuccess(r.status)).length;
+  const exceptions = sorted.filter(r => !isRunSuccess(r.status));
 
   return (
     <div className="record-strip">
@@ -98,9 +116,9 @@ interface TickProps {
 }
 
 function Tick({ run, onShowTooltip, onHideTooltip }: TickProps) {
-  const isOk = run.status === 'ok';
-  const isPartial = run.status === 'partial';
-  const isFailed = run.status === 'failed';
+  const isOk = isRunSuccess(run.status);
+  const isPartial = isRunPartial(run.status);
+  const isFailed = isRunFailed(run.status);
 
   const handlePointer = (e: React.PointerEvent) => {
     onShowTooltip(e.clientX, e.clientY, run);

@@ -175,7 +175,7 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
           </>
         ) : (
           <p style={{ fontFamily: "'B612', monospace", fontSize: 'var(--t-ui)', color: 'var(--ink-2)' }}>
-            Backend unavailable — verify API service is active.
+            Data unavailable — unable to retrieve the latest result.
           </p>
         )}
       </div>

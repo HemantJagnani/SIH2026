@@ -311,24 +311,9 @@ export const api = {
   },
 
   runs: async (): Promise<Run[]> => {
-    try {
-      const res = await fetch(`${BASE}/runs`);
-      if (res.ok) return await res.json();
-    } catch {}
-    return [
-      {
-        id: 1,
-        run_date: '2026-09-22',
-        started_at: '2026-09-22T13:21:00Z',
-        finished_at: '2026-09-22T13:22:00Z',
-        status: 'COMPLETED',
-        source: 'EaseMyTrip (DOM Live)',
-        pages_ok: 1,
-        pages_failed: 0,
-        observations_count: 145,
-        notes: 'Verified domestic fares across 8 product strata'
-      }
-    ];
+    const res = await fetch(`${BASE}/runs`);
+    if (!res.ok) throw new Error(`API error ${res.status}: /runs`);
+    return res.json();
   },
 
   observations: async (): Promise<Observation[]> => {

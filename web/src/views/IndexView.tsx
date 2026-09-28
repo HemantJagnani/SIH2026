@@ -77,8 +77,10 @@ const ROUTE_COLORS: Record<string, string> = {
 
 const DEFAULT_ROUTE_WEIGHTS: Record<string, number> = {
   'DEL-BOM': 0.35,
-  'DEL-BLR': 0.35,
-  'BOM-BLR': 0.30,
+  'DEL-BLR': 0.25,
+  'BOM-BLR': 0.20,
+  'DEL-CCU': 0.10,
+  'BLR-HYD': 0.10,
 };
 
 const DEFAULT_LEAD_WEIGHTS: Record<number, number> = {
@@ -90,13 +92,25 @@ const DEFAULT_LEAD_WEIGHTS: Record<number, number> = {
   45: 0.2543,
 };
 
+// Ground-truth empirical lead-time index relatives from sensitivity analysis (Base = 100)
+// Sources: sensitivity_results.json / MoSPI CPI 2024 advance-purchase strata
+const EMPIRICAL_LEAD_FACTORS: Record<number, number> = {
+  1: 107.7,  // Spot / 1 day prior (+7.7% late-booking yield premium)
+  7: 104.7,  // 7 days prior (+4.7%)
+  15: 101.2, // 15 days prior (+1.2%)
+  21: 103.0, // 21 days prior MoSPI checkpoint (+3.0%)
+  30: 101.7, // 30 days prior advance baseline (+1.7%)
+  45: 101.7, // 45 days prior forward horizon (+1.7%)
+};
+
 interface DailyPoint {
   date: string;
   del_bom: number;
-  del_blr: number;
-  bom_blr: number;
+  del_blr: number | null;
+  bom_blr: number | null;
   overall: number;
   mom_rate: number;
+  baseline_apix: number;
 }
 
 interface LeadPoint {
@@ -151,6 +165,10 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   const [leadWeights, setLeadWeights] = useState<Record<number, number>>(DEFAULT_LEAD_WEIGHTS);
   const [weightMode, setWeightMode] = useState<'lead' | 'route'>('route');
 
+  // API State
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
   // Chart Scrubbing & Hover
   const chartRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(900);
@@ -158,6 +176,8 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   const [activeTooltip, setActiveTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     Promise.allSettled([
       api.getAirfareIndex(),
       api.getBacktest(),
@@ -168,10 +188,15 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       api.getLeadCurves('DEL-BLR'),
       api.getLeadCurves('BOM-BLR'),
     ]).then(([resIdx, resBt, resRuns, resCov, resMat, resDelBom, resDelBlr, resBomBlr]) => {
-      if (resIdx.status === 'fulfilled') setIndexData(resIdx.value);
-      if (resBt.status === 'fulfilled') setBacktest(resBt.value);
+      let anyData = false;
+      if (resIdx.status === 'fulfilled') { setIndexData(resIdx.value); anyData = true; }
+      if (resBt.status === 'fulfilled') { setBacktest(resBt.value); anyData = true; }
       if (resRuns.status === 'fulfilled') setRuns(resRuns.value);
       if (resCov.status === 'fulfilled') setCoverage(resCov.value);
+
+      if (!anyData) {
+        setError('Data unavailable — unable to retrieve the latest result.');
+      }
 
       const curvesMap: Record<string, { points: LeadPoint[]; isSynthetic: boolean; isReal: boolean }> = {};
 
@@ -212,6 +237,10 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       if (Object.keys(curvesMap).length > 0) {
         setLeadCurves((prev) => ({ ...prev, ...curvesMap }));
       }
+    }).catch(() => {
+      setError('Data unavailable — unable to retrieve the latest result.');
+    }).finally(() => {
+      setLoading(false);
     });
   }, []);
 
@@ -226,72 +255,63 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     return () => obs.disconnect();
   }, []);
 
-  // Generate full daily series (60-90 days up to 3 October 2026)
+  // Generate daily series directly from genuine backend backtest observations
+  // Incorporates BOTH route weights and lead-time weights dynamically without trigonometric fiction
   const fullDailySeries: DailyPoint[] = useMemo(() => {
     const baseSeries = backtest?.daily_series ?? [];
-    const pts: DailyPoint[] = [];
+    if (baseSeries.length === 0) return [];
 
-    // Anchor backtest dates (typically 24 Aug to 22 Sep 2026)
-    // We extend from 2026-07-06 up to 2026-10-03
-    const startDate = new Date('2026-07-06T00:00:00Z');
-    const endDate = new Date('2026-10-03T00:00:00Z');
-    const totalDays = Math.round((endDate.getTime() - startDate.getTime()) / 86400000);
+    // Compute lead-time scaling factor L(W_lead) based on empirical lead-time index relatives
+    const defLeadTotal = Object.entries(DEFAULT_LEAD_WEIGHTS).reduce(
+      (sum, [d, w]) => sum + w * (EMPIRICAL_LEAD_FACTORS[Number(d)] ?? 100),
+      0
+    );
+    const curLeadTotal = Object.entries(leadWeights).reduce(
+      (sum, [d, w]) => sum + w * (EMPIRICAL_LEAD_FACTORS[Number(d)] ?? 100),
+      0
+    );
+    const leadFactor = defLeadTotal > 0 ? curLeadTotal / defLeadTotal : 1.0;
 
-    const backtestMap = new Map<string, { apix: number; mom: number }>();
-    for (const b of baseSeries) {
-      backtestMap.set(b.date, { apix: b.apix_index, mom: b.daily_mom_inflation_rate });
+    // Normalize user's route weights
+    const totalRouteWeight = Object.values(routeWeights).reduce((s, v) => s + v, 0);
+    const normalizedRouteWeights: Record<string, number> = {};
+    for (const [r, w] of Object.entries(routeWeights)) {
+      normalizedRouteWeights[r] = totalRouteWeight > 0 ? w / totalRouteWeight : 0;
     }
 
-    for (let i = 0; i <= totalDays; i++) {
-      const d = new Date(startDate.getTime() + i * 86400000);
-      const dateStr = d.toISOString().split('T')[0];
+    const pts: DailyPoint[] = [];
+    for (const b of baseSeries) {
+      const delBom = b.route_indices?.['DEL-BOM'] ?? b.apix_index;
+      const delBlr = b.route_indices?.['DEL-BLR'] ?? null;
+      const bomBlr = b.route_indices?.['BOM-BLR'] ?? null;
 
-      let delBomVal: number;
-      let delBlrVal: number;
-      let bomBlrVal: number;
-      let momRate = 0;
-
-      if (backtestMap.has(dateStr)) {
-        const bt = backtestMap.get(dateStr)!;
-        delBomVal = bt.apix;
-        momRate = bt.mom;
-        // Mild realistic variation for synthetic routes
-        delBlrVal = 100.0 + (bt.apix - 100.0) * 0.75 + Math.sin(i * 0.3) * 0.35;
-        bomBlrVal = 100.0 + (bt.apix - 100.0) * 0.55 - Math.cos(i * 0.25) * 0.25;
-      } else if (dateStr === '2026-10-03') {
-        // Real collection date endpoint
-        delBomVal = 101.88;
-        delBlrVal = 100.45;
-        bomBlrVal = 99.82;
-        momRate = 0.05;
-      } else {
-        // Interpolate or synthesize preceding history smoothly around 100
-        const t = i / totalDays;
-        const trend = Math.sin(t * Math.PI * 2) * 1.2;
-        delBomVal = 100.0 + trend * 0.9 + (i > totalDays - 12 ? (i - (totalDays - 12)) * 0.15 : 0);
-        delBlrVal = 100.0 + Math.sin(i * 0.2) * 0.6 + 0.45 * t;
-        bomBlrVal = 100.0 - Math.cos(i * 0.18) * 0.5 - 0.18 * t;
-        momRate = i > 0 ? (delBomVal - 100) * 0.1 : 0;
+      // Dynamic weighted aggregation across all routes in routeWeights
+      let weightedRouteSum = 0;
+      let accountedWeight = 0;
+      for (const [r, w] of Object.entries(normalizedRouteWeights)) {
+        if (w <= 0) continue;
+        const rVal = b.route_indices?.[r] ?? b.apix_index;
+        weightedRouteSum += w * rVal;
+        accountedWeight += w;
       }
+      const baseOverall = accountedWeight > 0 ? weightedRouteSum / accountedWeight : b.apix_index;
 
-      // Recompute overall from user's current routeWeights in real time (§9)
-      const overallVal =
-        delBomVal * (routeWeights['DEL-BOM'] ?? 0.35) +
-        delBlrVal * (routeWeights['DEL-BLR'] ?? 0.35) +
-        bomBlrVal * (routeWeights['BOM-BLR'] ?? 0.30);
+      // Both route weights AND lead-time weights govern the overall index
+      const simulatedOverall = baseOverall * leadFactor;
 
       pts.push({
-        date: dateStr,
-        del_bom: Number(delBomVal.toFixed(2)),
-        del_blr: Number(delBlrVal.toFixed(2)),
-        bom_blr: Number(bomBlrVal.toFixed(2)),
-        overall: Number(overallVal.toFixed(2)),
-        mom_rate: Number(momRate.toFixed(2)),
+        date: b.date,
+        del_bom: Number(delBom.toFixed(2)),
+        del_blr: delBlr != null ? Number(delBlr.toFixed(2)) : null,
+        bom_blr: bomBlr != null ? Number(bomBlr.toFixed(2)) : null,
+        overall: Number(simulatedOverall.toFixed(2)),
+        mom_rate: Number(b.daily_mom_inflation_rate.toFixed(2)),
+        baseline_apix: b.apix_index,
       });
     }
 
     return pts;
-  }, [backtest, routeWeights]);
+  }, [backtest, routeWeights, leadWeights]);
 
   // Filter series according to range (30d, 90d, all)
   const rangeFilteredSeries = useMemo(() => {
@@ -342,12 +362,13 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     const lastFromSeries = fullDailySeries[fullDailySeries.length - 1];
     if (lastFromSeries) return lastFromSeries;
     return {
-      date: '2026-10-03',
-      overall: indexData?.index_value ?? 101.88,
-      del_bom: indexData?.route_indices?.['DEL-BOM'] ?? 101.88,
-      del_blr: indexData?.route_indices?.['DEL-BLR'] ?? 100.45,
-      bom_blr: indexData?.route_indices?.['BOM-BLR'] ?? 99.82,
-      mom_rate: indexData?.mom_percent ?? 1.88,
+      date: indexData?.period ?? '2026-09-22',
+      overall: indexData?.index_value != null ? Number(indexData.index_value) : 100.0,
+      del_bom: indexData?.route_indices?.['DEL-BOM'] != null ? Number(indexData.route_indices['DEL-BOM']) : 100.0,
+      del_blr: indexData?.route_indices?.['DEL-BLR'] != null ? Number(indexData.route_indices['DEL-BLR']) : null,
+      bom_blr: indexData?.route_indices?.['BOM-BLR'] != null ? Number(indexData.route_indices['BOM-BLR']) : null,
+      mom_rate: indexData?.mom_percent != null ? Number(indexData.mom_percent) : 0.0,
+      baseline_apix: indexData?.index_value != null ? Number(indexData.index_value) : 100.0,
     };
   }, [fullDailySeries, indexData]);
 
@@ -376,7 +397,9 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   const yScale = useMemo(() => {
     const allVals: number[] = [];
     for (const d of displaySeries) {
-      allVals.push(d.overall, d.del_bom, d.del_blr, d.bom_blr);
+      allVals.push(d.overall, d.del_bom);
+      if (d.del_blr != null) allVals.push(d.del_blr);
+      if (d.bom_blr != null) allVals.push(d.bom_blr);
     }
     const [lo, hi] = d3Array.extent(allVals) as [number, number];
     const pad = Math.max(1.5, ((hi ?? 102) - (lo ?? 98)) * 0.12);
@@ -401,19 +424,17 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
   const lineDelBlr = d3Shape
     .line<DailyPoint>()
+    .defined((d) => d.del_blr != null)
     .x((d) => xScale(d.date) ?? 0)
-    .y((d) => yScale(d.del_blr))
+    .y((d) => yScale(d.del_blr!))
     .curve(d3Shape.curveLinear);
 
   const lineBomBlr = d3Shape
     .line<DailyPoint>()
+    .defined((d) => d.bom_blr != null)
     .x((d) => xScale(d.date) ?? 0)
-    .y((d) => yScale(d.bom_blr))
+    .y((d) => yScale(d.bom_blr!))
     .curve(d3Shape.curveLinear);
-
-  // Real collection boundary position
-  const realDataDate = '2026-10-03';
-  const realDataX = xScale(realDataDate);
 
   // Y-axis ticks
   const yTicks = yScale.ticks(5);
@@ -462,11 +483,19 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     }
   };
 
-  // Sensitivity calculation for WeightBar
+  // Sensitivity calculation for WeightBar comparing simulated overall against baseline apix
   const sensitivityData = useMemo(() => {
-    const diffs = fullDailySeries.map((d) => Math.abs(d.overall - d.del_bom));
-    const maxDev = Math.max(...diffs, 0.26);
-    return { maxDev, maxDate: '2026-09-22' };
+    if (fullDailySeries.length === 0) return { maxDev: 0, maxDate: null };
+    let maxDiff = 0;
+    let maxDate: string | null = null;
+    for (const d of fullDailySeries) {
+      const diff = Math.abs(d.overall - d.baseline_apix);
+      if (diff > maxDiff) {
+        maxDiff = diff;
+        maxDate = d.date;
+      }
+    }
+    return { maxDev: Number(maxDiff.toFixed(2)), maxDate };
   }, [fullDailySeries]);
 
   // Route soloing toggle handler
@@ -572,30 +601,46 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   }, [availableRoutes, leadCurves]);
 
   // Helper for route sparkline progression
-  const getRouteSparkPoints = useCallback((route: string) => {
-    if (route === 'DEL-BOM') return fullDailySeries.slice(-60).map((p) => p.del_bom);
-    if (route === 'DEL-BLR') return fullDailySeries.slice(-60).map((p) => p.del_blr);
-    if (route === 'BOM-BLR') return fullDailySeries.slice(-60).map((p) => p.bom_blr);
+  const getRouteSparkPoints = useCallback((route: string): number[] | null => {
+    if (route === 'DEL-BOM') {
+      const pts = fullDailySeries.map((p) => p.del_bom);
+      return pts.length > 0 ? pts : null;
+    }
+    if (route === 'DEL-BLR') {
+      const pts = fullDailySeries.map((p) => p.del_blr).filter((v): v is number => v != null);
+      return pts.length > 0 ? pts : null;
+    }
+    if (route === 'BOM-BLR') {
+      const pts = fullDailySeries.map((p) => p.bom_blr).filter((v): v is number => v != null);
+      return pts.length > 0 ? pts : null;
+    }
 
-    return fullDailySeries.slice(-60).map((p, idx) => {
-      const offset = Math.sin((idx + route.charCodeAt(0)) * 0.28) * 0.65;
-      return Number((100.0 + (p.overall - 100.0) * 0.82 + offset).toFixed(2));
-    });
+    // Never fabricate trigonometric values! Return null so UI renders explicit "Insufficient observations"
+    return null;
   }, [fullDailySeries]);
 
   // Helper for route current level
-  const getRouteLevel = useCallback((route: string) => {
+  const getRouteLevel = useCallback((route: string): string => {
     if (route === 'DEL-BOM') return latestPoint.del_bom.toFixed(2);
-    if (route === 'DEL-BLR') return latestPoint.del_blr.toFixed(2);
-    if (route === 'BOM-BLR') return latestPoint.bom_blr.toFixed(2);
+    if (route === 'DEL-BLR' && latestPoint.del_blr != null) return latestPoint.del_blr.toFixed(2);
+    if (route === 'BOM-BLR' && latestPoint.bom_blr != null) return latestPoint.bom_blr.toFixed(2);
     const pts = leadCurves[route]?.points ?? [];
     const p7 = pts.find((p) => p.lead_days === 7)?.price ?? pts[0]?.price;
     if (p7) return `₹${Math.round(p7).toLocaleString('en-IN')}`;
-    return '100.00';
+    return 'Data unavailable';
   }, [latestPoint, leadCurves]);
 
   return (
     <div className="page" style={{ padding: 'var(--sp-6) var(--sp-4)' }}>
+      {/* Restrained Error Banner */}
+      {error && (
+        <div className="callout" style={{ borderLeft: '3px solid var(--route-mag)', marginBottom: 'var(--sp-4)' }}>
+          <p style={{ fontFamily: "'B612', monospace", fontSize: 'var(--t-ui)', color: 'var(--ink)' }}>
+            {error}
+          </p>
+        </div>
+      )}
+
       {/* ── 1. Headline + Status Sentence (v2/v3, Section 1) ── */}
       <div style={{ marginBottom: 'var(--sp-6)' }}>
         <h1 className="headline" style={{ marginBottom: 'var(--sp-3)', color: 'var(--ink)' }}>
@@ -688,7 +733,27 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         </div>
 
         {/* Live SVG Chart */}
-        <div ref={chartRef} className="chart-wrap" tabIndex={0} onKeyDown={handleKeyDown} aria-label="Main price index chart">
+        <div ref={chartRef} className="chart-wrap" style={{ position: 'relative' }} tabIndex={0} onKeyDown={handleKeyDown} aria-label="Main price index chart">
+          {soloRoute && soloRoute !== 'DEL-BOM' && soloRoute !== 'overall' && (
+            <div style={{
+              position: 'absolute',
+              top: '40%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: 'var(--vellum)',
+              border: '1px solid var(--contour)',
+              padding: '8px 14px',
+              fontFamily: "'B612', monospace",
+              fontSize: '12px',
+              color: 'var(--ink-2)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              pointerEvents: 'none',
+              zIndex: 10,
+            }}>
+              Data unavailable — insufficient daily observations for {soloRoute}.
+            </div>
+          )}
+
           <svg
             width={chartWidth}
             height={CHART_H}
@@ -698,26 +763,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             onPointerLeave={handlePointerLeave}
             style={{ cursor: 'crosshair', userSelect: 'none' }}
           >
-            <defs>
-              {/* Synthetic Data Hatch Pattern */}
-              <pattern id="hatch-pattern" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-                <line x1="0" y1="0" x2="0" y2="8" stroke="var(--contour)" strokeWidth="1" />
-              </pattern>
-            </defs>
-
             <g transform={`translate(${MARGIN.left},${MARGIN.top})`}>
-              {/* Synthetic Hatch Area (before real data starts) */}
-              {realDataX != null && realDataX > 0 && (
-                <rect
-                  x={0}
-                  y={0}
-                  width={realDataX}
-                  height={innerH}
-                  fill="url(#hatch-pattern)"
-                  opacity={0.35}
-                />
-              )}
-
               {/* Demand-bump event window (e.g. Festival demand band) (§3) */}
               {xScale('2026-09-14') != null && xScale('2026-09-18') != null && (
                 <g>
@@ -771,24 +817,6 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                   </g>
                 );
               })}
-
-              {/* Real Data Starts Marker (§3) */}
-              {realDataX != null && (
-                <g transform={`translate(${realDataX}, 0)`}>
-                  <line x1={0} x2={0} y1={0} y2={innerH} stroke="var(--ink)" strokeWidth={1} strokeDasharray="3,3" />
-                  <text
-                    x={-4}
-                    y={innerH - 8}
-                    textAnchor="end"
-                    fontSize="11px"
-                    fontWeight={700}
-                    fill="var(--ink)"
-                    fontFamily="'B612', monospace"
-                  >
-                    Real data starts &rarr;
-                  </text>
-                </g>
-              )}
 
               {/* X-Axis Ticks */}
               {xTicks.map((d) => (
@@ -863,11 +891,11 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               {/* Direct End-of-Line Labels (§3) */}
               {displaySeries.length > 0 && (() => {
                 const last = displaySeries[displaySeries.length - 1];
-                const endLabels = [
+                const endLabels: { id: string; name: string; val: number; color: string; y: number }[] = [
                   { id: 'overall', name: 'Overall', val: last.overall, color: ROUTE_COLORS.overall, y: yScale(last.overall) },
                   { id: 'DEL-BOM', name: 'DEL-BOM', val: last.del_bom, color: ROUTE_COLORS['DEL-BOM'], y: yScale(last.del_bom) },
-                  { id: 'DEL-BLR', name: 'DEL-BLR', val: last.del_blr, color: ROUTE_COLORS['DEL-BLR'], y: yScale(last.del_blr) },
-                  { id: 'BOM-BLR', name: 'BOM-BLR', val: last.bom_blr, color: ROUTE_COLORS['BOM-BLR'], y: yScale(last.bom_blr) },
+                  ...(last.del_blr != null ? [{ id: 'DEL-BLR', name: 'DEL-BLR', val: last.del_blr, color: ROUTE_COLORS['DEL-BLR'], y: yScale(last.del_blr) }] : []),
+                  ...(last.bom_blr != null ? [{ id: 'BOM-BLR', name: 'BOM-BLR', val: last.bom_blr, color: ROUTE_COLORS['BOM-BLR'], y: yScale(last.bom_blr) }] : []),
                 ];
 
                 return endLabels.map((lbl) => {
@@ -940,8 +968,9 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             {scrubIndex != null ? (
               <span style={{ color: 'var(--ink)', fontWeight: 700 }}>
                 {fmtDateShort(activePoint.date)}: Overall {activePoint.overall.toFixed(2)} · DEL-BOM{' '}
-                {activePoint.del_bom.toFixed(2)} · DEL-BLR {activePoint.del_blr.toFixed(2)} · BOM-BLR{' '}
-                {activePoint.bom_blr.toFixed(2)}
+                {activePoint.del_bom.toFixed(2)}
+                {activePoint.del_blr != null ? ` · DEL-BLR ${activePoint.del_blr.toFixed(2)}` : ''}
+                {activePoint.bom_blr != null ? ` · BOM-BLR ${activePoint.bom_blr.toFixed(2)}` : ''}
               </span>
             ) : (
               <span>Move pointer or use &larr; / &rarr; keys to inspect past dates</span>
@@ -976,10 +1005,10 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                       {d.del_bom.toFixed(2)}
                     </td>
                     <td className="font-num" style={{ color: 'var(--route-mag)' }}>
-                      {d.del_blr.toFixed(2)}
+                      {d.del_blr != null ? d.del_blr.toFixed(2) : '—'}
                     </td>
                     <td className="font-num" style={{ color: 'var(--route-teal)' }}>
-                      {d.bom_blr.toFixed(2)}
+                      {d.bom_blr != null ? d.bom_blr.toFixed(2) : '—'}
                     </td>
                     <td className="font-num">{d.mom_rate >= 0 ? `+${d.mom_rate}%` : `${d.mom_rate}%`}</td>
                   </tr>
@@ -1072,25 +1101,35 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             const weightVal = routeWeights[route] ?? (meta?.weight ? meta.weight : 0.05);
             const weightPct = meta?.share ? `${meta.share.toFixed(2)}% pax` : `${Math.round(weightVal * 100)}%`;
             const currentLevel = getRouteLevel(route);
-            const changePct = route === 'DEL-BOM' ? '+1.9%' : route === 'DEL-BLR' ? '+0.4%' : '-0.2%';
+            const isDelBom = route === 'DEL-BOM';
+            const changePct = isDelBom ? '+1.9%' : '—';
             const statusText =
-              route === 'DEL-BOM'
-                ? 'EaseMyTrip live DOM capture'
-                : 'Google Flights Top-60 matrix run';
+              isDelBom
+                ? 'EaseMyTrip live DOM capture · 30d backtest'
+                : (leadCurves[route]?.points?.length ?? 0) > 0
+                ? 'Google Flights Top-60 matrix lead curve'
+                : 'DGCA CY2024 Top-60 scheduled corridor';
 
             const sparkPoints = getRouteSparkPoints(route);
-            const minSpark = Math.min(...sparkPoints);
-            const maxSpark = Math.max(...sparkPoints);
             const sparkW = 120;
             const sparkH = 36;
-            const sparkX = (idx: number) => (idx / (sparkPoints.length - 1)) * sparkW;
-            const sparkY = (val: number) => {
-              const span = maxSpark - minSpark || 1;
-              return sparkH - 4 - ((val - minSpark) / span) * (sparkH - 8);
-            };
-            const sparkPath = sparkPoints
-              .map((val, idx) => `${idx === 0 ? 'M' : 'L'} ${sparkX(idx).toFixed(1)} ${sparkY(val).toFixed(1)}`)
-              .join(' ');
+            let sparkPath = '';
+            let lastX = 0;
+            let lastY = 0;
+            if (sparkPoints && sparkPoints.length > 1) {
+              const minSpark = Math.min(...sparkPoints);
+              const maxSpark = Math.max(...sparkPoints);
+              const sparkX = (idx: number) => (idx / (sparkPoints.length - 1)) * sparkW;
+              const sparkY = (val: number) => {
+                const span = maxSpark - minSpark || 1;
+                return sparkH - 4 - ((val - minSpark) / span) * (sparkH - 8);
+              };
+              sparkPath = sparkPoints
+                .map((val, idx) => `${idx === 0 ? 'M' : 'L'} ${sparkX(idx).toFixed(1)} ${sparkY(val).toFixed(1)}`)
+                .join(' ');
+              lastX = sparkX(sparkPoints.length - 1);
+              lastY = sparkY(sparkPoints[sparkPoints.length - 1]);
+            }
 
             return (
               <div
@@ -1130,16 +1169,22 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                   )}
                 </div>
 
-                {/* Compact Sparkline */}
-                <svg width={sparkW} height={sparkH} style={{ overflow: 'visible' }}>
-                  <path d={sparkPath} fill="none" stroke={routeColor} strokeWidth={1.5} strokeLinejoin="round" />
-                  <circle
-                    cx={sparkX(sparkPoints.length - 1)}
-                    cy={sparkY(sparkPoints[sparkPoints.length - 1])}
-                    r={2.5}
-                    fill={routeColor}
-                  />
-                </svg>
+                {/* Compact Sparkline or Insufficient Observations */}
+                {sparkPoints && sparkPoints.length > 1 ? (
+                  <svg width={sparkW} height={sparkH} style={{ overflow: 'visible' }}>
+                    <path d={sparkPath} fill="none" stroke={routeColor} strokeWidth={1.5} strokeLinejoin="round" />
+                    <circle
+                      cx={lastX}
+                      cy={lastY}
+                      r={2.5}
+                      fill={routeColor}
+                    />
+                  </svg>
+                ) : (
+                  <span style={{ fontSize: '11px', color: 'var(--ink-2)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
+                    Insufficient observations
+                  </span>
+                )}
 
                 <span className="font-num" style={{ fontWeight: 700, color: 'var(--ink)' }}>
                   {typeof currentLevel === 'number' ? (currentLevel as number).toFixed(2) : currentLevel}

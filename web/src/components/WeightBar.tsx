@@ -6,9 +6,9 @@
  * main index chart. Fully accessible via keyboard and screen readers.
  */
 import { useRef, useCallback, useEffect, useState } from 'react';
+import { DGCA_TOP60_ROUTES } from '../data/dgcaTop60';
 
 const LEAD_DAYS = [1, 7, 15, 21, 30, 45] as const;
-const ROUTES = ['DEL-BOM', 'DEL-BLR', 'BOM-BLR'] as const;
 
 const SEGMENT_COLORS_LEAD: Record<number, string> = {
   1:  '#2A5FA5',
@@ -19,17 +19,20 @@ const SEGMENT_COLORS_LEAD: Record<number, string> = {
   45: '#5C4382',
 };
 
-const SEGMENT_COLORS_ROUTE: Record<string, string> = {
-  'DEL-BOM': '#2A5FA5',
-  'DEL-BLR': '#B0286A',
-  'BOM-BLR': '#2F7D6D',
-};
+const DYNAMIC_PALETTE = [
+  '#2A5FA5', '#B0286A', '#2F7D6D', '#E65100', '#6A1B9A',
+  '#00838F', '#2E7D32', '#C2185B', '#1565C0', '#F57F17',
+  '#4527A0', '#00695C', '#D84315', '#37474F',
+];
 
-const ROUTE_DESCRIPTIONS: Record<string, string> = {
-  'DEL-BOM': 'Delhi ⇄ Mumbai (Trunk)',
-  'DEL-BLR': 'Delhi ⇄ Bengaluru (Metro)',
-  'BOM-BLR': 'Mumbai ⇄ Bengaluru (South)',
-};
+function getRouteColor(route: string, idx: number): string {
+  if (route === 'DEL-BOM' || route === 'BOM-DEL') return '#2A5FA5';
+  if (route === 'DEL-BLR' || route === 'BLR-DEL') return '#B0286A';
+  if (route === 'BOM-BLR' || route === 'BLR-BOM') return '#2F7D6D';
+  if (route === 'DEL-CCU' || route === 'CCU-DEL') return '#E65100';
+  if (route === 'BLR-HYD' || route === 'HYD-BLR') return '#6A1B9A';
+  return DYNAMIC_PALETTE[idx % DYNAMIC_PALETTE.length];
+}
 
 const LEAD_DESCRIPTIONS: Record<number, string> = {
   1: 'Spot / Departure - 1d (5.09%)',
@@ -39,6 +42,14 @@ const LEAD_DESCRIPTIONS: Record<number, string> = {
   30: 'Standard Advance / 1 month (25.88%)',
   45: 'Long-range / 45 days (25.43%)',
 };
+
+function getRouteDescription(key: string): string {
+  const match = DGCA_TOP60_ROUTES.find(r => r.route_id === key);
+  if (match) {
+    return `${match.origin} ⇄ ${match.destination} (${match.dgca_share_percent.toFixed(2)}% DGCA share)`;
+  }
+  return `${key} Corridor`;
+}
 
 function dayLabel(d: number): string {
   return d === 1 ? '1 day' : `${d} days`;
@@ -78,20 +89,23 @@ export default function WeightBar({
   const trackRef = useRef<HTMLDivElement>(null);
   const [activeDivider, setActiveDivider] = useState<number | null>(null);
 
+  const routeKeys = Object.keys(routeWeights);
   const keys: (string | number)[] = mode === 'lead'
     ? [...LEAD_DAYS]
-    : [...ROUTES];
+    : routeKeys;
 
   const weights = mode === 'lead' ? leadWeights : routeWeights;
-  const colors = mode === 'lead'
-    ? (k: string | number) => SEGMENT_COLORS_LEAD[k as number]
-    : (k: string | number) => SEGMENT_COLORS_ROUTE[k as string];
+  const colors = (k: string | number) => {
+    if (mode === 'lead') return SEGMENT_COLORS_LEAD[k as number] ?? '#2A5FA5';
+    const idx = keys.indexOf(k);
+    return getRouteColor(String(k), idx >= 0 ? idx : 0);
+  };
 
   const segLabel = (k: string | number) =>
     mode === 'lead' ? dayLabel(k as number) : String(k);
 
   const segSub = (k: string | number) =>
-    mode === 'lead' ? LEAD_DESCRIPTIONS[k as number] : ROUTE_DESCRIPTIONS[String(k)];
+    mode === 'lead' ? LEAD_DESCRIPTIONS[k as number] : getRouteDescription(String(k));
 
   const getWeightsArr = useCallback(() => keys.map(k => weights[k] ?? 0), [keys, weights]);
 
@@ -251,7 +265,9 @@ export default function WeightBar({
         <div className="weight-clean-meta">
           <span className="weight-clean-indicator-dot" />
           <span className="weight-clean-meta-title">
-            {mode === 'route' ? 'Route Basket Allocation (3 Corridors)' : 'Lead Time Windows (4 Advance Tiers)'}
+            {mode === 'route'
+              ? `Route Basket Allocation (${keys.length} Corridors)`
+              : `Lead Time Windows (${keys.length} Advance Tiers)`}
           </span>
           <span className="weight-clean-badge font-num">100% Balanced</span>
         </div>

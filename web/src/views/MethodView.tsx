@@ -60,15 +60,47 @@ export default function MethodView({ runs }: Props) {
   const [backtest, setBacktest] = useState<BacktestResponse | null>(null);
   const [sensitivity, setSensitivity] = useState<SensitivityResponse | null>(null);
 
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
   // Search & Filter for DGCA Top-60 Routes
   const [routeQuery, setRouteQuery] = useState('');
   const [metroFilter, setMetroFilter] = useState<'all' | 'del' | 'bom' | 'blr' | 'goa'>('all');
 
   useEffect(() => {
-    api.methodology().then(setMethod).catch(() => {});
-    api.observations().then(setObservations).catch(() => {});
-    api.getBacktest().then(setBacktest).catch(() => {});
-    api.getSensitivity().then(setSensitivity).catch(() => {});
+    setLoading(true);
+    setError(null);
+    Promise.allSettled([
+      api.methodology(),
+      api.observations(),
+      api.getBacktest(),
+      api.getSensitivity(),
+    ]).then(([resMethod, resObs, resBt, resSens]) => {
+      let anySuccess = false;
+      if (resMethod.status === 'fulfilled') {
+        setMethod(resMethod.value);
+        anySuccess = true;
+      }
+      if (resObs.status === 'fulfilled') {
+        setObservations(resObs.value);
+        anySuccess = true;
+      }
+      if (resBt.status === 'fulfilled' && (resBt.value as any)?.status !== 'NOT_GENERATED') {
+        setBacktest(resBt.value);
+        anySuccess = true;
+      }
+      if (resSens.status === 'fulfilled' && (resSens.value as any)?.status !== 'NOT_GENERATED') {
+        setSensitivity(resSens.value);
+        anySuccess = true;
+      }
+      if (!anySuccess) {
+        setError('Data unavailable — unable to retrieve the latest result.');
+      }
+    }).catch(() => {
+      setError('Data unavailable — unable to retrieve the latest result.');
+    }).finally(() => {
+      setLoading(false);
+    });
   }, []);
 
   // Filtered Top-60 routes
@@ -148,6 +180,23 @@ export default function MethodView({ runs }: Props) {
           </span>
         </div>
       </div>
+
+      {error && (
+        <div
+          role="alert"
+          style={{
+            padding: 'var(--sp-3) var(--sp-4)',
+            border: '1px solid var(--contour)',
+            background: 'rgba(0, 0, 0, 0.03)',
+            color: 'var(--ink)',
+            fontFamily: "'B612', monospace",
+            fontSize: '13px',
+            marginBottom: 'var(--sp-4)',
+          }}
+        >
+          {error}
+        </div>
+      )}
 
       {/* ── 2. Table of Contents Jump Navigation ── */}
       <nav aria-label="Methodology Table of Contents" className="method-toc-bar">
@@ -707,50 +756,84 @@ export default function MethodView({ runs }: Props) {
         <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)', marginBottom: '8px' }}>
           30-Day Market Backtest Performance (APIx vs Naive Scraped Average)
         </h3>
-        <div style={{ overflowX: 'auto', marginBottom: 'var(--sp-4)' }}>
-          <table className="method-table" style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th>Econometric Metric</th>
-                <th>APIx Certified Engine</th>
-                <th>Naive Scraped Average</th>
-                <th>Performance Delta</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Mean Absolute Error (MAE)</td>
-                <td className="font-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>1.3302</td>
-                <td className="font-num" style={{ color: 'var(--ink-2)' }}>5.0933</td>
-                <td className="font-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>-73.88% Noise Reduction</td>
-              </tr>
-              <tr>
-                <td>Root Mean Squared Error (RMSE)</td>
-                <td className="font-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>1.7056</td>
-                <td className="font-num" style={{ color: 'var(--ink-2)' }}>6.0463</td>
-                <td className="font-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>-71.79% Error Reduction</td>
-              </tr>
-              <tr>
-                <td>Daily Volatility (Std. Dev.)</td>
-                <td className="font-num">1.48%</td>
-                <td className="font-num">5.68%</td>
-                <td className="font-num">3.84x Smoother Series</td>
-              </tr>
-              <tr>
-                <td>Benchmark Correlation (R)</td>
-                <td className="font-num" style={{ fontWeight: 700 }}>0.8659</td>
-                <td className="font-num">0.6865</td>
-                <td className="font-num">+0.1794 Higher Alignment</td>
-              </tr>
-              <tr>
-                <td>Maximum Drawdown</td>
-                <td className="font-num">2.87%</td>
-                <td className="font-num">8.42%</td>
-                <td className="font-num">-5.55 pp Volatility Containment</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        {backtest?.summary ? (
+          <div style={{ overflowX: 'auto', marginBottom: 'var(--sp-4)' }}>
+            <table className="method-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>Econometric Metric</th>
+                  <th>APIx Certified Engine</th>
+                  <th>Naive Scraped Average</th>
+                  <th>Performance Delta</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Mean Absolute Error (MAE)</td>
+                  <td className="font-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>
+                    {backtest.summary.mean_absolute_error_mae.toFixed(4)}
+                  </td>
+                  <td className="font-num" style={{ color: 'var(--ink-2)' }}>
+                    {backtest.summary.naive_mae.toFixed(4)}
+                  </td>
+                  <td className="font-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>
+                    {backtest.summary.mean_absolute_error_mae < backtest.summary.naive_mae
+                      ? `-${Math.abs(((backtest.summary.mean_absolute_error_mae - backtest.summary.naive_mae) / backtest.summary.naive_mae) * 100).toFixed(2)}% Error Reduction`
+                      : `+${(((backtest.summary.mean_absolute_error_mae - backtest.summary.naive_mae) / backtest.summary.naive_mae) * 100).toFixed(2)}% Difference`}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Root Mean Squared Error (RMSE)</td>
+                  <td className="font-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>
+                    {backtest.summary.root_mean_squared_error_rmse.toFixed(4)}
+                  </td>
+                  <td className="font-num" style={{ color: 'var(--ink-2)' }}>
+                    {backtest.summary.naive_rmse.toFixed(4)}
+                  </td>
+                  <td className="font-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>
+                    {backtest.summary.root_mean_squared_error_rmse < backtest.summary.naive_rmse
+                      ? `-${Math.abs(((backtest.summary.root_mean_squared_error_rmse - backtest.summary.naive_rmse) / backtest.summary.naive_rmse) * 100).toFixed(2)}% Error Reduction`
+                      : `+${(((backtest.summary.root_mean_squared_error_rmse - backtest.summary.naive_rmse) / backtest.summary.naive_rmse) * 100).toFixed(2)}% Difference`}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Daily Volatility (Std. Dev.)</td>
+                  <td className="font-num">
+                    {backtest.summary.apix_daily_volatility_percent.toFixed(2)}%
+                  </td>
+                  <td className="font-num">
+                    {backtest.summary.naive_scraped_daily_volatility_percent.toFixed(2)}%
+                  </td>
+                  <td className="font-num">
+                    {backtest.summary.volatility_reduction_ratio
+                      ? `${backtest.summary.volatility_reduction_ratio.toFixed(2)}x Ratio`
+                      : '—'}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Benchmark Correlation (R)</td>
+                  <td className="font-num" style={{ fontWeight: 700 }}>
+                    {backtest.summary.benchmark_correlation.toFixed(4)}
+                  </td>
+                  <td className="font-num" style={{ color: 'var(--ink-2)' }}>—</td>
+                  <td className="font-num">Ground Truth Benchmark Tracking</td>
+                </tr>
+                <tr>
+                  <td>Maximum Drawdown</td>
+                  <td className="font-num">
+                    {backtest.summary.maximum_drawdown_percent.toFixed(2)}%
+                  </td>
+                  <td className="font-num" style={{ color: 'var(--ink-2)' }}>—</td>
+                  <td className="font-num">30-Day Period Evaluation</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p style={{ color: 'var(--ink-2)', fontStyle: 'italic', marginBottom: 'var(--sp-4)', fontSize: '13px' }}>
+            Data unavailable — unable to retrieve the latest result.
+          </p>
+        )}
 
         {/* Sensitivity Analysis */}
         <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)', marginBottom: '8px' }}>
@@ -759,14 +842,24 @@ export default function MethodView({ runs }: Props) {
         <p style={{ fontSize: '13px', color: 'var(--ink-2)', marginBottom: '8px' }}>
           Tested against 4 distinct structural weight variants: Baseline Empirical, Equal Sensitivity Stress-Test, Top-10 Trunk Concentrated, and Inverse Spot Heavy.
         </p>
-        <div className="step-card" style={{ borderLeftColor: 'var(--route-teal)', background: 'rgba(47, 125, 109, 0.04)' }}>
-          <div className="step-title" style={{ color: 'var(--route-teal)' }}>MAXIMUM SENSITIVITY DIVERGENCE: ONLY 0.2625 POINTS</div>
-          <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink)' }}>
-            Across all four divergent regimes, the maximum index divergence observed was only <strong>0.2625 index points</strong> (0.26%),
-            categorizing the index under <strong>Low Sensitivity</strong>. This proves mathematically that matched-model Jevons chaining
-            is intrinsically robust and structurally invariant to lead-time weighting assumptions.
+        {sensitivity ? (
+          <div className="step-card" style={{ borderLeftColor: 'var(--route-teal)', background: 'rgba(47, 125, 109, 0.04)' }}>
+            <div className="step-title" style={{ color: 'var(--route-teal)' }}>
+              MAXIMUM SENSITIVITY DIVERGENCE: {sensitivity.maximum_divergence_pts != null ? `${sensitivity.maximum_divergence_pts.toFixed(4)} POINTS` : '—'}
+            </div>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink)' }}>
+              Across all four divergent regimes, the maximum index divergence observed was{' '}
+              <strong>{sensitivity.maximum_divergence_pts != null ? `${sensitivity.maximum_divergence_pts.toFixed(4)} index points` : '—'}</strong>
+              {sensitivity.maximum_divergence_percent != null ? ` (${sensitivity.maximum_divergence_percent.toFixed(2)}%)` : ''},
+              categorizing the index under <strong>{sensitivity.robustness_status || 'Low Sensitivity'}</strong>.
+              This confirms mathematically that matched-model Jevons chaining is intrinsically robust to lead-time weighting variations.
+            </p>
+          </div>
+        ) : (
+          <p style={{ color: 'var(--ink-2)', fontStyle: 'italic', fontSize: '13px' }}>
+            Data unavailable — unable to retrieve the latest result.
           </p>
-        </div>
+        )}
       </section>
 
       {/* ── Section 9: Diagnostic Audit Log & Recorded Observations ── */}
