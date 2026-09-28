@@ -17,43 +17,51 @@ export default function DataView() {
       });
   }, []);
 
-  if (loading) return <div>Loading data...</div>;
+  if (loading) {
+    return (
+      <div className="view-content">
+        <div className="state-banner state-banner--loading">Loading raw observations data...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="view-content">
       <h2>Raw Observations Data</h2>
-      <p>Showing {observations.length} records</p>
+      <p className="text-caption" style={{ marginBottom: 'var(--sp-3)' }}>Showing {observations.length} records</p>
       
-      <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
-        <table className="data-table" style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+      <div style={{ overflowX: 'auto', marginTop: 'var(--sp-2)' }}>
+        <table className="data-table">
           <thead>
-            <tr style={{ borderBottom: '1px solid #ccc' }}>
+            <tr>
               <th>Source</th>
               <th>Airline</th>
               <th>Route</th>
               <th>Date</th>
               <th>Departs</th>
               <th>Arrives</th>
-              <th>Stops</th>
-              <th>Total Fare (INR)</th>
+              <th className="col-num">Stops</th>
+              <th className="col-num">Total Fare (INR)</th>
             </tr>
           </thead>
           <tbody>
             {observations.map((o, i) => (
-              <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+              <tr key={i}>
                 <td>{o.source}</td>
                 <td>{o.airline}</td>
-                <td>{o.route}</td>
-                <td>{o.travel_date}</td>
-                <td>{o.departure_time_local?.split('T')[1] || '-'}</td>
-                <td>{o.arrival_time_local?.split('T')[1] || '-'}</td>
-                <td>{o.stops}</td>
-                <td>₹{o.total_fare}</td>
+                <td style={{ fontWeight: 600 }}>{o.route}</td>
+                <td className="font-num">{o.travel_date}</td>
+                <td className="font-num">{o.departure_time_local?.split('T')[1]?.slice(0, 5) || '—'}</td>
+                <td className="font-num">{o.arrival_time_local?.split('T')[1]?.slice(0, 5) || '—'}</td>
+                <td className="font-num col-num">{o.stops === 0 ? 'Nonstop' : `${o.stops}`}</td>
+                <td className="font-num col-num" style={{ fontWeight: 700 }}>₹{Math.round(Number(o.total_fare)).toLocaleString('en-IN')}</td>
               </tr>
             ))}
             {observations.length === 0 && (
               <tr>
-                <td colSpan={8}>No observations found</td>
+                <td colSpan={8}>
+                  <div className="data-table-empty">No observations found in storage.</div>
+                </td>
               </tr>
             )}
           </tbody>

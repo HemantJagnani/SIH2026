@@ -22,8 +22,6 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
     <div
       className="page"
       style={{
-        maxWidth: '820px',
-        padding: 'var(--sp-8) var(--sp-4) var(--sp-6)',
         display: 'flex',
         flexDirection: 'column',
         gap: 'var(--sp-6)',
@@ -40,7 +38,7 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
             marginBottom: 'var(--sp-2)',
           }}
         >
-          APIx
+          AERIX
         </h1>
         <p
           style={{
@@ -86,7 +84,7 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
 
       <p className="prose" style={{ color: 'var(--ink)' }}>
         Prices for the same flights move by 200 to 400 percent depending on advance booking timing.
-        Official monthly inflation statistics cannot capture this dynamic dispersion. APIx tracks the official
+        Official monthly inflation statistics cannot capture this dynamic dispersion. AERIX tracks the official
         <strong> DGCA CY2024 Top-60 Route Basket</strong> (representing 91.99M annual passengers; 57.02% national coverage)
         across <strong>6 advance-purchase horizons</strong> (T+1, T+7, T+15, <strong>T+21 MoSPI Checkpoint</strong>, T+30, and T+45)
         forming a rigorous 360-cell matrix. Price relatives are chained using micro-founded Jevons elementary indices and

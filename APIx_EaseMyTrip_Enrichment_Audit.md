@@ -1,7 +1,7 @@
-# APIx Phase 27 — EaseMyTrip Data Quality + Enrichment Audit
+# AERIX Phase 27 — EaseMyTrip Data Quality + Enrichment Audit
 
 **Project:** Development of a Real-time Airfare Price Index for India (CPI Augmentation)  
-**Document ID:** `APIx-EMT-ENRICH-AUDIT-2026-09-27`  
+**Document ID:** `AERIX-EMT-ENRICH-AUDIT-2026-09-27`  
 **Target Route:** DEL–BOM (Delhi to Mumbai)  
 **Lead Time:** T+7 (`2026-10-03`) & T+21 (`2026-10-17`)  
 **Source:** EaseMyTrip (`easemytrip`)  
@@ -25,7 +25,7 @@ Following the full recovery of the EaseMyTrip normal user search lifecycle (home
    - **Date Change Fee:** Explicit starting fee (e.g., ₹0–₹4,999) on 100% of offers.
    - **Refund Status:** Explicitly tagged as `CONDITIONAL` on 100% of offers.
 5. **Genuinely Unavailable Fields (No Fabrication):** Base fare, taxes, GST, and airport charges are **not exposed** in the flight search results DOM. They only appear after proceeding to the passenger booking flow. Under the strict CPI methodology, these fields remain `None` with explicit provenance `SOURCE_TOTAL_ONLY` and `NOT_PRESENT_IN_DOM`.
-6. **APIx Product Eligibility:** **100% of observations (383/383)** satisfy the mandatory CPI airfare product specification.
+6. **AERIX Product Eligibility:** **100% of observations (383/383)** satisfy the mandatory CPI airfare product specification.
 
 ---
 
@@ -222,9 +222,9 @@ A deterministic stratified sample of 20 unique itineraries was selected to audit
 
 ---
 
-## 8. Phase 12 — APIx Product Eligibility
+## 8. Phase 12 — AERIX Product Eligibility
 
-The APIx methodology requires each price quotation to represent a well-defined, comparable product:
+The AERIX methodology requires each price quotation to represent a well-defined, comparable product:
 
 | Eligibility Criterion | Required Specification | EaseMyTrip Observation Status | Pass / Fail |
 | :--- | :--- | :--- | :---: |
@@ -238,7 +238,7 @@ The APIx methodology requires each price quotation to represent a well-defined, 
 | **Lead Time** | Lead days match travel date| $(T_{travel} - T_{collect}) = 7$ or $21$ | **PASS** |
 | **Comparability** | Fare tier / baggage known | Fare family & baggage explicitly captured | **PASS** |
 
-**Verdict:** **100% of observations (383/383) are fully eligible for APIx index calculation.**
+**Verdict:** **100% of observations (383/383) are fully eligible for AERIX index calculation.**
 
 ---
 
@@ -286,7 +286,7 @@ tests/core/test_phase19_phase20_remediation.py (13 tests) PASSED
 ## 11. Evidence Checkpoint Artifacts
 
 The audit data, parsed observations, and full diagnostic evidence are persisted in:
-* **Audit JSON Summary:** [`APIx_EaseMyTrip_Enrichment_Audit.json`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/APIx_EaseMyTrip_Enrichment_Audit.json)
+* **Audit JSON Summary:** [`AERIX_EaseMyTrip_Enrichment_Audit.json`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/AERIX_EaseMyTrip_Enrichment_Audit.json)
 * **Live DOM HTML Snapshot:** [`runtime/evidence/2026-09-26/source=easemytrip/run=a2f475ae-4704-4d29-993f-c99cfb2a5826/page.html`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/runtime/evidence/2026-09-26/source=easemytrip/run=a2f475ae-4704-4d29-993f-c99cfb2a5826/page.html)
 * **Screenshot Artifact:** [`runtime/evidence/2026-09-26/source=easemytrip/run=a2f475ae-4704-4d29-993f-c99cfb2a5826/screenshot.png`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/runtime/evidence/2026-09-26/source=easemytrip/run=a2f475ae-4704-4d29-993f-c99cfb2a5826/screenshot.png)
 * **Metadata & Diagnostics:** [`runtime/evidence/2026-09-26/source=easemytrip/run=a2f475ae-4704-4d29-993f-c99cfb2a5826/metadata.json`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/runtime/evidence/2026-09-26/source=easemytrip/run=a2f475ae-4704-4d29-993f-c99cfb2a5826/metadata.json)

@@ -1,9 +1,9 @@
-# APIx Methodology Validation Report
+# AERIX Methodology Validation Report
 ## Alignment with MoSPI CPI 2024 Framework and Eurostat HICP 2024 Standards
 
 > **Document Status:** Official Production Validation Report — Phase 29  
-> **Methodology Version:** `APIx v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)`  
-> **Product Definition Version:** `APIx_PRODUCT_DEF_v2.0_FROZEN`  
+> **Methodology Version:** `AERIX v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)`  
+> **Product Definition Version:** `AERIX_PRODUCT_DEF_v2.0_FROZEN`  
 > **Weight Version:** `2026.09`  
 > **Test Status:** 14/14 Acceptance Criteria Verified & Passing  
 
@@ -11,7 +11,7 @@
 
 ## 1. Institutional Context & Validation Purpose
 
-The **Indian Airfare Price Index (APIx)** is an experimental price index engineered to measure temporal consumer-facing price changes in scheduled domestic passenger air transport within India. 
+The **Indian Airfare Price Index (AERIX)** is an experimental price index engineered to measure temporal consumer-facing price changes in scheduled domestic passenger air transport within India. 
 
 Its primary objective is the **potential augmentation of the official Consumer Price Index (CPI)** compiled by the National Statistics Office (NSO), Ministry of Statistics and Programme Implementation (MoSPI), Government of India.
 
@@ -31,7 +31,7 @@ To guarantee that the experimental index is methodologically defensible, statist
    - Strict non-zero treatment for missing and sold-out observations.
 
 > [!IMPORTANT]
-> **Methodological Boundary:** APIx is an experimental research and analytical engine. It does **not** claim to be an official index of MoSPI or the Government of India unless formally validated and adopted by the competent statistical authority.
+> **Methodological Boundary:** AERIX is an experimental research and analytical engine. It does **not** claim to be an official index of MoSPI or the Government of India unless formally validated and adopted by the competent statistical authority.
 
 ---
 
@@ -57,14 +57,14 @@ $$\text{Jevons: } J_{s,t} = \prod_{i=1}^N \left( \frac{p_{i,t}}{p_{i,t-1}} \righ
    - **Scale Invariance:** Multiplying all prices by $\lambda$ scales the link by $\lambda$.
    - **Commensurability:** Invariant to units of measurement.
 
-Both the **MoSPI CPI 2024 Expert Group** and **Eurostat HICP Manual 2024 (Chapter 3)** formally mandate Jevons for elementary aggregates. APIx strictly enforces Jevons.
+Both the **MoSPI CPI 2024 Expert Group** and **Eurostat HICP Manual 2024 (Chapter 3)** formally mandate Jevons for elementary aggregates. AERIX strictly enforces Jevons.
 
 ---
 
 ### 2.2 Proof of Logarithmic vs Direct Geometric Equivalence
 `[PROJECT DESIGN CHOICE]`
 
-To guarantee numerical stability when aggregating hundreds of price relatives without floating-point overflow or underflow, APIx calculates Jevons via the logarithmic mean:
+To guarantee numerical stability when aggregating hundreds of price relatives without floating-point overflow or underflow, AERIX calculates Jevons via the logarithmic mean:
 
 $$\ln J_{s,t} = \frac{1}{N} \sum_{i=1}^N \Delta \ln p_{i,t} \implies J_{s,t} = \exp\left( \ln J_{s,t} \right)$$
 
@@ -82,7 +82,7 @@ $$\ln J_{s,t} = \frac{1}{N} \sum_{i=1}^N \Delta \ln p_{i,t} \implies J_{s,t} = \
 
 A fixed-base Laspeyres index requires observing the exact identical flight numbers over multiple years. In commercial aviation, airlines regularly modify flight numbers, shift departure times by 15–30 minutes, or cancel specific seasonal rotations. A fixed-base index rapidly deteriorates as products disappear.
 
-APIx implements monthly short-chain linking:
+AERIX implements monthly short-chain linking:
 $$I_{s,t} = I_{s,t-1} \times J_{s,t} \quad \text{with } I_{s,0} = 100.0000$$
 
 This allows:
@@ -96,17 +96,17 @@ This allows:
 
 `[PROJECT DESIGN CHOICE]` / `[MO SPI REQUIREMENT / PRACTICE]`
 
-To serve both financial market analysts and national statistical accountants, APIx maintains two distinct publication channels:
+To serve both financial market analysts and national statistical accountants, AERIX maintains two distinct publication channels:
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│                          APIx Index System                             │
+│                          AERIX Index System                             │
 └──────────────────────────────────┬─────────────────────────────────────┘
                                    │
          ┌─────────────────────────┴─────────────────────────┐
          ▼                                                   ▼
 ┌───────────────────────────────────┐       ┌───────────────────────────────────┐
-│     HIGH-FREQUENCY INDICATOR      │       │     MONTHLY CPI-COMPATIBLE APIx   │
+│     HIGH-FREQUENCY INDICATOR      │       │     MONTHLY CPI-COMPATIBLE AERIX   │
 ├───────────────────────────────────┤       ├───────────────────────────────────┤
 │ • Frequency: Daily / Weekly       │       │ • Frequency: Monthly              │
 │ • Purpose: Market sentiment, OTA  │       │ • Purpose: Macroeconomic inflation│
@@ -129,7 +129,7 @@ To serve both financial market analysts and national statistical accountants, AP
 `[PROVISIONAL ASSUMPTION]` / `[MO SPI REQUIREMENT / PRACTICE]`
 
 ### 4.1 Advance-Purchase Lead Times
-APIx tracks six advance purchase horizons:
+AERIX tracks six advance purchase horizons:
 - $T+1$: Emergency / last-minute travel (1 day before flight)
 - $T+7$: Short-term booking (7 days before flight)
 - $T+15$: Domestic forward booking (15 days before flight)
@@ -138,7 +138,7 @@ APIx tracks six advance purchase horizons:
 - $T+45$: Advanced planning horizon (45 days before flight)
 
 ### 4.2 Equal Weight Specification:
-Until official transaction-level booking share data is released by DGCA or airline partners, APIx employs:
+Until official transaction-level booking share data is released by DGCA or airline partners, AERIX employs:
 
 $$w_L = \frac{1}{6} \approx 0.166667 \quad \forall L \in \{T+1, T+7, T+15, T+21, T+30, T+45\}$$
 
@@ -152,7 +152,7 @@ These weights are formally cataloged as `PROVISIONAL EQUAL LEAD-TIME WEIGHTS`. T
 
 `[MO SPI REQUIREMENT / PRACTICE]` / `[PROJECT DESIGN CHOICE]`
 
-A foundational error in amateur airfare index projects is confusing **passenger volume** with **household budget expenditure**. APIx enforces a strict architectural boundary:
+A foundational error in amateur airfare index projects is confusing **passenger volume** with **household budget expenditure**. AERIX enforces a strict architectural boundary:
 
 1. **Route Representativeness Proxy ($W_r$):**
    - Derived from DGCA domestic city-pair passenger traffic reports.
@@ -171,7 +171,7 @@ A foundational error in amateur airfare index projects is confusing **passenger 
 
 `[MO SPI REQUIREMENT / PRACTICE]` | `[EUROSTAT METHODOLOGICAL REFERENCE]` | `[PROJECT DESIGN CHOICE]` | `[PROVISIONAL ASSUMPTION]` | `[UNRESOLVED METHODOLOGICAL QUESTION]`
 
-The following matrix formally classifies every design decision and methodological rule implemented in the APIx Phase 29 engine, providing exact statutory and literature citations:
+The following matrix formally classifies every design decision and methodological rule implemented in the AERIX Phase 29 engine, providing exact statutory and literature citations:
 
 | Methodological Rule | Classification | Statutory / Academic Citation |
 | :--- | :--- | :--- |
@@ -190,10 +190,10 @@ The following matrix formally classifies every design decision and methodologica
 | **Four-protocol replacement & comparability scoring** | `[EUROSTAT METHODOLOGICAL REFERENCE]` | Eurostat HICP Methodological Manual (2024 Edition, Chapter 7: Replacements) |
 | **14 airfare quality characteristics retention** | `[EUROSTAT METHODOLOGICAL REFERENCE]` | Eurostat HICP Methodological Manual (2024 Edition, Chapter 12: Air Passenger Transport) |
 | **Strict non-zero axiom for missing/sold-out flights** | `[EUROSTAT METHODOLOGICAL REFERENCE]` | Eurostat Practical guidelines on web scraping for the HICP (November 2020, §4.1) |
-| **Frozen Headline Product Definition (MIN offer per itin)**| `[PROJECT DESIGN CHOICE]` | APIx Product Definition v2.0 (Phase 29 Architecture Lock) |
-| **Single baseline offer contribution per itinerary** | `[PROJECT DESIGN CHOICE]` | APIx Statistical Invariants Specification §1.3 |
-| **Preservation of rejected fare families for analytics** | `[PROJECT DESIGN CHOICE]` | APIx Ancillary Fare Family Research Specification §2.1 |
-| **Retention of DEL_BOM_PROTOTYPE_MEDIAN_INDICATOR** | `[PROJECT DESIGN CHOICE]` | APIx Diagnostic Benchmark Protocol (Phase 29 Directive) |
+| **Frozen Headline Product Definition (MIN offer per itin)**| `[PROJECT DESIGN CHOICE]` | AERIX Product Definition v2.0 (Phase 29 Architecture Lock) |
+| **Single baseline offer contribution per itinerary** | `[PROJECT DESIGN CHOICE]` | AERIX Statistical Invariants Specification §1.3 |
+| **Preservation of rejected fare families for analytics** | `[PROJECT DESIGN CHOICE]` | AERIX Ancillary Fare Family Research Specification §2.1 |
+| **Retention of DEL_BOM_PROTOTYPE_MEDIAN_INDICATOR** | `[PROJECT DESIGN CHOICE]` | AERIX Diagnostic Benchmark Protocol (Phase 29 Directive) |
 | **Provisional equal lead-time weights ($w_L = 1/6$)** | `[PROVISIONAL ASSUMPTION]` | Adopted pending release of official DGCA/airline booking-share statistics |
 | **DGCA passenger traffic shares as route proxy** | `[PROVISIONAL ASSUMPTION]` | DGCA Monthly Domestic Air Transport Traffic Reports (2026) |
 | **Hedonic valuation benchmarks for baggage / time slots**| `[UNRESOLVED METHODOLOGICAL QUESTION]` | Benchmark estimates (₹500/5kg bag); full hedonic regression planned for 60 routes |
@@ -226,6 +226,6 @@ The pipeline strictly adheres to the non-circumvention compliance rules:
 | **`DEL_BOM_replacements.csv`** | Comprehensive audit trail of all flight replacement events | **PRODUCED & AUDITED** |
 | **`DEL_BOM_methodology_snapshot.md`** | Concise methodology snapshot citing MoSPI & Eurostat benchmarks | **PRODUCED & AUDITED** |
 | **`DEL_BOM_quality_report.md`** | Statistical data quality and offer selection audit report | **PRODUCED & AUDITED** |
-| **`APIx_Reference_Period_Taxonomy_Report.md`** | Formal distinction among the 5 reference tiers | **PRODUCED & AUDITED** |
+| **`AERIX_Reference_Period_Taxonomy_Report.md`** | Formal distinction among the 5 reference tiers | **PRODUCED & AUDITED** |
 | **`methodology_validation_report.md`** | Comprehensive mathematical and institutional validation document | **PRODUCED & AUDITED** |
 | **`test_phase29_mospi_eurostat_engine.py`** | Automated test suite verifying all 15 acceptance criteria gates | **15/15 PASSED (100%)** |

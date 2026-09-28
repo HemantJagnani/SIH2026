@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-This report documents the implementation of the six P0 frontend correctness and data-integrity fixes identified during the comprehensive UI/UX audit of the APIx Airfare Price Index dashboard. 
+This report documents the implementation of the six P0 frontend correctness and data-integrity fixes identified during the comprehensive UI/UX audit of the AERIX Airfare Price Index dashboard. 
 
 All modifications strictly adhered to the governance and data-integrity guidelines:
 - **Zero UI Layout Reshuffling or Premature P1 Redesign:** The vellum and ink chart-paper aesthetic and structural hierarchy were strictly preserved.

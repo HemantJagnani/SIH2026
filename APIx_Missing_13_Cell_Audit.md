@@ -1,16 +1,16 @@
-# APIx Production Matrix: Audit of the 13 Missing (Route × Lead Time) Cells
+# AERIX Production Matrix: Audit of the 13 Missing (Route × Lead Time) Cells
 
 **Audit Date**: September 28, 2026  
 **Auditor**: Antigravity Autonomous Reconciliation & Governance Auditor  
 **Dataset Reference**: `runtime/top60_observation_classification.json` (11,430 observations)  
 **Configuration Reference**: `config/dgca_cy2024_top60.json` (60 routes × 6 lead times = 360 cells)  
-**Evidence Source**: `APIx_All60_Production_Coverage_Report.json` & `runtime/evidence/2026-09-27/source=google_flights/`  
+**Evidence Source**: `AERIX_All60_Production_Coverage_Report.json` & `runtime/evidence/2026-09-27/source=google_flights/`  
 
 ---
 
 ## 1. Executive Summary & Verification of Invariants
 
-An exhaustive forensic audit was conducted on the finalized 60-route × 6-lead-time APIx production matrix to investigate the exact cause of all 13 unpopulated cells.
+An exhaustive forensic audit was conducted on the finalized 60-route × 6-lead-time AERIX production matrix to investigate the exact cause of all 13 unpopulated cells.
 
 ### Production Baseline Verification
 | Metric | Final Audited Value | Invariant Status |
@@ -20,7 +20,7 @@ An exhaustive forensic audit was conducted on the finalized 60-route × 6-lead-t
 | **Missing Cells** | **13** (3.6111%) | **MATCH / UNCHANGED** |
 | **DGCA-Weighted Coverage** | **97.5232%** | **MATCH / UNCHANGED** |
 | **Total Raw Observations** | 11,430 | Unmodified |
-| **Valid APIx Baseline Observations** | 5,834 | Unmodified |
+| **Valid AERIX Baseline Observations** | 5,834 | Unmodified |
 | **Duplicate Observations** | 4,772 | Unmodified |
 | **Higher Fare Family Exclusions** | 666 | Unmodified |
 | **Foreign Transit Exclusions** | 158 | Unmodified |

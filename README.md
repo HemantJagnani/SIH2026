@@ -1,4 +1,4 @@
-# India Airfare Price Index (APIx) — SIH 2026
+# India Airfare Price Index (AERIX) — SIH 2026
 
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
@@ -8,7 +8,7 @@
 [![Eurostat HICP](https://img.shields.io/badge/Standard-Eurostat%20HICP%202024-purple.svg)](https://ec.europa.eu/eurostat/)
 [![Tests](https://img.shields.io/badge/Acceptance%20Gates-15%2F15%20Passed-success.svg)](file:///tests/core/test_phase29_mospi_eurostat_engine.py)
 
-Welcome to the **Indian Airfare Price Index (APIx)** repository! APIx is an enterprise-grade, high-frequency airfare price collection and index compilation engine engineered for scheduled domestic commercial aviation in India.
+Welcome to the **Indian Airfare Price Index (AERIX)** repository! AERIX is an enterprise-grade, high-frequency airfare price collection and index compilation engine engineered for scheduled domestic commercial aviation in India.
 
 The platform aligns web-scraped airline ticket prices with official national and international statistical compilation standards:
 - **MoSPI CPI 2024 Revision Framework:** Conceptual base $2024 = 100$, UN COICOP 2018 Subclass `07.3.3.1` (Domestic Passenger Transport by Air), $T+21$ official domestic advance-booking checkpoint, unweighted short-chain Jevons elementary index, and Household Consumption Expenditure Survey (HCES 2023-24) weighting integration.
@@ -16,7 +16,7 @@ The platform aligns web-scraped airline ticket prices with official national and
 
 > [!IMPORTANT]
 > **Institutional Scope Note:**  
-> APIx is an experimental airfare price index engineered for research, macroeconomic transparency, and potential Consumer Price Index (CPI) augmentation. It is **not** an official publication of MoSPI / NSO or the Government of India.
+> AERIX is an experimental airfare price index engineered for research, macroeconomic transparency, and potential Consumer Price Index (CPI) augmentation. It is **not** an official publication of MoSPI / NSO or the Government of India.
 
 ---
 
@@ -38,7 +38,7 @@ The platform aligns web-scraped airline ticket prices with official national and
 
 ## 🏗️ System Architecture & Compilation Hierarchy
 
-Unlike naive web scrapers that compute unstable arithmetic averages of ticket search cards, APIx implements a mathematically rigorous calculation hierarchy:
+Unlike naive web scrapers that compute unstable arithmetic averages of ticket search cards, AERIX implements a mathematically rigorous calculation hierarchy:
 
 ```mermaid
 flowchart TD
@@ -55,7 +55,7 @@ flowchart TD
     J --> K[Recursive Elementary Chaining: I_s,t = I_s,t-1 x J_s,t]
     K --> L[Lead-Time Aggregation: Provisional Equal Weights w_L = 1/6 across T+1..T+45]
     L --> M[Route Aggregation: DEL-BOM Pilot W_r = 1.0000 / National DGCA Matrix]
-    M --> N[All-India APIx Headline Index]
+    M --> N[All-India AERIX Headline Index]
     N --> O[CPI Integration Layer: Household Budget Impact via MoSPI CPI 2024 Weight 0.02951%]
     N --> P[Retained Diagnostic Prototype Median Benchmark: DEL_BOM_PROTOTYPE_MEDIAN_INDICATOR]
     N --> Q[Multi-Source Diagnostic Divergence: Google Flights vs EaseMyTrip]
@@ -65,11 +65,11 @@ flowchart TD
 
 ## 🏛️ Reference Period Taxonomy
 
-To conform to national accounting principles and avoid methodological conflation, APIx enforces a strict **Reference Period Taxonomy** distinguishing five distinct reference tiers:
+To conform to national accounting principles and avoid methodological conflation, AERIX enforces a strict **Reference Period Taxonomy** distinguishing five distinct reference tiers:
 
 | Reference Concept | System Identifier | Current Production Value | Standard / Regulatory Reference | Methodological Rule & Operational Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **1. PROJECT REFERENCE** | `experimental_project_reference_price` | **₹6,632.67** on `2026-09-26` | APIx Pilot Architecture (`PROVISIONAL_PROJECT_REFERENCE`) | Operational baseline from the first complete production run. Used exclusively to compute the high-frequency experimental prototype index: $I_{\text{project},t} = \frac{P_{\text{project},t}}{P_{\text{project},\text{reference}}} \times 100$. **NEVER described as MoSPI price reference.** |
+| **1. PROJECT REFERENCE** | `experimental_project_reference_price` | **₹6,632.67** on `2026-09-26` | AERIX Pilot Architecture (`PROVISIONAL_PROJECT_REFERENCE`) | Operational baseline from the first complete production run. Used exclusively to compute the high-frequency experimental prototype index: $I_{\text{project},t} = \frac{P_{\text{project},t}}{P_{\text{project},\text{reference}}} \times 100$. **NEVER described as MoSPI price reference.** |
 | **2. MOSPI INDEX REFERENCE** | `index_reference_period` | **$2024 = 100$** | MoSPI CPI 2024 National Revision Framework | The official numerical scaling reference period. All official CPI series are presented on the scale where the average of calendar year 2024 equals 100.00. |
 | **3. MOSPI PRICE REFERENCE** | `price_reference_period` | **Calendar-Year 2024 Average** | MoSPI CPI 2024 Service Price Compilation Manual | The unweighted or weighted average of all observed transaction prices across all 12 months of calendar year 2024. **Status: PENDING 2024 HISTORICAL ACTUALS.** Must never be manufactured or interpolated from 2026 data. |
 | **4. MOSPI WEIGHT REFERENCE** | `weight_reference_period` | **HCES 2023-24** | MoSPI Household Consumption Expenditure Survey 2023-24 | Household consumption expenditure survey period used to compute consumer budget weights ($W^{\text{CPI}}_{\text{airfare}} = 0.02951\%$, decimal $0.0002951$, Item Code `07.3.3.1.2.01`). Strictly separated from DGCA route traffic proxies. |
@@ -118,28 +118,28 @@ When a base flight becomes unavailable, the system audits 14 service characteris
 
 ### 4. Route Traffic Proxies vs. Macroeconomic CPI Expenditure Weights
 `[MO SPI REQUIREMENT / PRACTICE]`
-APIx enforces an impenetrable architectural boundary between transport volume and household budgets:
+AERIX enforces an impenetrable architectural boundary between transport volume and household budgets:
 - **Route Traffic Weights (`DGCA_CY2024_TOP60`):** Derived from official DGCA calendar-year 2024 city-pair domestic traffic statistics. Answers: *"What proportion of domestic air passengers travel on route $r$ within the Top-60 basket?"*
 - **CPI Household Expenditure Weight ($W_{\text{cpi}}^{\text{combined}} = 0.02951\%$ / decimal $0.0002951$):** Derived from official MoSPI CPI 2024 "Weights of item CPI 2024" (Item Code `07.3.3.1.2.01` — *Passenger transport by air, domestic*). Answers: *"What proportion of total household consumption expenditure is spent on domestic airfare?"*
 
 > [!IMPORTANT]
 > **DGCA Top-60 Route Basket Specification (`DGCA_CY2024_TOP60`):**  
-> APIx route aggregation uses a Top-60 domestic city-pair basket selected by annual scheduled passenger volume from DGCA calendar-year 2024 data. Route weights are normalized within the selected Top-60 basket. The basket covers 57.0247% of 2024 domestic passenger traffic. These are APIx representativeness weights and are distinct from the MoSPI CPI airfare expenditure weight.
+> AERIX route aggregation uses a Top-60 domestic city-pair basket selected by annual scheduled passenger volume from DGCA calendar-year 2024 data. Route weights are normalized within the selected Top-60 basket. The basket covers 57.0247% of 2024 domestic passenger traffic. These are AERIX representativeness weights and are distinct from the MoSPI CPI airfare expenditure weight.
 
 > [!IMPORTANT]
 > **Mandatory Methodological Invariant & Disclaimer:**  
 > “The MoSPI CPI 2024 airfare expenditure weight is used only for the optional integration of the experimental Airfare Price Index into CPI. It is not used to construct the Airfare Price Index itself.”
 
 - **CPI Contribution Calculation:**
-  $$\text{airfare\_contribution\_pp} = \Delta \text{APIx} \times \frac{0.02951}{100} = \Delta \text{APIx} \times 0.0002951$$
-  *Example:* An APIx inflation change of $+10.0\%$ contributes:
+  $$\text{airfare\_contribution\_pp} = \Delta \text{AERIX} \times \frac{0.02951}{100} = \Delta \text{AERIX} \times 0.0002951$$
+  *Example:* An AERIX inflation change of $+10.0\%$ contributes:
   $$\text{contribution} = 10.0 \times \frac{0.02951}{100} = +0.002951\text{ percentage points to headline CPI}$$
 
 ---
 
 ## 📅 Advance-Purchase Architecture & Weighting System
 
-APIx compiles six forward-looking advance purchase classes:
+AERIX compiles six forward-looking advance purchase classes:
 
 | Horizon | Lead Days | Methodological Role | Empirical Weight ($w_L$) | Official Status |
 | :---: | :---: | :--- | :---: | :--- |
@@ -153,13 +153,13 @@ APIx compiles six forward-looking advance purchase classes:
 
 > [!IMPORTANT]
 > **Empirical Lead-Time Weights Specification (`EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`):**  
-> Primary APIx aggregation uses empirical weights derived from the supplied `Clean_Dataset.csv` booking dataset, treating `days_left` as booking lead time based on the verified dataset interpretation that each row represents an individual booking.
+> Primary AERIX aggregation uses empirical weights derived from the supplied `Clean_Dataset.csv` booking dataset, treating `days_left` as booking lead time based on the verified dataset interpretation that each row represents an individual booking.
 >
 > - **Methodology Status:** `EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`
 > - **Source Dataset:** `Clean_Dataset.csv`
 > - **Source Interpretation:** Treat `days_left` as booking lead time; each row represents an individual booking transaction.
 > - **Mandatory Disclaimer:** **These weights are derived from the supplied Clean_Dataset.csv booking dataset and are not official Indian national booking weights.**
-> - **Strict Rejection of Equal Weighting:** APIx explicitly does NOT assign equal weightage to lead times. Advance booking horizons exhibit highly asymmetric passenger demand and yield management pricing, where advance windows ($T+30, T+45$) capture over 51% of bookings while urgent travel ($T+1$) accounts for 5.09%.
+> - **Strict Rejection of Equal Weighting:** AERIX explicitly does NOT assign equal weightage to lead times. Advance booking horizons exhibit highly asymmetric passenger demand and yield management pricing, where advance windows ($T+30, T+45$) capture over 51% of bookings while urgent travel ($T+1$) accounts for 5.09%.
 > - **Tri-Layer Separation:**
 >   1. **Route Representativeness Weights ($w_r$):** Derived from official DGCA CY2024 scheduled domestic city-pair passenger volumes (`DGCA_CY2024_TOP60`, 57.0247% coverage).
 >   2. **Lead-Time Profile Weights ($w_L$):** Derived from `Clean_Dataset.csv` empirical booking horizons (`EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`).
@@ -203,7 +203,7 @@ SIH2026/
 │   │           ├── flight_schedule.py    # DGCA CY2024 Schedule Universe & Coverage Engine
 │   │           ├── weights.py            # Weight Registry (Lead-Time & Route Proxies)
 │   │           ├── aggregation.py        # Higher-Level Young/Laspeyres Aggregation
-│   │           └── engine.py             # Master APIx Compilation Engine Orchestrator
+│   │           └── engine.py             # Master AERIX Compilation Engine Orchestrator
 │   └── api/                              # FastAPI Service
 │       └── src/
 │           ├── main.py                   # FastAPI Application Entrypoint
@@ -228,8 +228,8 @@ SIH2026/
 │   ├── dgca_cy2024_top60.json            # Official DGCA Top-60 Basket Dataset
 │   ├── dgca_cy2024_schedule.json         # Approved DGCA CY2024 Flight Schedule Dataset
 │   └── empirical_lead_time_weights.json  # Empirical Booking Lead-Time Weights Dataset
-├── APIx_CY2024_Top60_Route_Weights.csv   # Validated Top-60 Route Weights Export (CSV)
-├── APIx_CY2024_Top60_Route_Weights.xlsx  # Validated Top-60 Route Weights Export (Excel)
+├── AERIX_CY2024_Top60_Route_Weights.csv   # Validated Top-60 Route Weights Export (CSV)
+├── AERIX_CY2024_Top60_Route_Weights.xlsx  # Validated Top-60 Route Weights Export (Excel)
 ├── apix_base_delbom.json                 # Locked Provisional Project Reference File
 ├── apix_delbom_result.json               # Backend Master Output Series
 ├── DEL_BOM_elementary_jevons.csv & .json # Published Elementary Jevons Output
@@ -238,9 +238,9 @@ SIH2026/
 ├── DEL_BOM_replacements.csv              # Published Replacement Events Audit Log
 ├── DEL_BOM_methodology_snapshot.md       # Methodological Alignment Snapshot
 ├── DEL_BOM_quality_report.md             # Data Quality & Offer Selection Audit
-├── APIx_Reference_Period_Taxonomy_Report.md # Formal Reference Period Taxonomy Specification
+├── AERIX_Reference_Period_Taxonomy_Report.md # Formal Reference Period Taxonomy Specification
 ├── methodology_validation_report.md      # Comprehensive Statistical Proofs & Literature Citations
-└── APIx_Scraper_Missing_Data_Remediation_Report.md # Scraper Dimension Completeness Audit
+└── AERIX_Scraper_Missing_Data_Remediation_Report.md # Scraper Dimension Completeness Audit
 ```
 
 ---
@@ -290,18 +290,18 @@ python scripts/run_phase29_engine.py
 **Expected Console Output:**
 ```text
 ======================================================================
-  APIx Phase 29: MoSPI CPI 2024 + Eurostat HICP Aligned Engine
+  AERIX Phase 29: MoSPI CPI 2024 + Eurostat HICP Aligned Engine
 ======================================================================
 Loaded 70 raw production observations from Phase 28.
 
 [Period 2026-09-26 — BASE REFERENCE]
-  APIx Index Value : 100.0000 (Base = 100.0000)
+  AERIX Index Value : 100.0000 (Base = 100.0000)
   Elementary Strata: 55
   Selected Offers  : 60
   Rejected Offers  : 10
 
 [Period 2026-09-27 — SHORT-CHAIN JEVONS EVALUATION]
-  APIx Index Value : 102.6407
+  AERIX Index Value : 102.6407
   MoM Price Change : +2.6407%
   Active Replacements Logged: 10
   Quality Adjustments Logged: 5
@@ -354,7 +354,7 @@ The API conforms to standard statistical dissemination formats:
 
 | HTTP Method | Route | Description |
 | :---: | :--- | :--- |
-| `GET` | `/api/v1/airfare-index` | Official APIx headline index series, MoM inflation rate, and sub-indices |
+| `GET` | `/api/v1/airfare-index` | Official AERIX headline index series, MoM inflation rate, and sub-indices |
 | `GET` | `/api/v1/reference-taxonomy` | Five-tier Reference Period Taxonomy and institutional metadata |
 | `GET` | `/api/v1/lead-curves` | Route-specific advance purchase yield curve points ($T+1 \dots T+45$) |
 | `GET` | `/api/v1/quality-metrics` | Observation status counts (`VALID`, `QUALITY_ADJUSTED`, `SOLD_OUT`, etc.) |
@@ -407,18 +407,18 @@ Execution of the engine generates auditable production artifacts:
 - [`apix_base_delbom.json`](file:///apix_base_delbom.json): Locked provisional project reference file ($P_{\text{project},\text{ref}} = \text{₹}6,632.67$).
 
 ### 2. Comprehensive Methodological Reports:
-- [`APIx_Reference_Period_Taxonomy_Report.md`](file:///APIx_Reference_Period_Taxonomy_Report.md): Mandatory architectural specification distinguishing Project Reference, MoSPI Index Reference, MoSPI Price Reference, MoSPI Weight Reference, and Eurostat Chain-Linking Reference.
+- [`AERIX_Reference_Period_Taxonomy_Report.md`](file:///AERIX_Reference_Period_Taxonomy_Report.md): Mandatory architectural specification distinguishing Project Reference, MoSPI Index Reference, MoSPI Price Reference, MoSPI Weight Reference, and Eurostat Chain-Linking Reference.
 - [`DEL_BOM_methodology_snapshot.md`](file:///DEL_BOM_methodology_snapshot.md): Concise institutional methodology snapshot citing MoSPI & Eurostat benchmarks.
 - [`DEL_BOM_quality_report.md`](file:///DEL_BOM_quality_report.md): Statistical quality audit, offer selection validation, and observation taxonomy.
 - [`methodology_validation_report.md`](file:///methodology_validation_report.md): Deep-dive mathematical proofs, axiomatic properties, and statutory claims matrix.
-- [`APIx_Remaining_Mathematical_and_Data_Roadmap_Report.md`](file:///APIx_Remaining_Mathematical_and_Data_Roadmap_Report.md): Detailed gap analysis of remaining internal econometric math, scraper dimensions, and external administrative data.
-- [`APIx_Scraper_Missing_Data_Remediation_Report.md`](file:///APIx_Scraper_Missing_Data_Remediation_Report.md): Scraper dimension completeness audit and remediation roadmap.
+- [`AERIX_Remaining_Mathematical_and_Data_Roadmap_Report.md`](file:///AERIX_Remaining_Mathematical_and_Data_Roadmap_Report.md): Detailed gap analysis of remaining internal econometric math, scraper dimensions, and external administrative data.
+- [`AERIX_Scraper_Missing_Data_Remediation_Report.md`](file:///AERIX_Scraper_Missing_Data_Remediation_Report.md): Scraper dimension completeness audit and remediation roadmap.
 
 ---
 
 ## 🛡️ Ethical Scraping & Regulatory Compliance
 
-The APIx scraping architecture is strictly compliant with legal and ethical standards for price statistics:
+The AERIX scraping architecture is strictly compliant with legal and ethical standards for price statistics:
 1. **Zero CAPTCHA Bypass:** No CAPTCHA solvers, audio cracking, or automated bypass tools exist in the codebase.
 2. **Zero Proxy Rotation:** No residential proxy networks, botnets, or IP masking rotation are employed.
 3. **Zero Fingerprint Spoofing:** No canvas or hardware spoofing is practiced.

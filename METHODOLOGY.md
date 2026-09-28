@@ -1,8 +1,8 @@
-# Official Methodology: Indian Airfare Price Index (APIx)
+# Official Methodology: Indian Airfare Price Index (AERIX)
 ## CPI 2024-Compatible Statistical Index Compilation Framework
 
 > **Document Status:** Official Production Specification  
-> **Methodology Version:** `APIx v1.0`  
+> **Methodology Version:** `AERIX v1.0`  
 > **Weight Version:** `2026.09`  
 > **Indian Benchmark:** MoSPI / NSO Consumer Price Index (CPI 2024 Base: $2024 = 100$)  
 > **International Benchmark:** Eurostat HICP Airfare Standards & Web Scraping Practical Guidelines (2024)  
@@ -12,9 +12,9 @@
 
 ## 1. Executive Summary & Institutional Alignment
 
-The **Indian Airfare Price Index (APIx)** is an experimental, analytical price index designed to measure temporal changes in consumer-facing passenger airfares across India's domestic aviation network. 
+The **Indian Airfare Price Index (AERIX)** is an experimental, analytical price index designed to measure temporal changes in consumer-facing passenger airfares across India's domestic aviation network. 
 
-Traditional unweighted arithmetic averages of scraped ticket prices fail basic statistical tests: they are susceptible to phantom inflation from flight availability churn, scraper result truncation, and extreme last-minute outlier fares. In accordance with MoSPI CPI 2024 and Eurostat HICP standards, APIx enforces a strict micro-founded calculation hierarchy:
+Traditional unweighted arithmetic averages of scraped ticket prices fail basic statistical tests: they are susceptible to phantom inflation from flight availability churn, scraper result truncation, and extreme last-minute outlier fares. In accordance with MoSPI CPI 2024 and Eurostat HICP standards, AERIX enforces a strict micro-founded calculation hierarchy:
 
 ```text
 Scraped Raw Observations (DOM / API)
@@ -37,14 +37,14 @@ Lead-Time Aggregation (I_(r,l,t) via Booking Weights W_l)
                 ↓
 Route Aggregation (I_(r,t) via DGCA Passenger Weights W_r)
                 ↓
-All-India Airfare Price Index (APIx_t = ∑ W_r I_(r,t))
+All-India Airfare Price Index (AERIX_t = ∑ W_r I_(r,t))
 ```
 
 ---
 
 ## 2. Temporal & Lead-Time Architecture
 
-Air travel pricing is characterized by dynamic yield management: ticket prices escalate as the departure date approaches. APIx monitors six advance-purchase horizons:
+Air travel pricing is characterized by dynamic yield management: ticket prices escalate as the departure date approaches. AERIX monitors six advance-purchase horizons:
 
 | Horizon | Days to Departure | Analytical Role | Empirical Weight ($W_l$) | Statistical Classification |
 | :---: | :---: | :--- | :---: | :--- |
@@ -58,19 +58,19 @@ Air travel pricing is characterized by dynamic yield management: ticket prices e
 
 > [!IMPORTANT]
 > **Empirical Lead-Time Weights Specification (`EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`):**  
-> APIx primary lead-time aggregation uses empirical weights derived from the supplied `Clean_Dataset.csv` booking dataset, treating `days_left` as booking lead time based on the verified dataset interpretation that each row represents an individual booking.
+> AERIX primary lead-time aggregation uses empirical weights derived from the supplied `Clean_Dataset.csv` booking dataset, treating `days_left` as booking lead time based on the verified dataset interpretation that each row represents an individual booking.
 >
 > - **Methodology Status:** `EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`
 > - **Source Dataset:** `Clean_Dataset.csv`
 > - **Source Interpretation:** Treat `days_left` as booking lead time; each row represents an individual booking transaction.
 > - **Official Status Disclaimer:** **These weights are derived from the supplied booking dataset and are not official Indian national booking weights.**
-> - **Rejection of Equal Weighting:** APIx explicitly does NOT assign equal weights to lead times. Advance booking windows have vastly different passenger volumes and dynamic price elasticity. Equal weighting ($1/6 \approx 16.67\%$) distorts the index by over-weighting volatile last-minute travel ($T+1$) and under-weighting common advance bookings ($T+30, T+45$).
+> - **Rejection of Equal Weighting:** AERIX explicitly does NOT assign equal weights to lead times. Advance booking windows have vastly different passenger volumes and dynamic price elasticity. Equal weighting ($1/6 \approx 16.67\%$) distorts the index by over-weighting volatile last-minute travel ($T+1$) and under-weighting common advance bookings ($T+30, T+45$).
 > - **Tri-Layer Weight Separation:**
 >   1. **Route Representativeness Weights ($w_r$):** Derived from official DGCA CY2024 scheduled domestic city-pair passenger volumes (`DGCA_CY2024_TOP60`, 57.0247% coverage).
 >   2. **Lead-Time Profile Weights ($w_L$):** Derived from `Clean_Dataset.csv` empirical booking horizons (`EMPIRICAL_DATASET_DERIVED_LEAD_TIME_WEIGHTS`).
 >   3. **Macroeconomic Expenditure Weight ($W_{\text{cpi}} = 0.02951\%$):** Derived from MoSPI CPI 2024 "Weights of item CPI 2024" (Item Code `07.3.3.1.2.01`), operating exclusively at the national CPI aggregation layer.
 >
-> **$T+21$ MoSPI Alignment Rule:** The MoSPI CPI 2024 Expert Group specifically designated **21 days prior to departure** as the standard advance-purchase specification for domestic air travel. In APIx, $T+21$ is scheduled, captured, normalized, and aggregated as an **independent, isolated stratum**, preventing artificial blending with $T+15$ or $T+30$.
+> **$T+21$ MoSPI Alignment Rule:** The MoSPI CPI 2024 Expert Group specifically designated **21 days prior to departure** as the standard advance-purchase specification for domestic air travel. In AERIX, $T+21$ is scheduled, captured, normalized, and aggregated as an **independent, isolated stratum**, preventing artificial blending with $T+15$ or $T+30$.
 
 ---
 
@@ -126,12 +126,12 @@ $$I_{s,t} = I_{s,t-1} \times J_{s,t}$$
    $$I_{r,l,t} = \frac{1}{|S_{r,l}|} \sum_{s \in S_{r,l}} I_{s,t}$$
 2. **Route Index ($I_{r,t}$):**
    $$I_{r,t} = \sum_{l \in L} W_l \cdot I_{r,l,t} \quad \text{where} \quad \sum_l W_l = 1.0000$$
-3. **All-India APIx ($APIx_t$):**
-   $$APIx_t = \sum_{r \in R} W_r \cdot I_{r,t} \quad \text{where} \quad \sum_r W_r = 1.0000$$
+3. **All-India AERIX ($AERIX_t$):**
+   $$AERIX_t = \sum_{r \in R} W_r \cdot I_{r,t} \quad \text{where} \quad \sum_r W_r = 1.0000$$
 
 > [!IMPORTANT]
 > **DGCA Top-60 Route Basket Specification (`DGCA_CY2024_TOP60`):**  
-> APIx route aggregation uses a Top-60 domestic city-pair basket selected by annual scheduled passenger volume from DGCA calendar-year 2024 data. Route weights are normalized within the selected Top-60 basket. The basket covers 57.0247% of 2024 domestic passenger traffic. These are APIx representativeness weights and are distinct from the MoSPI CPI airfare expenditure weight.
+> AERIX route aggregation uses a Top-60 domestic city-pair basket selected by annual scheduled passenger volume from DGCA calendar-year 2024 data. Route weights are normalized within the selected Top-60 basket. The basket covers 57.0247% of 2024 domestic passenger traffic. These are AERIX representativeness weights and are distinct from the MoSPI CPI airfare expenditure weight.
 >
 > - **Basket Identifier:** `DGCA_CY2024_TOP60`
 > - **Reference Period:** `CY2024` (January 2024 – December 2024)
@@ -141,8 +141,8 @@ $$I_{s,t} = I_{s,t-1} \times J_{s,t}$$
 > - **Station Preservation:** Dual-airport stations such as South Goa Dabolim (`GOI`) and North Goa Mopa (`GOX`) are preserved as separate stations and never merged.
 
 ### 4.5 Inflation Metrics
-$$\text{MoM Inflation (\%)} = \left(\frac{APIx_t}{APIx_{t-1}} - 1\right) \times 100$$
-$$\text{YoY Inflation (\%)} = \left(\frac{APIx_t}{APIx_{t-12}} - 1\right) \times 100$$
+$$\text{MoM Inflation (\%)} = \left(\frac{AERIX_t}{AERIX_{t-1}} - 1\right) \times 100$$
+$$\text{YoY Inflation (\%)} = \left(\frac{AERIX_t}{AERIX_{t-12}} - 1\right) \times 100$$
 
 ---
 
@@ -153,7 +153,7 @@ $$\text{YoY Inflation (\%)} = \left(\frac{APIx_t}{APIx_{t-12}} - 1\right) \times
 > The Directorate General of Civil Aviation (DGCA) approved domestic flight schedules (Northern Summer 2024: March 31 – October 26, 2024; Northern Winter 2024: October 27, 2024 – March 29, 2025) serve strictly as a **regulatory flight-universe control and denominator dataset**. They contain NO ticket prices and NO passenger headcounts and must **NEVER** be used to construct route weights, lead-time weights, or CPI weights.
 
 ### 5.1 Scraper Coverage Metric
-To quantify web crawler completeness against the sovereign regulatory baseline, APIx calculates the active flight coverage ratio on travel date $d$:
+To quantify web crawler completeness against the sovereign regulatory baseline, AERIX calculates the active flight coverage ratio on travel date $d$:
 $$C_{\text{scraper}}(r, d) = \frac{|\text{Observed Approved Active Flights}|}{|\text{DGCA Approved Active Flights}|}$$
 
 ### 5.2 Tripartite Universe Partitioning

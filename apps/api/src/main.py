@@ -21,7 +21,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')
 load_dotenv(os.path.join(ROOT, '.env'))
 
 from models.canonical import NormalizedFareObservation
-from index import APIxEngine, WeightRegistry, CPIAirfareWeightConfig
+from index import AERIXEngine, APIxEngine, WeightRegistry, CPIAirfareWeightConfig
 
 # Lead-day → lead-time class mapping
 def _lead_class(days: int) -> str:
@@ -86,7 +86,7 @@ def load_top60_observations() -> List[dict]:
             rows = cur.fetchall()
             cur.close()
             conn.close()
-            if rows:
+            if rows and len(rows) >= 11000:
                 _top60_obs_cache = [
                     {
                         "origin": r[0],
@@ -114,7 +114,47 @@ def load_top60_observations() -> List[dict]:
                 except Exception:
                     pass
 
-    # 2. Fallback to local disk cache
+    # 2. Fallback to local disk cache: prioritize complete finalized 360-cell dataset (11,716 records)
+    cls_path = os.path.join(ROOT, 'runtime', 'top60_observation_classification.json')
+    if os.path.exists(cls_path):
+        try:
+            mtime = os.path.getmtime(cls_path)
+            with open(cls_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            raw_obs = data.get('observations', []) if isinstance(data, dict) else data
+            if len(raw_obs) >= 11000:
+                _top60_obs_cache = []
+                for o in raw_obs:
+                    route = o.get('route') or ''
+                    parts = route.split('-') if '-' in route else ['', '']
+                    origin = o.get('origin') or parts[0]
+                    dest = o.get('destination') or parts[1]
+                    lt_str = str(o.get('lead_time') or '')
+                    days = int(o.get('lead_days') or (lt_str.replace('T+', '') if 'T+' in lt_str else 7))
+                    _top60_obs_cache.append({
+                        'observation_id': o.get('observation_id'),
+                        'route': f'{origin}-{dest}' if origin and dest else route,
+                        'origin': origin,
+                        'destination': dest,
+                        'lead_days': days,
+                        'lead_time': f'T+{days}',
+                        'travel_date': o.get('travel_date'),
+                        'total_fare': float(o.get('total_fare', 0) or 0),
+                        'base_fare': float(o.get('base_fare', 0) or 0),
+                        'taxes': float(o.get('taxes', 0) or 0),
+                        'airline': o.get('airline', 'Domestic Carrier'),
+                        'flight_number': o.get('flight_number', ''),
+                        'source': o.get('source', 'google_flights'),
+                        'status': o.get('status', 'VALID_BASELINE'),
+                        'stops': o.get('stops', 0),
+                        'cabin': o.get('cabin', 'ECONOMY'),
+                        'collected_at': o.get('collected_at')
+                    })
+                _top60_obs_mtime = mtime
+                return _top60_obs_cache
+        except Exception as e:
+            print(f'Error loading top60 observations from classification: {e}')
+
     path = os.path.join(ROOT, 'runtime', 'top60_fare_observations.json')
     if not os.path.exists(path):
         return []
@@ -130,8 +170,8 @@ def load_top60_observations() -> List[dict]:
         return []
 
 app = FastAPI(
-    title="India Airfare Price Index (APIx) API",
-    description="Production-grade REST API serving official CPI-compatible airfare price index series, quality metrics, and lead-time yield curves.",
+    title="India Airfare Price Index (AERIX) API",
+    description="Production-grade REST API serving official AERIX CPI-compatible airfare price index series, quality metrics, and lead-time yield curves.",
     version="1.0.0"
 )
 
@@ -182,7 +222,7 @@ async def get_airfare_index(
     to_date: Optional[str] = Query(None, description="YYYY-MM"),
 ):
     """
-    Official APIx Airfare Price Index endpoint per Methodology §68.
+    Official AERIX Airfare Price Index endpoint per Methodology §68.
     Returns the CPI-compatible index series, MoM inflation %, YoY inflation %, and sub-indices.
     """
     cached = load_compiled_index()
@@ -201,7 +241,7 @@ async def get_airfare_index(
 
     # Dynamic fallback compilation if file not yet written
     observations = load_canonical_data()
-    engine = APIxEngine()
+    engine = AERIXEngine()
     compiled = engine.process_period(period="2026-09", observations=observations)
     return json.loads(json.dumps(compiled.model_dump(mode="json"), default=decimal_default))
 
@@ -231,7 +271,7 @@ async def get_quality_metrics():
         "unique_itineraries_count": unique_itineraries,
         "routes_covered": routes,
         "currency": "INR",
-        "methodology_version": "APIx v1.0",
+        "methodology_version": "AERIX v1.0",
         "evaluated_at": datetime.now(timezone.utc).isoformat()
     }
 
@@ -410,7 +450,7 @@ async def get_methodology():
         "lead_time_weights": {k: float(v) for k, v in registry.lead_time_weights.items()},
         "cpi_airfare_weight": cpi_cfg.to_metadata_dict(),
         "disclaimer": cpi_cfg.disclaimer,
-        "methodology_version": "APIx v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)",
+        "methodology_version": "AERIX v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)",
         "weight_version": registry.version,
     }
 
@@ -571,14 +611,16 @@ async def get_matrix(
     # Group into cells
     cells: Dict[str, Dict[str, List[float]]] = {}
     for o in obs_all:
+        if o.get('status') and o.get('status') != 'VALID_BASELINE':
+            continue
         fare = float(o.get('total_fare', 0) or 0)
         if fare <= 0:
             continue
         origin = o.get('origin', '')
         dest = o.get('destination', '')
-        r = f'{origin}-{dest}'
+        r = o.get('route') or f'{origin}-{dest}'
         days = int(o.get('lead_days', 7) or 7)
-        lt = _lead_class(days)
+        lt = o.get('lead_time') or _lead_class(days)
 
         if route and r != route:
             continue
@@ -632,12 +674,14 @@ async def get_coverage():
         fare = float(o.get('total_fare', 0) or 0)
         origin = o.get('origin', '')
         dest = o.get('destination', '')
-        r = f'{origin}-{dest}'
+        r = o.get('route') or f'{origin}-{dest}'
         days = int(o.get('lead_days', 7) or 7)
-        lt = _lead_class(days)
-        routes_seen.add(r)
-        if fare > 0:
+        lt = o.get('lead_time') or _lead_class(days)
+        if r and r != '-':
+            routes_seen.add(r)
+        if fare > 0 and r and r != '-':
             obs_with_fare += 1
+            cell_set.add((r, lt))
             cell_set.add((r, lt))
 
     # Also load classification for VALID/DUPLICATE breakdown if available

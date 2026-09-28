@@ -1,7 +1,7 @@
-# APIx Post-Force-Pull Full Read-Only Regression Audit
+# AERIX Post-Force-Pull Full Read-Only Regression Audit
 
 **Audit Date**: 2026-09-28  
-**Audit Scope**: Complete APIx Repository (Scrapers, Pipeline, Engine, Weights, Models, API, Frontend, Production Datasets)  
+**Audit Scope**: Complete AERIX Repository (Scrapers, Pipeline, Engine, Weights, Models, API, Frontend, Production Datasets)  
 **Mode**: Read-Only Comprehensive Audit (No code, weights, data, configs, or methodology modified)  
 **Repository Working Directory**: `c:\Users\Hemant Jagnani\OneDrive\Desktop\SIH2026`  
 
@@ -9,14 +9,14 @@
 
 ## Executive Summary & Metrics
 
-Following a git force-pull triggered during frontend enhancements, a comprehensive read-only regression audit was performed across all 14 subsystems of APIx. The audit confirms that **zero core scraper, pipeline, reconciliation, weight, or index engine files were damaged or altered**. The changes introduced were strictly confined to visual frontend components, TypeScript interface extensions, and backwards-compatible read endpoints in FastAPI.
+Following a git force-pull triggered during frontend enhancements, a comprehensive read-only regression audit was performed across all 14 subsystems of AERIX. The audit confirms that **zero core scraper, pipeline, reconciliation, weight, or index engine files were damaged or altered**. The changes introduced were strictly confined to visual frontend components, TypeScript interface extensions, and backwards-compatible read endpoints in FastAPI.
 
 | Metric | Value | Status |
 | :--- | :--- | :--- |
-| **A. Overall APIx Integrity Status** | **HEALTHY / UNCOMPROMISED** | ✅ PASS |
+| **A. Overall AERIX Integrity Status** | **HEALTHY / UNCOMPROMISED** | ✅ PASS |
 | **B. Test Suite Results** | **104 Passed / 1 Failed** | ✅ PASS (Pre-existing fixture timezone edge case) |
-| **C. APIx Files Changed by Force-Pull** | **7 Files** (`apps/api`, `web/src`) | ℹ️ CHANGED-BUT-COMPATIBLE |
-| **D. APIx Files Deleted or Renamed** | **0 Files** | ✅ PASS |
+| **C. AERIX Files Changed by Force-Pull** | **7 Files** (`apps/api`, `web/src`) | ℹ️ CHANGED-BUT-COMPATIBLE |
+| **D. AERIX Files Deleted or Renamed** | **0 Files** | ✅ PASS |
 | **E. Behavioral Regressions** | **0 Regressions** | ✅ PASS |
 | **F. Contract / Schema Regressions** | **0 Regressions** | ✅ PASS |
 | **G. Methodology / Weight / Index Regressions** | **0 Regressions** | ✅ PASS |
@@ -28,7 +28,7 @@ Following a git force-pull triggered during frontend enhancements, a comprehensi
 
 ### Scope & Checks
 - Audited Pydantic models in `models/canonical.py`, `models/observation.py`, `models/itinerary.py`, and `index/` schemas.
-- Validated serialization and deserialization roundtrips on `RawFareObservation`, `NormalizedFareObservation`, `FareSearchRequest`, `ItinerarySegment`, `FlightItinerary`, `CanonicalOffer`, `APIxProductObservation`, `RouteBasketConfig`, and `CPIAirfareWeightConfig`.
+- Validated serialization and deserialization roundtrips on `RawFareObservation`, `NormalizedFareObservation`, `FareSearchRequest`, `ItinerarySegment`, `FlightItinerary`, `CanonicalOffer`, `AERIXProductObservation`, `RouteBasketConfig`, and `CPIAirfareWeightConfig`.
 - Verified strict typing, field defaults, required vs optional fields, and enum constraints.
 
 ### Findings
@@ -63,7 +63,7 @@ Following a git force-pull triggered during frontend enhancements, a comprehensi
 ### Scope & Checks
 Verified that the end-to-end data processing chain has not been bypassed, reordered, or compromised:
 
-$$\text{RAW OBSERVATION} \longrightarrow \text{NORMALIZATION} \longrightarrow \text{RECONCILIATION} \longrightarrow \text{DEDUPLICATION} \longrightarrow \text{PRODUCT COMPARABILITY} \longrightarrow \text{LEAD-TIME CLASSIFICATION} \longrightarrow \text{ROUTE CLASSIFICATION} \longrightarrow \text{PRICE FORMATION} \longrightarrow \text{ELEMENTARY INDEX} \longrightarrow \text{ROUTE INDEX} \longrightarrow \text{ALL-INDIA APIx}$$
+$$\text{RAW OBSERVATION} \longrightarrow \text{NORMALIZATION} \longrightarrow \text{RECONCILIATION} \longrightarrow \text{DEDUPLICATION} \longrightarrow \text{PRODUCT COMPARABILITY} \longrightarrow \text{LEAD-TIME CLASSIFICATION} \longrightarrow \text{ROUTE CLASSIFICATION} \longrightarrow \text{PRICE FORMATION} \longrightarrow \text{ELEMENTARY INDEX} \longrightarrow \text{ROUTE INDEX} \longrightarrow \text{ALL-INDIA AERIX}$$
 
 ### Findings
 - Normalization in `validation/pipeline.py` enforces IATA airport validation, currency conversion verification, and lead-time calculation.
@@ -92,10 +92,10 @@ $$\text{RAW OBSERVATION} \longrightarrow \text{NORMALIZATION} \longrightarrow \t
 
 ---
 
-## 5. APIx Product Definition
+## 5. AERIX Product Definition
 
 ### Scope & Checks
-Audited adherence to the official APIx product specification:
+Audited adherence to the official AERIX product specification:
 1. Domestic Indian passenger air transportation (origin and destination within DGCA-monitored Indian civil airports).
 2. One-way point-to-point journey.
 3. Single adult passenger quote (no companion or group discounts).
@@ -145,7 +145,7 @@ Verified the exact configuration, source, and values of all weight tiers:
 - **Item Code**: `07.3.3.1.2.01` ("Air fare (domestic)").
 - **Weight**: $0.02951\%$ ($0.0002951$ decimal) of All-India CPI (Base 2012=100).
 - **Architectural Segregation**: Strict separation verified. CPI weight is never used as a route weight or applied directly to price observations. CPI contribution is computed independently via:
-  $$\Delta \text{CPI}_{pp} = \Delta \text{APIx}_{\%} \times \frac{0.02951}{100}$$
+  $$\Delta \text{CPI}_{pp} = \Delta \text{AERIX}_{\%} \times \frac{0.02951}{100}$$
 
 **Status**: **PASS**
 
@@ -205,7 +205,7 @@ $$5,834 + 4,772 + 666 + 158 = 11,430$$
 | Category | Expected Count | Audited File Count | Discrepancy |
 | :--- | :--- | :--- | :--- |
 | **Total Observations** | 11,430 | 11,430 | **0** |
-| **Valid APIx Baseline** | 5,834 | 5,834 | **0** |
+| **Valid AERIX Baseline** | 5,834 | 5,834 | **0** |
 | **Duplicate Observations** | 4,772 | 4,772 | **0** |
 | **Higher Fare-Family Exclusions** | 666 | 666 | **0** |
 | **Foreign Transit Exclusions** | 158 | 158 | **0** |
@@ -271,7 +271,7 @@ Evaluated all changes in `web/` and their interaction with `apps/api/src/main.py
 
 | Endpoint | HTTP Status | Response Schema Check | Impact |
 | :--- | :--- | :--- | :--- |
-| `GET /api/v1/airfare-index` | **200 OK** | Matches `APIxIndexResponse` | Backward Compatible |
+| `GET /api/v1/airfare-index` | **200 OK** | Matches `AERIXIndexResponse` | Backward Compatible |
 | `GET /api/v1/lead-curves` | **200 OK** | Matches `LeadCurveResponse` | Enhanced: loads all 57 routes from top60 data |
 | `GET /api/v1/quality-metrics` | **200 OK** | Matches `QualityMetricsResponse` | Backward Compatible |
 | `GET /api/v1/matrix` | **200 OK** | Matches `MatrixResponse` | Added: serves 60×6 matrix |
@@ -341,7 +341,7 @@ Executed deterministic verification on the mathematical engines:
 | **2** | **Scraping Subsystem** | **PASS** | Google Flights, EaseMyTrip, and Ixigo adapters untouched; 0 scraper files changed. |
 | **3** | **Data Pipeline Lifecycle** | **PASS** | All 11 pipeline stages intact and validated without bypass. |
 | **4** | **Cross-Source Reconciliation** | **PASS** | Exact/probable matching, price conflict resolution, and duplicate rules verified (16/16 tests pass). |
-| **5** | **APIx Product Definition** | **PASS** | Domestic one-way economy passenger definition strictly preserved; 666 fare-family and 158 transit exclusions intact. |
+| **5** | **AERIX Product Definition** | **PASS** | Domestic one-way economy passenger definition strictly preserved; 666 fare-family and 158 transit exclusions intact. |
 | **6** | **Weights & Schedule Control** | **PASS** | DGCA 60 route weights sum to 1.00000000; lead weights sum to 1.0000; CPI weight isolated. |
 | **7** | **Statistical Methodology** | **PASS** | Eurostat HICP and MoSPI CPI 2024 compliance verified; Jevons and chained Laspeyres/Young formulas intact. |
 | **8** | **DGCA Schedule Control** | **PASS** | Schedule loading, airline code normalization, time bands, and capacity checks intact (8/8 tests pass). |
@@ -378,4 +378,4 @@ Executed deterministic verification on the mathematical engines:
 
 ## Final Certification
 
-The APIx system remains **fully intact, mathematically valid, and statistically compliant** following the force-pull. No regressions were introduced into the core data collection, cleaning, reconciliation, weighting, or index aggregation pipelines.
+The AERIX system remains **fully intact, mathematically valid, and statistically compliant** following the force-pull. No regressions were introduced into the core data collection, cleaning, reconciliation, weighting, or index aggregation pipelines.

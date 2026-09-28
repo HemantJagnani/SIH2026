@@ -1,4 +1,4 @@
-# APIx Index-Construction Pipeline Methodology Correction & Monthly Coverage Audit Report
+# AERIX Index-Construction Pipeline Methodology Correction & Monthly Coverage Audit Report
 
 **Document Version:** 1.0.0  
 **Audit Date:** 2026-09-28  
@@ -10,12 +10,12 @@
 
 ## 1. Executive Summary
 
-This report documents the formal correction of the APIx index-construction pipeline and presents the empirical observation coverage audit of the finalized 11,716-observation production dataset.
+This report documents the formal correction of the AERIX index-construction pipeline and presents the empirical observation coverage audit of the finalized 11,716-observation production dataset.
 
 ### Critical Methodological Corrections Enforced
 1. **Strict Prohibition of $P_{\text{ref}}$ as Index Denominator:**  
    The provisional basket reference price $P_{\text{ref}} = ₹8,641.45$ **MUST NOT** be used as the base or denominator for index compilation. The pipeline explicitly forbids computing:
-   $$\text{APIx}_t = 100 \times \frac{P_t}{P_{\text{ref}}}$$
+   $$\text{AERIX}_t = 100 \times \frac{P_t}{P_{\text{ref}}}$$
    Such a naive ratio-to-base construction violates international CPI standards (MoSPI CPI 2024, Eurostat HICP, ILO CPI Manual §10.15), ignores product comparability, and produces severe chain-drift and unadjusted quality bias.
 2. **Implementation of Short-Chain Jevons Construction:**  
    The index calculation pipeline is strictly configured to use the internationally compliant short-chain Jevons index:
@@ -34,7 +34,7 @@ This report documents the formal correction of the APIx index-construction pipel
 
 ## 2. Formal Short-Chain Jevons Index Architecture
 
-The corrected APIx index hierarchy strictly adheres to the 5-stage aggregation hierarchy prescribed by MoSPI CPI 2024 and Eurostat HICP:
+The corrected AERIX index hierarchy strictly adheres to the 5-stage aggregation hierarchy prescribed by MoSPI CPI 2024 and Eurostat HICP:
 
 ```
 [ Individual Flight Itineraries (Single Headline Offer Selected) ]
@@ -58,7 +58,7 @@ The corrected APIx index hierarchy strictly adheres to the 5-stage aggregation h
                                │
                                ▼
 [ All-India Route Basket Aggregation (Frozen DGCA Weights W_r) ]
-                   APIx_t = Σ_r W_r * I_(r,t)
+                   AERIX_t = Σ_r W_r * I_(r,t)
                                │
                                ▼
 [ Short-Chain Recursive Linking ]
@@ -96,7 +96,7 @@ $$J_{s,t} = \exp\left(\frac{1}{|M_{s,t}|}\sum_{i \in M_{s,t}} \ln(r_{i,t})\right
    - $w_{T+30} = 0.2588$
    - $w_{T+45} = 0.2543$
 3. **All-India Index:** Aggregate across the 60 routes using frozen DGCA CY2024 passenger volume weights:
-   $$\text{APIx}_t = \sum_{r=1}^{60} W_r \times I_{r,t}$$
+   $$\text{AERIX}_t = \sum_{r=1}^{60} W_r \times I_{r,t}$$
 
 ### Stage 5: Recursive Chaining
 The index is chained recursively over time:
@@ -161,7 +161,7 @@ The following targeted architectural fixes were implemented:
      - Added explicit documentation that $P_{\text{ref}}$ is prohibited from entering index calculation formulas.
    - Updated `get_reference_taxonomy_meta()` with descriptive status notes.
 2. **`apps/scraper/src/index/models.py`**:
-   - Updated `RouteIndexResult` and `APIxSeriesResult` models:
+   - Updated `RouteIndexResult` and `AERIXSeriesResult` models:
      - Default `experimental_project_reference_price = Decimal("8641.45")`
      - Default `reference_price = Decimal("8641.45")`
      - Default `base_price = Decimal("8641.45")`
@@ -218,7 +218,7 @@ To prevent institutional confusion, the following taxonomy is explicitly documen
    - Role: Provides a representative fare level benchmark across the 360-cell matrix. It **DOES NOT** enter the elementary index formula and is **NEVER** used as an index denominator.
 2. **MoSPI CPI 21-Day Advance Purchase Timing ($T+21$):**
    - Status: Official CPI airfare price collection checkpoint.
-   - Role: MoSPI CPI methodology samples domestic airfare at 21 days advance booking. In APIx, $T+21$ is monitored as an explicit checkpoint and assigned its empirical weight ($0.1519$), but does not override the multi-horizon structure.
+   - Role: MoSPI CPI methodology samples domestic airfare at 21 days advance booking. In AERIX, $T+21$ is monitored as an explicit checkpoint and assigned its empirical weight ($0.1519$), but does not override the multi-horizon structure.
 3. **2026 Production Baseline vs 2024 Historical Average:**
    - Status: `CALENDAR_YEAR_2026_OBSERVED_FARES`
    - Role: The current 11,716 observations are actual fares collected in September 2026. They are **NOT** historical calendar-year 2024 fares. The MoSPI 2024 price reference remains formally classified as `PENDING_2024_HISTORICAL_ACTUALS`.

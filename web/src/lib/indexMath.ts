@@ -1,5 +1,5 @@
 /**
- * indexMath.ts — client-side recompute of the APIx index.
+ * indexMath.ts — client-side recompute of the AERIX index.
  *
  * Mirrors the Python pipeline exactly:
  *   1. Bands → (route, lead) : geometric mean of relatives within the band

@@ -11,7 +11,7 @@ Build a zero-license-cost airfare collection engine that:
 - detects CAPTCHA, 403, 429, blocking and access restrictions;
 - never solves CAPTCHA or bypasses authentication/access controls;
 - stores raw evidence and normalized fare observations;
-- feeds the existing PostgreSQL/APIx/dashboard pipeline;
+- feeds the existing PostgreSQL/AERIX/dashboard pipeline;
 - can combine web-scraped sources with Ignav/API sources.
 
 ## Important expectation
@@ -88,7 +88,7 @@ Ignav/API         HTTP Collector     Browser Collector
                                   PostgreSQL   Quarantine
                                         |
                                         v
-                                       APIx
+                                       AERIX
                                         |
                                   +-----+-----+
                                   |           |
@@ -904,7 +904,7 @@ Test:
 10. Add PostgreSQL persistence.
 11. Add Ignav adapter.
 12. Add more sources.
-13. Add APIx.
+13. Add AERIX.
 14. Add dashboard.
 15. Begin 30-day collection/backtest window.
 
@@ -1005,7 +1005,7 @@ Run through Docker Compose.
 - do not silently convert non-INR values;
 - do not invent prices;
 - do not drop failure states;
-- do not alter APIx methodology without explicit approval.
+- do not alter AERIX methodology without explicit approval.
 
 ## Definition of done
 

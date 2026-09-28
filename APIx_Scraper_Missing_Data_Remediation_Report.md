@@ -1,12 +1,12 @@
-# APIx Scraper Missing-Data Remediation Report
+# AERIX Scraper Missing-Data Remediation Report
 
 ## Purpose
 
-This report converts the current Phase 1 data-quality findings into an implementation plan for closing the missing-data links in the airfare scraper. The objective is **not to manufacture the missing fields**, but to modify the scraper so that fields genuinely exposed by the source are captured, fields that are deterministically derivable are calculated transparently, and fields that are not exposed remain explicitly `NULL/UNKNOWN`. The remediation preserves the APIx methodology: total consumer-payable price is the primary price concept, product comparability must be maintained, and raw observations must remain auditable.
+This report converts the current Phase 1 data-quality findings into an implementation plan for closing the missing-data links in the airfare scraper. The objective is **not to manufacture the missing fields**, but to modify the scraper so that fields genuinely exposed by the source are captured, fields that are deterministically derivable are calculated transparently, and fields that are not exposed remain explicitly `NULL/UNKNOWN`. The remediation preserves the AERIX methodology: total consumer-payable price is the primary price concept, product comparability must be maintained, and raw observations must remain auditable.
 
 ## 1. Current Situation
 
-The current scraper has 29 product dimensions defined by the APIx methodology. The Phase 1 audit reports:
+The current scraper has 29 product dimensions defined by the AERIX methodology. The Phase 1 audit reports:
 
 - **14/29 fully extracted**
 - **6/29 defaulted or inferred**
@@ -59,7 +59,7 @@ A deterministic value such as `WEEKDAY` is not equivalent to an assumption such 
 2. Seat-inventory/scarcity indicators.
 3. Fare basis / booking class when technically and legally exposed.
 
-These enrich the dataset but are not all required for the core APIx index.
+These enrich the dataset but are not all required for the core AERIX index.
 
 ### Priority 3 — Coverage expansion
 
@@ -101,7 +101,7 @@ The existing DEL-BOM/T+7 result should be treated as a validated scraper fixture
 
 **Fix:** Capture fare-breakup UI only when explicitly available; extract base fare, taxes, GST/K3, UDF/ADF, security fee and other mandatory charges; validate that components reconcile to displayed total within documented rounding tolerance; create a `FARE_BREAKUP_MISMATCH` quality event if they do not reconcile. If only total is shown, leave components null.
 
-**Index rule:** The APIx index uses the correctly defined consumer-payable total. Never synthetically allocate taxes or fees.
+**Index rule:** The AERIX index uses the correctly defined consumer-payable total. Never synthetically allocate taxes or fees.
 
 ### 4.5 Convenience / payment gateway fee
 
@@ -126,7 +126,7 @@ flight_segments   = one-to-many segment records linked by observation_id
 
 **Gap:** Explicit scarcity badges are ignored.
 
-**Fix:** Detect text such as “X seats left”; store `seats_remaining_displayed`, `inventory_status`, and `inventory_raw_text`. Absence of a badge does not mean high availability. Inventory must not become an APIx weight.
+**Fix:** Detect text such as “X seats left”; store `seats_remaining_displayed`, `inventory_status`, and `inventory_raw_text`. Absence of a badge does not mean high availability. Inventory must not become an AERIX weight.
 
 ### 4.8 Fare basis / booking class
 
@@ -185,7 +185,7 @@ RawFareObservation + child segment/offer records
   ↓
 Common validation → normalization → quality → fingerprints/dedupe
   ↓
-Product classification → APIx
+Product classification → AERIX
 ```
 
 Each optional expansion must have a timeout, retry limit, success/failure state, evidence capture and diagnostics so a failed modal does not stop the entire run.
@@ -201,7 +201,7 @@ CORE + DETAILS + FARE_RULES
 FULL_AUDIT
 ```
 
-Production APIx collection should use the minimum extraction needed to define the representative product consistently. Periodic `FULL_AUDIT` runs can measure missingness and verify conditions without clicking every modal on every flight on every run.
+Production AERIX collection should use the minimum extraction needed to define the representative product consistently. Periodic `FULL_AUDIT` runs can measure missingness and verify conditions without clicking every modal on every flight on every run.
 
 ## 7. Multi-Lead-Time and Multi-Route Collection
 
@@ -283,7 +283,7 @@ Report by source, route, lead-time, airline and collection run. The report shoul
 13. Collection completeness is measured by route × lead-time matrix.
 14. Parser diagnostics are stored.
 15. Fixtures and regression tests cover all new modal/tooltip states.
-16. APIx consumes only observations passing the common validation/quality pipeline.
+16. AERIX consumes only observations passing the common validation/quality pipeline.
 17. No CAPTCHA, access-control or anti-bot bypass is introduced.
 
 ## 11. Recommended Antigravity Implementation Order
@@ -298,8 +298,8 @@ Report by source, route, lead-time, airline and collection run. The report shoul
 
 ## 12. Antigravity Instruction
 
-Before modifying code, inspect the existing EaseMyTrip adapter, canonical `FareSearchRequest`/`RawFareObservation` schema, database models, collection orchestrator, evidence system, parser utilities and tests. Reuse the existing architecture rather than creating parallel schemas. Implement missing fields incrementally, beginning with removal of unsafe defaults and evidence capture, then details/modals, then coverage orchestration. Use Playwright for permitted rendered-page interactions, but do not implement CAPTCHA bypass, anti-bot evasion, fingerprint spoofing for evasion, or proxy rotation intended to circumvent blocks. When a protection challenge or access block appears, record the state and evidence and stop or follow the repository's safe retry policy. Do not fabricate any missing field. Do not change the APIx index formula, route-weight methodology or lead-time methodology while fixing scraper completeness. After each phase, run the existing test suite and add regression fixtures before proceeding.
+Before modifying code, inspect the existing EaseMyTrip adapter, canonical `FareSearchRequest`/`RawFareObservation` schema, database models, collection orchestrator, evidence system, parser utilities and tests. Reuse the existing architecture rather than creating parallel schemas. Implement missing fields incrementally, beginning with removal of unsafe defaults and evidence capture, then details/modals, then coverage orchestration. Use Playwright for permitted rendered-page interactions, but do not implement CAPTCHA bypass, anti-bot evasion, fingerprint spoofing for evasion, or proxy rotation intended to circumvent blocks. When a protection challenge or access block appears, record the state and evidence and stop or follow the repository's safe retry policy. Do not fabricate any missing field. Do not change the AERIX index formula, route-weight methodology or lead-time methodology while fixing scraper completeness. After each phase, run the existing test suite and add regression fixtures before proceeding.
 
 ## Final Outcome
 
-The target is **not “29/29 fields populated at any cost.”** The target is **29/29 dimensions handled correctly**: scraped when the source exposes them, derived when derivation is deterministic, specified by the collection request when they are sampling conditions, explicitly unknown when unavailable, and never fabricated. The final result should provide both a richer airfare observation dataset and a defensible audit trail showing exactly which fields were observed, derived or unavailable and how each observation entered the APIx pipeline.
+The target is **not “29/29 fields populated at any cost.”** The target is **29/29 dimensions handled correctly**: scraped when the source exposes them, derived when derivation is deterministic, specified by the collection request when they are sampling conditions, explicitly unknown when unavailable, and never fabricated. The final result should provide both a richer airfare observation dataset and a defensible audit trail showing exactly which fields were observed, derived or unavailable and how each observation entered the AERIX pipeline.

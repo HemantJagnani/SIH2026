@@ -1,8 +1,8 @@
-# APIx Reference-Price Construction: Diagnostic Sensitivity Audit
+# AERIX Reference-Price Construction: Diagnostic Sensitivity Audit
 
 **Audit Date**: September 28, 2026  
 **Status / Classification**: `DIAGNOSTIC_SENSITIVITY_AUDIT`  
-**Underlying Dataset**: Finalized 360-Cell APIx Production Matrix (`runtime/top60_observation_classification.json`, 11,716 observations / 5,977 valid baseline observations)  
+**Underlying Dataset**: Finalized 360-Cell AERIX Production Matrix (`runtime/top60_observation_classification.json`, 11,716 observations / 5,977 valid baseline observations)  
 
 > [!IMPORTANT]
 > **METHODOLOGICAL & INTERPRETATION GUARDRAIL**  

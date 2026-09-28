@@ -1,6 +1,6 @@
-# APIx Mathematics & Econometrics Roadmap Implementation Report
+# AERIX Mathematics & Econometrics Roadmap Implementation Report
 
-**Project**: All-India Airfare Price Index (APIx)  
+**Project**: All-India Airfare Price Index (AERIX)  
 **Execution Timestamp**: 2026-09-28T04:45:00+05:30  
 **Environment**: Production Regression Suite (Python 3.13 / Windows)  
 **Baseline Dataset Status**: `runtime/top60_observation_classification.json` (11,716 observations — 100% UNCHANGED)
@@ -39,8 +39,8 @@ All 10 mathematical and econometric components requested in the roadmap have bee
 | **5** | **Variance / Standard Errors / 95% CI** | `apps/scraper/src/index/uncertainty/` | `IMPLEMENTED` | Elementary Jevons log variance $s^2/N$; Delta method $\text{Var}(I) \approx I^2 \text{Var}(\ln J)$; two-tier linear aggregation; returns `NOT_AVAILABLE` when $N < 2$. |
 | **6** | **Mandatory Checkout Fee Harmonization** | `apps/scraper/src/index/checkout/` | `IMPLEMENTED` | Distinguishes search card price, mandatory fee, unconditional discount, and final mandatory payable price; excludes optional seats/meals; unverified checkout retains card price without fee invention. |
 | **7** | **Annual December Chain-Linking** | `apps/scraper/src/index/chain_linking/` | `DATA_DEPENDENT_INACTIVE` | Annual linking formula $I_{m,y}^{2024=100} = I_{\text{Dec}, y-1}^{2024=100} \times [I_{m,y}/100]$; immutable historical series; inactive until multiple annual baskets exist. |
-| **8** | **Seasonal Adjustment Module** | `apps/scraper/src/index/seasonal_adjustment/` | `NOT_AVAILABLE` | Segregated analytical pipeline; headline APIx unadjusted; X-13ARIMA-SEATS interface requires $\ge 36$ monthly observations; returns `NOT_AVAILABLE` on short series. |
-| **9** | **Urban/Rural CPI Contribution Output** | `apps/scraper/src/index/cpi_contribution/` | `IMPLEMENTED` | Official MoSPI 2024 Annexure 5.3d weights: Combined $0.02951\%$, Urban $0.017843\%$, Rural $0.011666\%$; calculated strictly on inflation rate ($\Delta \text{APIx}$). |
+| **8** | **Seasonal Adjustment Module** | `apps/scraper/src/index/seasonal_adjustment/` | `NOT_AVAILABLE` | Segregated analytical pipeline; headline AERIX unadjusted; X-13ARIMA-SEATS interface requires $\ge 36$ monthly observations; returns `NOT_AVAILABLE` on short series. |
+| **9** | **Urban/Rural CPI Contribution Output** | `apps/scraper/src/index/cpi_contribution/` | `IMPLEMENTED` | Official MoSPI 2024 Annexure 5.3d weights: Combined $0.02951\%$, Urban $0.017843\%$, Rural $0.011666\%$; calculated strictly on inflation rate ($\Delta \text{AERIX}$). |
 | **10** | **DGCA Annual Route-Weight Framework** | `apps/scraper/src/index/dgca_weights/` | `DATA_DEPENDENT_INACTIVE` | Immutable CY2024 Top-60 basket ($\sum W_r = 1.000000$); annual passenger volume ingestion & Top-60 ranking; transition tracking (`RETAINED`, `NEW_ENTRANT`, `EXIT`); future years remain pending official publication. |
 
 ---
@@ -79,7 +79,7 @@ All 10 mathematical and econometric components requested in the roadmap have bee
   $$\text{Var}(I_{s,t}) \approx I_{s,t}^2 \times \text{Var}(\ln J_{s,t}), \quad \text{SE}(I_{s,t}) = \sqrt{\text{Var}(I_{s,t})}$$
   $$\text{CI}_{95} = \left[ I_{s,t} - 1.96 \times \text{SE}(I_{s,t}), \; I_{s,t} + 1.96 \times \text{SE}(I_{s,t}) \right]$$
 - **Higher-Level Propagation**:
-  $$\text{Var}(I_{r,t}) = \sum_{L} w_L^2 \text{Var}(I_{r,L,t}), \quad \text{Var}(\text{APIx}_t) = \sum_r W_r^2 \text{Var}(I_{r,t})$$
+  $$\text{Var}(I_{r,t}) = \sum_{L} w_L^2 \text{Var}(I_{r,L,t}), \quad \text{Var}(\text{AERIX}_t) = \sum_r W_r^2 \text{Var}(I_{r,t})$$
 - **Non-Manufacture Guard**: Returns `NOT_AVAILABLE` with null variance/SE when $N < 2$.
 
 ### 6. Mandatory Checkout Fee Harmonization (`index/checkout/`)
@@ -94,7 +94,7 @@ All 10 mathematical and econometric components requested in the roadmap have bee
 - **Immutability Invariant**: Historical published index values are read-only and cannot be altered retrospectively by future links.
 
 ### 8. Analytical Seasonal Adjustment Pipeline (`index/seasonal_adjustment/`)
-- **Segregated Architecture**: Headline APIx is published unadjusted. The seasonal module operates as an analytical sidecar.
+- **Segregated Architecture**: Headline AERIX is published unadjusted. The seasonal module operates as an analytical sidecar.
 - **Standard Threshold**: Adheres to X-13ARIMA-SEATS requirement of $\ge 36$ monthly observations. Because only single-period data currently exist, returns `NOT_AVAILABLE` with explicit diagnostic rationale.
 - **Moving-Holiday Matrix**: Pre-configured with lunar calendar moving-holiday windows for Diwali and Durga Puja across 2024–2026.
 
@@ -104,8 +104,8 @@ All 10 mathematical and econometric components requested in the roadmap have bee
   - Urban Airfare Weight: **0.017843%** ($0.00017843$)
   - Rural Airfare Weight: **0.011666%** ($0.00011666$)
 - **Percentage-Point Contribution Formula**:
-  $$\text{Contribution}_{\text{sector}} (\text{pp}) = \Delta\text{APIx}_{\text{MoM}} (\%) \times \frac{w_{\text{sector}}}{100}$$
-- Output fields `cpi_urban_contribution_pp`, `cpi_rural_contribution_pp`, and `cpi_combined_contribution_pp` are formally integrated into `APIxSeriesResult` and `aggregation.py`.
+  $$\text{Contribution}_{\text{sector}} (\text{pp}) = \Delta\text{AERIX}_{\text{MoM}} (\%) \times \frac{w_{\text{sector}}}{100}$$
+- Output fields `cpi_urban_contribution_pp`, `cpi_rural_contribution_pp`, and `cpi_combined_contribution_pp` are formally integrated into `AERIXSeriesResult` and `aggregation.py`.
 
 ### 10. DGCA Annual Route-Weight Registry (`index/dgca_weights/`)
 - **Mathematical Formula**:
@@ -183,4 +183,4 @@ A forensic audit of `runtime/top60_observation_classification.json` confirms:
 
 ## 6. Conclusion
 
-The remaining APIx mathematics and econometrics roadmap is fully implemented in production-ready condition. All modules are protected with strict non-fabrication guards and data-dependent feature flags, preserving the existing baseline and methodological governance intact.
+The remaining AERIX mathematics and econometrics roadmap is fully implemented in production-ready condition. All modules are protected with strict non-fabrication guards and data-dependent feature flags, preserving the existing baseline and methodological governance intact.

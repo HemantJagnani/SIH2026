@@ -945,5 +945,5 @@ export const MOSPI_CPI_EXPENDITURE_WEIGHT = {
   decimal_weight: 0.0002951,
   methodology_version: "MoSPI CPI 2024 (Base 2024=100) / HCES 2023-24 Item Level Weights",
   source: "MoSPI CPI 2024 Weights of item CPI 2024 (Annexure 5.3d)",
-  disclaimer: "The MoSPI CPI 2024 airfare expenditure weight operates strictly at the national CPI aggregation layer and must NEVER be used as a micro route or lead-time weight within APIx.",
+  disclaimer: "The MoSPI CPI 2024 airfare expenditure weight operates strictly at the national CPI aggregation layer and must NEVER be used as a micro route or lead-time weight within AERIX.",
 };

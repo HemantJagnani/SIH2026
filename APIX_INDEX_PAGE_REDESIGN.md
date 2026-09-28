@@ -1,4 +1,4 @@
-# APIx Index Page Redesign (v4): Brief for Cursor / Antigravity
+# AERIX Index Page Redesign (v4): Brief for Cursor / Antigravity
 
 > How to use: put this in the project root. Tell the agent: "Read APIX_INDEX_PAGE_REDESIGN.md. This replaces the Index page's structure only — Overview, Booking curves, Method, the design tokens and the design-lint script are unchanged. Follow section 6 in order."
 

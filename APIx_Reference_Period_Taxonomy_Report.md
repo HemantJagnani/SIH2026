@@ -1,17 +1,17 @@
-# APIx Reference Period Taxonomy & Methodology Report
+# AERIX Reference Period Taxonomy & Methodology Report
 ## Correction and Formal Alignment with MoSPI CPI 2024 and Eurostat HICP Standards
 
-> **Document Version:** `APIx_REF_TAXONOMY_v1.0`  
+> **Document Version:** `AERIX_REF_TAXONOMY_v1.0`  
 > **Status:** Mandatory Statistical Architecture Specification  
 > **Classification Standard:** UN COICOP 2018 Subclass `07.3.3.1` (Domestic Passenger Transport by Air)  
-> **Index Engine Methodology Version:** `APIx v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)`  
+> **Index Engine Methodology Version:** `AERIX v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)`  
 > **Audited Dataset:** DEL-BOM Production Pilot Run (`825fa969` / `925fa969`)  
 
 ---
 
 ## 1. Executive Summary & Purpose of the Correction
 
-A fundamental requirement in national accounting and consumer price statistics is the rigorous distinction among different types of "reference periods." In early prototypes of the Indian Airfare Price Index (APIx), the initial production collection date (`2026-09-26`) and its associated representative price (`₹6,632.67`) were colloquially referred to as the "base period" and "base price."
+A fundamental requirement in national accounting and consumer price statistics is the rigorous distinction among different types of "reference periods." In early prototypes of the Indian Airfare Price Index (AERIX), the initial production collection date (`2026-09-26`) and its associated representative price (`₹6,632.67`) were colloquially referred to as the "base period" and "base price."
 
 **This terminology was methodologically ambiguous and statistically inaccurate.**
 
@@ -20,17 +20,17 @@ Under the official **MoSPI CPI 2024** framework, national statistical authoritie
 2. **Weight reference period** (HCES 2023-24)
 3. **Price reference period** (calendar-year 2024 average)
 
-Describing a single-day 2026 scraped price (₹6,632.67) as the "MoSPI price reference" or "base price" violates official statistical norms. Therefore, APIx has implemented a formal **Reference Period Taxonomy** across its database models, computation engine, and public artifacts.
+Describing a single-day 2026 scraped price (₹6,632.67) as the "MoSPI price reference" or "base price" violates official statistical norms. Therefore, AERIX has implemented a formal **Reference Period Taxonomy** across its database models, computation engine, and public artifacts.
 
 ---
 
 ## 2. The Five Distinct Reference Tiers
 
-Every calculation, data model, API endpoint, and analytical report in the APIx system now strictly distinguishes and reports five separate reference concepts:
+Every calculation, data model, API endpoint, and analytical report in the AERIX system now strictly distinguishes and reports five separate reference concepts:
 
 | Reference Tier | Identifier | Value in Current Engine | Standard / Citation | Methodological Rule & Operational Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **1. PROJECT REFERENCE** | `experimental_project_reference_price` | **₹6,632.67** on `2026-09-26` | APIx Pilot Architecture (`PROVISIONAL_PROJECT_REFERENCE`) | Operational baseline from the first complete multi-lead-time production run. Used exclusively to compute the high-frequency experimental prototype index: $I_{\text{project},t} = \frac{P_{\text{project},t}}{P_{\text{project},\text{reference}}} \times 100$. **NEVER describe as MoSPI price reference.** |
+| **1. PROJECT REFERENCE** | `experimental_project_reference_price` | **₹6,632.67** on `2026-09-26` | AERIX Pilot Architecture (`PROVISIONAL_PROJECT_REFERENCE`) | Operational baseline from the first complete multi-lead-time production run. Used exclusively to compute the high-frequency experimental prototype index: $I_{\text{project},t} = \frac{P_{\text{project},t}}{P_{\text{project},\text{reference}}} \times 100$. **NEVER describe as MoSPI price reference.** |
 | **2. MOSPI INDEX REFERENCE** | `index_reference_period` | **$2024 = 100$** | MoSPI CPI 2024 National Revision Framework | The official numerical scaling reference period. All official CPI commodity series are presented on the scale where the average of calendar year 2024 equals 100.00. |
 | **3. MOSPI PRICE REFERENCE** | `price_reference_period` | **Calendar-Year 2024 Average** | MoSPI CPI 2024 Service Price Compilation Manual | The unweighted or weighted average of all observed transaction prices across all 12 months of calendar year 2024. **Status: PENDING 2024 HISTORICAL ACTUALS.** Must never be manufactured or interpolated from 2026 data. |
 | **4. MOSPI WEIGHT REFERENCE** | `weight_reference_period` | **HCES 2023-24** | MoSPI All-India Household Consumption Expenditure Survey 2023-24 | The expenditure survey period used to compute household consumption budget shares ($W^{\text{CPI}}_{\text{airfare}} \approx 0.185\%$ combined, $0.35\%$ urban). Strictly separated from DGCA route traffic proxies. |
@@ -40,7 +40,7 @@ Every calculation, data model, API endpoint, and analytical report in the APIx s
 
 ## 3. High-Frequency Experimental Series vs. Final CPI-Aligned Design
 
-To balance immediate operational requirements (providing live inflation monitoring for DEL-BOM) with long-term macroeconomic integrity, APIx operates a dual-layer architecture:
+To balance immediate operational requirements (providing live inflation monitoring for DEL-BOM) with long-term macroeconomic integrity, AERIX operates a dual-layer architecture:
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -112,7 +112,7 @@ Eurostat HICP guidelines explicitly reject direct annual division for seasonal a
 Generic and ambiguous field names such as `base_period` and `base_price` have been replaced with explicit schema attributes across all index models:
 
 ```python
-# Formal Reference Period Taxonomy Fields in APIx Models
+# Formal Reference Period Taxonomy Fields in AERIX Models
 index_reference_period: str = "2024=100"
 price_reference_period: str = "calendar-year 2024 average (Pending Historical Actuals)"
 weight_reference_period: str = "HCES 2023-24"
@@ -127,7 +127,7 @@ reference_price: Decimal = Decimal("6632.67")
 reference_price_method: str = "Option B — first production run weighted representative price"
 reference_price_source: str = "production_run_825fa969"
 reference_index_value: Decimal = Decimal("100.00")
-methodology_version: str = "APIx v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)"
+methodology_version: str = "AERIX v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)"
 
 # Explicit Backward-Compatibility Aliases
 base_price: Decimal = experimental_project_reference_price  # Explicit alias
@@ -161,11 +161,11 @@ From the official MoSPI "Weights of item CPI 2024" Excel workbook (`announcement
 > “The MoSPI CPI 2024 airfare expenditure weight is used only for the optional integration of the experimental Airfare Price Index into CPI. It is not used to construct the Airfare Price Index itself.”
 
 ### 7.2 Strict Separation Axioms
-1. **APIx Construction:** APIx continues using route weights, lead-time weights, and product/stratum methodology. Individual fare observations are **never** multiplied by `0.0002951`. The CPI weight is **never** used as a route weight or lead-time weight.
-2. **CPI Contribution Calculation:** Given APIx percentage change $\Delta \text{APIx}$:
-   $$\text{airfare\_contribution\_pp} = \Delta \text{APIx} \times \frac{0.02951}{100} = \Delta \text{APIx} \times 0.0002951$$
-   *Example:* If APIx change is $+10\%$, contribution $= 10 \times 0.0002951 = +0.002951$ percentage points.
-3. **Separate Outputs:** APIx level, APIx MoM change, APIx YoY change, CPI airfare weight, and estimated CPI contribution in percentage points are published as separate, distinct outputs.
+1. **AERIX Construction:** AERIX continues using route weights, lead-time weights, and product/stratum methodology. Individual fare observations are **never** multiplied by `0.0002951`. The CPI weight is **never** used as a route weight or lead-time weight.
+2. **CPI Contribution Calculation:** Given AERIX percentage change $\Delta \text{AERIX}$:
+   $$\text{airfare\_contribution\_pp} = \Delta \text{AERIX} \times \frac{0.02951}{100} = \Delta \text{AERIX} \times 0.0002951$$
+   *Example:* If AERIX change is $+10\%$, contribution $= 10 \times 0.0002951 = +0.002951$ percentage points.
+3. **Separate Outputs:** AERIX level, AERIX MoM change, AERIX YoY change, CPI airfare weight, and estimated CPI contribution in percentage points are published as separate, distinct outputs.
 
 ---
 
@@ -178,5 +178,5 @@ The reference taxonomy and CPI airfare expenditure weight implementation have be
   - Percentage/decimal consistency validation
   - Correct CPI contribution calculation (+10% -> +0.002951 pp)
   - Protection against using CPI weight as route weight (raises `ValueError`)
-  - APIx construction independence
+  - AERIX construction independence
   - Distinct separate output verification

@@ -1,11 +1,11 @@
-# APIx Production Reconciliation Audit: 5,834 vs. 5,134 Discrepancy Investigation
+# AERIX Production Reconciliation Audit: 5,834 vs. 5,134 Discrepancy Investigation
 
 **Audit Date:** 2026-09-28  
-**Governance Standard:** `APIx_PRODUCT_DEF_v2.0_FROZEN` / `APIX_METHODOLOGY_V1`  
+**Governance Standard:** `AERIX_PRODUCT_DEF_v2.0_FROZEN` / `APIX_METHODOLOGY_V1`  
 **Dataset Audited:** `runtime/top60_observation_classification.json` (11,430 Production Observations)  
 **Investigation Scope:** Exact reconciliation and mathematical proof of the 700-observation discrepancy between:
 - Pre-classified `VALID_BASELINE`: **5,834 observations**
-- Pipeline Final APIx-Valid: **5,134 observations**
+- Pipeline Final AERIX-Valid: **5,134 observations**
 
 **Governance Guarantee:** **AUDIT ONLY**. No scraper code, pipeline code, observation data, weights, methodology, or reference price ($P_{\text{ref}}$) were modified.
 
@@ -25,7 +25,7 @@ $$\mathbf{5,834}\; (\text{Pre-Classified}) - \mathbf{1,047}\; (\text{Cross-LT Co
 
 $$\text{Net Discrepancy} = 5,834 - 5,134 = \mathbf{700}\quad (\text{Mathematical Discrepancy} = \mathbf{0})$$
 
-**Verdict:** **5,834 is the methodologically correct production APIx-valid count** under `APIx_PRODUCT_DEF_v2.0_FROZEN`.
+**Verdict:** **5,834 is the methodologically correct production AERIX-valid count** under `AERIX_PRODUCT_DEF_v2.0_FROZEN`.
 
 ---
 
@@ -155,7 +155,7 @@ The net difference is exactly 700:
 $$\Delta = 5,834 - 5,134 = \mathbf{700}$$
 
 ### 4.1 Net Discrepancy by Scraper Source
-| Scraper Source | Pre-Classified Valid (`VALID_BASELINE`) | Pipeline Valid (`APIxProductObservation`) | Discrepancy ($\Delta$) |
+| Scraper Source | Pre-Classified Valid (`VALID_BASELINE`) | Pipeline Valid (`AERIXProductObservation`) | Discrepancy ($\Delta$) |
 | :--- | :---: | :---: | :---: |
 | **Google Flights** | 4,768 | 4,489 | **+279** |
 | **EaseMyTrip** | 1,066 | 645 | **+421** |
@@ -252,12 +252,12 @@ assert valid_matched_to_5834 == 5834  # PROVED: EXACTLY 5,834
 
 ### **Verdict: 5,834 is the Methodologically Correct Count**
 
-Under the official governance standard `APIx_PRODUCT_DEF_v2.0_FROZEN` and Eurostat/MoSPI index standards:
+Under the official governance standard `AERIX_PRODUCT_DEF_v2.0_FROZEN` and Eurostat/MoSPI index standards:
 
 1. **Stratum Integrity ($T+1$ through $T+45$):**  
    An airfare price index measures price behavior across defined advance-purchase windows. Each cell $(r, L)$ is an independent elementary aggregate. Observations gathered for $T+7$ belong to the $T+7$ stratum; discarding them because their travel date happened to match a $T+1$ test run depopulates the lead-time matrix and distorts the empirical weights ($w_L$).
 2. **Product Comparability Gate (No Higher Fare Families):**  
-   Under Section 3 of `APIx_PRODUCT_DEF_v2.0_FROZEN`, only standard unbundled economy fares enter the baseline. `FlexiPlus` includes complimentary meals, seat selection, and zero cancellation fees. Including 344 `FlexiPlus` tickets at ₹8,500 artificially inflates price levels. The pre-classified count of 5,834 correctly excluded them.
+   Under Section 3 of `AERIX_PRODUCT_DEF_v2.0_FROZEN`, only standard unbundled economy fares enter the baseline. `FlexiPlus` includes complimentary meals, seat selection, and zero cancellation fees. Including 344 `FlexiPlus` tickets at ₹8,500 artificially inflates price levels. The pre-classified count of 5,834 correctly excluded them.
 3. **Cabotage Protection (No Foreign Transit):**  
    Foreign carriers (Gulf Air, Singapore Airlines) operating indirect 1-stop domestic connections via overseas hubs do not hold DGCA cabotage rights. Pre-classification correctly excluded all 158 foreign transit observations.
 
@@ -284,7 +284,7 @@ The underlying raw dataset (`runtime/top60_observation_classification.json`, 11,
 | Dimension | Pre-Classified Baseline | Pipeline Flat Batch | Methodological Resolution |
 | :--- | :---: | :---: | :--- |
 | **Total Raw Records** | 11,430 | 11,430 | Bit-for-bit identical |
-| **Valid APIx Observations** | **5,834** | **5,134** | **5,834 is the correct production count** |
+| **Valid AERIX Observations** | **5,834** | **5,134** | **5,834 is the correct production count** |
 | **Stratum Deduplication** | Cell-level $(r, L)$ | Global Flat Batch | Must be cell-level to protect lead-time strata |
 | **Higher Fare Families** | 666 Excluded | 344 Admitted | Exclusions are mandatory under frozen standard |
 | **Foreign Transit** | 158 Excluded | 3 Admitted | Exclusions are mandatory under cabotage law |

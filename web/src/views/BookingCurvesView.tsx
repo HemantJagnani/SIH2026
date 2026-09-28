@@ -2,7 +2,7 @@
  * BookingCurvesView (Airfare Advance-Purchase Yield Curves)
  *
  * Full production view displaying advance-purchase yield curves (T+45 to T+1)
- * across the DGCA CY2024 Top-60 Matrix (57 active scraped routes).
+ * across the DGCA CY2024 Top-60 Matrix (all 60 active scraped routes).
  *
  * Features:
  * - Dynamic route loading from official DGCA Top-60 matrix API
@@ -18,6 +18,7 @@ import * as d3Shape from 'd3-shape';
 import * as d3Array from 'd3-array';
 import { api, type LeadCurve, type MatrixCell } from '../api';
 import { DGCA_TOP60_ROUTES } from '../data/dgcaTop60';
+import { getRouteColor } from '../lib/palette';
 
 const LEAD_DAYS = [45, 30, 21, 15, 7, 1] as const;
 const PANEL_H = 220;
@@ -28,25 +29,7 @@ type Mode = 'rupees' | 'indexed';
 type HubFilter = 'ALL' | 'TOP10' | 'DEL' | 'BOM' | 'BLR' | 'HYD' | 'CCU' | 'MAA';
 type SortOption = 'rank' | 'alpha' | 'fare_asc' | 'fare_desc' | 'premium_desc';
 
-// Harmonious 16-color palette tailored for high-contrast data visualization
-const PALETTE = [
-  'var(--route-blue)', // #2A5FA5
-  'var(--route-mag)',  // #B0286A
-  'var(--route-teal)', // #2F7D6D
-  '#E65100', // Amber/Orange
-  '#6A1B9A', // Deep Purple
-  '#00838F', // Cyan
-  '#2E7D32', // Forest Green
-  '#C2185B', // Rose
-  '#1565C0', // Royal Blue
-  '#F57F17', // Gold/Ochre
-  '#4527A0', // Indigo
-  '#00695C', // Dark Teal
-  '#D84315', // Rust
-  '#37474F', // Slate
-  '#827717', // Olive
-  '#880E4F', // Berry
-];
+
 
 // Cache route metadata from DGCA Top 60
 const ROUTE_META_MAP = new Map(
@@ -76,23 +59,7 @@ DGCA_TOP60_ROUTES.forEach(r => {
   }
 });
 
-function getRouteColor(route: string, index?: number): string {
-  if (route === 'DEL-BOM' || route === 'BOM-DEL') return 'var(--route-blue)';
-  if (route === 'DEL-BLR' || route === 'BLR-DEL') return 'var(--route-mag)';
-  if (route === 'BOM-BLR' || route === 'BLR-BOM') return 'var(--route-teal)';
-  
-  if (index !== undefined && index >= 0) {
-    return PALETTE[index % PALETTE.length];
-  }
-  
-  // Stable hash from route string
-  let hash = 0;
-  for (let i = 0; i < route.length; i++) {
-    hash = (hash << 5) - hash + route.charCodeAt(i);
-    hash |= 0;
-  }
-  return PALETTE[Math.abs(hash) % PALETTE.length];
-}
+
 
 function parseUTC(s: string): Date {
   return new Date(s + 'T00:00:00Z');
@@ -275,6 +242,11 @@ function RoutePanel({
           {cityPair && (
             <div style={{ fontSize: '11px', color: 'var(--ink-2)', marginTop: '1px' }}>
               {cityPair}
+            </div>
+          )}
+          {curves.length === 1 && (
+            <div style={{ fontSize: '10px', color: 'var(--ink-2)', fontStyle: 'italic', marginTop: '2px' }}>
+              Single observation date — trend unavailable.
             </div>
           )}
         </div>
@@ -643,14 +615,14 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
   }, [filteredRoutes]);
 
   return (
-    <div className="page" style={{ padding: 'var(--sp-6) var(--sp-4)' }}>
+    <div className="page">
       {/* Page Header */}
       <div style={{ marginBottom: 'var(--sp-4)' }}>
         <h1 className="headline" style={{ color: 'var(--ink)', marginBottom: 'var(--sp-2)' }}>
           Booking curves
         </h1>
         <p className="prose" style={{ color: 'var(--ink)', fontSize: '15px', marginBottom: 'var(--sp-2)' }}>
-          Advance-purchase yield curves (T+1 to T+45) across the official DGCA CY2024 Top-60 matrix production scrape.
+          Advance-purchase booking curves (T+1 to T+45) across the official DGCA CY2024 Top-60 matrix production scrape.
         </p>
         <div className="font-num" style={{ fontSize: '13px', color: 'var(--ink-2)' }}>
           {routes.length > 0 ? (
@@ -802,7 +774,7 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
 
       {loading ? (
         <div className="loading" style={{ padding: 'var(--sp-8) 0', textAlign: 'center' }}>
-          Loading yield curves across all 57 scraped routes…
+          Loading advance-purchase booking curves across all 60 scraped routes…
         </div>
       ) : (
         <>
@@ -836,7 +808,7 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
                       selectedDate={selectedDate}
                       onSelectDate={onSelectDate}
                       panelW={panelW}
-                      color={getRouteColor(route, idx)}
+                      color={getRouteColor(route)}
                       rank={meta?.rank ? Math.floor(meta.rank) : undefined}
                       cityPair={cityPair}
                     />
@@ -862,10 +834,10 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
                   <thead>
                     <tr>
                       <th>Route</th>
-                      <th>Rank</th>
+                      <th className="col-num">Rank</th>
                       <th>City Pair</th>
-                      {LEAD_DAYS.map(d => <th key={d}>{d}d</th>)}
-                      <th>Late Premium (1d vs 30d)</th>
+                      {LEAD_DAYS.map(d => <th key={d} className="col-num">{d}d</th>)}
+                      <th className="col-num">Late Premium (1d vs 30d)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -882,17 +854,17 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
                       return (
                         <tr key={route}>
                           <td className="font-num" style={{ fontWeight: 700 }}>{route}</td>
-                          <td className="font-num">{meta?.rank ? `#${Math.floor(meta.rank)}` : '—'}</td>
+                          <td className="font-num col-num">{meta?.rank ? `#${Math.floor(meta.rank)}` : '—'}</td>
                           <td>{meta ? `${meta.origin} ⇄ ${meta.destination}` : '—'}</td>
                           {LEAD_DAYS.map(d => {
                             const p = pts.find(pt => pt.lead_days === d);
                             return (
-                              <td key={d} className="font-num">
+                              <td key={d} className="font-num col-num">
                                 {p ? (mode === 'indexed' ? p.price.toFixed(1) : fmtRupee(p.price)) : '—'}
                               </td>
                             );
                           })}
-                          <td className="font-num" style={{ fontWeight: 700, color: prem && prem >= 0 ? 'var(--route-mag)' : 'var(--route-teal)' }}>
+                          <td className="font-num col-num" style={{ fontWeight: 700, color: prem && prem >= 0 ? 'var(--route-mag)' : 'var(--route-teal)' }}>
                             {prem !== null ? `${prem >= 0 ? '+' : ''}${prem}%` : '—'}
                           </td>
                         </tr>
@@ -974,6 +946,76 @@ function PremiumChart({
 
   if (!xScale || !yScale) return null;
 
+  // Gracefully handle single observation date per Task 5 without broken floating dots
+  if (allDates.length <= 1) {
+    const singleDate = allDates[0];
+    return (
+      <figure className="chart-figure" ref={ref} style={{ border: '1px solid var(--contour)', padding: 'var(--sp-4)', background: 'var(--vellum)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px', marginBottom: 'var(--sp-3)' }}>
+          <figcaption style={{ fontSize: 'var(--t-ui)', fontWeight: 700, color: 'var(--ink)' }}>
+            Late-booking premium (1d vs 30d advance)
+          </figcaption>
+          {singleDate && (
+            <span className="font-num" style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>
+              Observation Date: {fmtDateShort(singleDate)}
+            </span>
+          )}
+        </div>
+
+        <div style={{
+          padding: '10px 14px',
+          borderLeft: '3px solid var(--ink)',
+          background: 'rgba(0,0,0,0.03)',
+          marginBottom: 'var(--sp-4)',
+        }}>
+          <p style={{ fontFamily: "'B612', monospace", fontSize: 'var(--t-ui)', color: 'var(--ink)', fontWeight: 700 }}>
+            Single observation date — trend unavailable.
+          </p>
+          <p style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)', marginTop: '4px' }}>
+            A historical trend line cannot be calculated from a single collection date. Below are the actual observed late-booking premiums recorded across top routes.
+          </p>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+          gap: '12px',
+        }}>
+          {routes.map(r => {
+            const data = premiumData[r] ?? [];
+            const prem = data.length > 0 ? data[0].premium : null;
+            const color = getRouteColor(r);
+            return (
+              <div
+                key={r}
+                style={{
+                  border: '1px solid var(--contour)',
+                  padding: '8px 12px',
+                  background: '#FFFFFF',
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: '13px', color, fontFamily: "'B612', monospace" }}>
+                  {r}
+                </div>
+                <div className="font-num" style={{
+                  fontSize: '18px',
+                  fontWeight: 700,
+                  marginTop: '4px',
+                  color: prem !== null && prem >= 0 ? 'var(--route-mag)' : 'var(--route-teal)'
+                }}>
+                  {prem !== null ? `${prem >= 0 ? '+' : ''}${prem.toFixed(0)}%` : '—'}
+                </div>
+                <div style={{ fontSize: '10px', color: 'var(--ink-2)', marginTop: '2px' }}>
+                  1d vs 30d
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </figure>
+    );
+  }
+
   const yTicks = yScale.ticks(4).map(t => ({ val: t, y: yScale(t) }));
 
   return (
@@ -995,31 +1037,10 @@ function PremiumChart({
           <line x1={0} x2={0} y1={0} y2={innerH} stroke="var(--contour)" />
           <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke="var(--contour)" />
 
-          {routes.map((route, idx) => {
+          {routes.map((route) => {
             const data = premiumData[route] ?? [];
             if (data.length === 0) return null;
-            const color = getRouteColor(route, idx);
-
-            if (data.length === 1) {
-              const cx = xScale(data[0].date) ?? innerW / 2;
-              const cy = yScale(data[0].premium);
-              return (
-                <g key={route}>
-                  <circle cx={cx} cy={cy} r={4} fill={color} />
-                  <text
-                    x={cx + 8}
-                    y={cy}
-                    dominantBaseline="middle"
-                    fontSize="11px"
-                    fill={color}
-                    fontFamily="'B612', monospace"
-                    fontWeight={700}
-                  >
-                    {route}: {data[0].premium.toFixed(0)}%
-                  </text>
-                </g>
-              );
-            }
+            const color = getRouteColor(route);
 
             const line = d3Shape.line<{ date: string; premium: number }>()
               .x(d => xScale(d.date) ?? 0)
@@ -1039,8 +1060,8 @@ function PremiumChart({
         </g>
       </svg>
       <div style={{ display: 'flex', gap: 'var(--sp-4)', flexWrap: 'wrap', marginTop: 'var(--sp-2)', fontSize: 'var(--t-axis)' }}>
-        {routes.map((r, idx) => (
-          <span key={r} style={{ color: getRouteColor(r, idx), fontFamily: "'B612', monospace", fontWeight: 700 }}>
+        {routes.map((r) => (
+          <span key={r} style={{ color: getRouteColor(r), fontFamily: "'B612', monospace", fontWeight: 700 }}>
             — {r}
           </span>
         ))}

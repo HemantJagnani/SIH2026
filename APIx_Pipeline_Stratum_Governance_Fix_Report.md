@@ -1,7 +1,7 @@
-# APIx Pipeline Stratum Governance & Product Definition Fix Report
+# AERIX Pipeline Stratum Governance & Product Definition Fix Report
 
 **Execution Date:** 2026-09-28  
-**Governance Standard:** `APIx_PRODUCT_DEF_v2.0_FROZEN` / `APIX_METHODOLOGY_V1`  
+**Governance Standard:** `AERIX_PRODUCT_DEF_v2.0_FROZEN` / `APIX_METHODOLOGY_V1`  
 **Dataset Audited:** `runtime/top60_observation_classification.json` (11,430 Production Observations)  
 **Target Invariant Verified:**  
 $$\text{VALID\_BASELINE}\,(5,834) + \text{DUPLICATE}\,(4,772) + \text{HIGHER\_FARE}\,(666) + \text{FOREIGN\_TRANSIT}\,(158) = \mathbf{11,430}\quad (\Delta = 0)$$
@@ -10,7 +10,7 @@ $$\text{VALID\_BASELINE}\,(5,834) + \text{DUPLICATE}\,(4,772) + \text{HIGHER\_FA
 
 ## 1. Executive Summary
 
-Based on the findings from [`APIx_5834_vs_5134_Discrepancy_Audit.md`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/APIx_5834_vs_5134_Discrepancy_Audit.md), the APIx reconciliation and product comparability pipeline has been architectural upgraded to:
+Based on the findings from [`AERIX_5834_vs_5134_Discrepancy_Audit.md`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/AERIX_5834_vs_5134_Discrepancy_Audit.md), the AERIX reconciliation and product comparability pipeline has been architectural upgraded to:
 1. **Enforce Stratum Independence:** The minimum protected sampling stratum is $(\text{route}, \text{lead\_time})$. Observations from different lead times ($T+1, T+7, \dots, T+45$) can **never** collide or cross-deduplicate, even if their calendar travel date, flight number, and prices are identical.
 2. **Centralize Product Definition Gates:** Created a single authoritative policy module ([`apps/scraper/src/reconciliation/policy.py`](file:///c:/Users/Hemant%20Jagnani/OneDrive/Desktop/SIH2026/apps/scraper/src/reconciliation/policy.py)) governing higher fare family exclusions and the complete list of 14 international carriers without domestic cabotage rights.
 3. **Harmonize Pipeline & Production Classifier:** Executing `CrossSourceReconciliationPipeline.run()` dynamically on the 11,430-observation dataset now yields **EXACTLY 5,834 valid baseline observations**, 4,772 same-source duplicates, 666 higher fare family exclusions, and 158 foreign transit exclusions with **0 discrepancy**.
@@ -52,7 +52,7 @@ $env:PYTHONPATH="apps/scraper/src;apps/api/src"; pytest tests/reconciliation/ -v
 5. **`test_governance_e_existing_foreign_carriers_remain_excluded`**:  
    Verifies that Kuwait Airways, Emirates, Etihad, SriLankan, and Oman Air all remain strictly excluded.
 6. **`test_governance_f_multi_source_same_product_aggregation_still_works`**:  
-   Verifies that multi-source same-product aggregation functions properly within stratum: Google Flights (₹6,500) + EaseMyTrip (₹7,200) collapses to **1 APIx observation at ₹6,850.00** with `PRICE_VARIANCE_AGGREGATED`.
+   Verifies that multi-source same-product aggregation functions properly within stratum: Google Flights (₹6,500) + EaseMyTrip (₹7,200) collapses to **1 AERIX observation at ₹6,850.00** with `PRICE_VARIANCE_AGGREGATED`.
 7. **`test_governance_g_different_lead_time_cells_remain_independent`**:  
    Verifies that $T+1$ (GF ₹6,000 + EMT ₹6,200 $\to$ ₹6,100) and $T+7$ (GF ₹7,000 + EMT ₹7,400 $\to$ ₹7,200) produce **2 distinct observations**, one in each cell, without cross-averaging.
 8. **`test_production_invariants_11430`**:  
@@ -67,7 +67,7 @@ $env:PYTHONPATH="apps/scraper/src;apps/api/src"; pytest tests/reconciliation/ -v
 | Metric / Dimension | Before Architecture Fix (Flat Batch) | After Architecture Fix (Stratum-Aware) | Status / Target |
 | :--- | :---: | :---: | :---: |
 | **Total Raw Observations** | **11,430** | **11,430** | Verified Identical |
-| **Valid APIx Baseline Observations** | 5,134 | **5,834** | **Target Met ($\Delta = 0$)** |
+| **Valid AERIX Baseline Observations** | 5,134 | **5,834** | **Target Met ($\Delta = 0$)** |
 | **Same-Source Duplicates** | 6,220 *(False Cross-LT duplicates)* | **4,772** *(Within-cell duplicates)* | **Target Met ($\Delta = 0$)** |
 | **Higher Fare Family Exclusions** | 0 *(344 FlexiPlus leaked into valid)* | **666** *(100% FlexiPlus excluded)* | **Target Met ($\Delta = 0$)** |
 | **Foreign Transit Exclusions** | 76 offers *(3 flights leaked)* | **158** *(100% foreign carriers excluded)* | **Target Met ($\Delta = 0$)** |
@@ -97,7 +97,7 @@ $env:PYTHONPATH="apps/scraper/src;apps/api/src"; pytest tests/reconciliation/ -v
 ### 5.3 Confirmation That Multi-Source Price Aggregation Still Works
 - Within any given $(\text{route}, \text{lead\_time})$ stratum, multiple OTA observations of the exact same canonical flight offer are detected, tested for semantic compatibility, and aggregated using equal source weights:
   $$\text{canonical\_fare} = \frac{1}{K}\sum_{k=1}^K p_k$$
-- Confirmed by `test_governance_f_multi_source_same_product_aggregation_still_works` and Test J (4 OTAs collapsing into 1 APIx observation at ₹6,300.00).
+- Confirmed by `test_governance_f_multi_source_same_product_aggregation_still_works` and Test J (4 OTAs collapsing into 1 AERIX observation at ₹6,300.00).
 
 ---
 
@@ -107,7 +107,7 @@ The following core components were **strictly preserved** without modification:
 1. **DGCA Route Weights ($W_r$):** Top-60 weights sum strictly to $1.000000$.
 2. **Empirical Lead-Time Weights ($w_L$):** Weights sum strictly to $1.0000$ across all 6 horizons.
 3. **CPI Airfare Weight:** Value $0.0014022$ remains unaltered and decoupled.
-4. **Product Definition Standard:** `APIx_PRODUCT_DEF_v2.0_FROZEN` remains unchanged.
+4. **Product Definition Standard:** `AERIX_PRODUCT_DEF_v2.0_FROZEN` remains unchanged.
 5. **OTA Aggregation Methodology:** Arithmetic mean with full lineage preservation remains unchanged.
 6. **Jevons Elementary Aggregator:** $\exp\left(\frac{1}{N}\sum \ln p_i\right)$ untouched.
 7. **Reference Price ($P_{\text{ref}}$):** **$P_{\text{ref}}$ was NOT calculated**.

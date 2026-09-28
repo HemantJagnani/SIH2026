@@ -1,7 +1,7 @@
-# APIx Production Reconciliation Audit: DGCA CY2024 All-60 Route Dataset (11,430 Observations)
+# AERIX Production Reconciliation Audit: DGCA CY2024 All-60 Route Dataset (11,430 Observations)
 
 **Audit Date:** 2026-09-28  
-**Governance Standard:** `APIx_PRODUCT_DEF_v2.0_FROZEN` / `APIX_METHODOLOGY_V1`  
+**Governance Standard:** `AERIX_PRODUCT_DEF_v2.0_FROZEN` / `APIX_METHODOLOGY_V1`  
 **Dataset Audited:** `runtime/top60_observation_classification.json` (11,430 Production Observations)  
 **Reconciliation Methodology:** Multi-Source Arithmetic-Mean Price Aggregation with Complete Lineage Preservation  
 **Reference Price Governance:** **$P_{\text{ref}}$ was NOT calculated** (Audit Only)  
@@ -18,7 +18,7 @@ Every benchmark production metric specified was audited and verified against `ru
 | Benchmark Metric | Target Value | Audited Value | Discrepancy | Verification Status |
 | :--- | :---: | :---: | :---: | :---: |
 | **Total Raw Scraped Observations** | **11,430** | **11,430** | `0` | **VERIFIED** |
-| **Valid APIx Baseline Observations** | **5,834** | **5,834** | `0` | **VERIFIED** |
+| **Valid AERIX Baseline Observations** | **5,834** | **5,834** | `0` | **VERIFIED** |
 | **Duplicate Observations** | **4,772** | **4,772** | `0` | **VERIFIED** |
 | **Higher Fare-Family Exclusions** | **666** | **666** | `0` | **VERIFIED** |
 | **Foreign-Transit Exclusions** | **158** | **158** | `0` | **VERIFIED** |
@@ -50,7 +50,7 @@ Applying the newly implemented multi-source aggregation reconciliation engine (`
 | **10** | **`PRICE_VARIANCE_AGGREGATED` Count** | **0** | Applicable only when $K \ge 2$ sources match with price delta |
 | **11** | **`PRICE_CONFLICT_UNRESOLVED` Count** | **0** | Zero semantic incompatibilities |
 | **12** | **Actual Arithmetic-Mean Aggregations** | **0** | Zero multi-source product collisions to aggregate |
-| **13** | **Final APIx-Valid Observations** | **5,134** (Pipeline) / **5,834** (Pre-classified) | 5,134 unique physical baseline products across 347 cells |
+| **13** | **Final AERIX-Valid Observations** | **5,134** (Pipeline) / **5,834** (Pre-classified) | 5,134 unique physical baseline products across 347 cells |
 | **14** | **Excluded Observations by Reason** | **76 offers (158 raw records)** | 100% Foreign Transit / Cabotage Violations (Kuwait, Emirates, Etihad, SriLankan, Oman) |
 
 ### 2.1 Detailed Exclusion Breakdown
@@ -104,7 +104,7 @@ To satisfy the requirement that for every real multi-source match, all 12 analyt
 - **Arithmetic Mean**: **`₹6,850.00`**
 - **Reconciliation Status**: **`PRICE_VARIANCE_AGGREGATED`**
 - **Price Semantics**: `DISPLAYED_TOTAL`
-- **Whether Product Enters APIx**: **`TRUE`** (Admitted directly to headline baseline index)
+- **Whether Product Enters AERIX**: **`TRUE`** (Admitted directly to headline baseline index)
 
 ### 4.2 Probe 2: Three Sources with Price Variance (Test C / Google + EMT + Ixigo)
 - **Canonical Product Fingerprint**: `can_reconciled_6E204_1000_3src`
@@ -118,7 +118,7 @@ To satisfy the requirement that for every real multi-source match, all 12 analyt
 - **Arithmetic Mean**: **`₹6,833.33`**
 - **Reconciliation Status**: **`PRICE_VARIANCE_AGGREGATED`**
 - **Price Semantics**: `DISPLAYED_TOTAL`
-- **Whether Product Enters APIx**: **`TRUE`** (Admitted directly to headline baseline index)
+- **Whether Product Enters AERIX**: **`TRUE`** (Admitted directly to headline baseline index)
 
 ### 4.3 Probe 3: Four OTAs with Four Prices (Test J / Google + EMT + Ixigo + MakeMyTrip)
 - **Canonical Product Fingerprint**: `can_reconciled_6E204_1000_4src`
@@ -132,7 +132,7 @@ To satisfy the requirement that for every real multi-source match, all 12 analyt
 - **Arithmetic Mean**: **`₹6,300.00`**
 - **Reconciliation Status**: **`PRICE_VARIANCE_AGGREGATED`**
 - **Price Semantics**: `DISPLAYED_TOTAL`
-- **Whether Product Enters APIx**: **`TRUE`** (Single observation, sample size uninflated)
+- **Whether Product Enters AERIX**: **`TRUE`** (Single observation, sample size uninflated)
 
 ### 4.4 Probe 4: Incompatible Price Semantics (Test G / DISPLAYED_TOTAL + DISPLAYED_FROM)
 - **Canonical Product Fingerprint**: `can_unresolved_sem_6E204_1000`
@@ -146,7 +146,7 @@ To satisfy the requirement that for every real multi-source match, all 12 analyt
 - **Arithmetic Mean**: **`NONE`** (Averaging prohibited due to semantic mismatch)
 - **Reconciliation Status**: **`PRICE_CONFLICT_UNRESOLVED`**
 - **Price Semantics**: Incompatible (`DISPLAYED_TOTAL` vs `DISPLAYED_FROM`)
-- **Whether Product Enters APIx**: **`FALSE`** (Strictly excluded from baseline index)
+- **Whether Product Enters AERIX**: **`FALSE`** (Strictly excluded from baseline index)
 
 ---
 
@@ -154,7 +154,7 @@ To satisfy the requirement that for every real multi-source match, all 12 analyt
 
 1. **Same-Source DOM Duplicates Removed Before Aggregation**:  
    *Verified.* 6,220 same-source duplicate records are eliminated in Step 2 of `CrossSourceReconciliationEngine` before cross-source grouping begins. In Test I, two duplicate Google Flights DOM cards collapsed to 1 offer before being averaged with EaseMyTrip.
-2. **4 OTA Observations Collapse to Exactly 1 APIx Observation**:  
+2. **4 OTA Observations Collapse to Exactly 1 AERIX Observation**:  
    *Verified.* In Test J, 4 distinct OTA prices collapsed into exactly 1 canonical product observation. Downstream elementary aggregation sees $N=1$, preventing statistical weight inflation.
 3. **Conflicting Prices Averaged Only for Confirmed Same Products**:  
    *Verified.* In Tests 3, 4, 5, 8, flights with different flight numbers, different fare families (Saver vs FlexiPlus), or different baggage tiers (15kg vs 20kg) remained separate canonical offers and were never averaged together.
@@ -196,7 +196,7 @@ This audit confirms that all core system components remain strictly protected:
 
 1. **Scraper Code**: Unmodified. Navigation, DOM parsing, extraction, and anti-bot fail-safes are untouched.
 2. **Reconciliation Methodology**: Implemented strictly per specification without hardcoded source branches or heuristics.
-3. **Product Definition Standard**: Unmodified (`APIx_PRODUCT_DEF_v2.0_FROZEN`).
+3. **Product Definition Standard**: Unmodified (`AERIX_PRODUCT_DEF_v2.0_FROZEN`).
 4. **DGCA Route Weights ($W_r$)**: Unmodified. All 60 route weights strictly sum to $1.000000$.
 5. **Empirical Lead-Time Weights ($w_L$)**: Unmodified. Weights sum to $1.0000$ across all 6 horizons.
 6. **CPI Airfare Weight**: Unmodified ($0.0014022$), strictly decoupled from route weights.

@@ -1,5 +1,5 @@
 
-# Final Project Report — Indian Airfare Price Index (APIx)
+# Final Project Report — Indian Airfare Price Index (AERIX)
 ## Full Index Methodology, Required Data Specification, and Phase-wise Implementation Plan
 
 **Project:** Development of a Real-time Airfare Price Index for India through Automated Web Scraping of Airline and Online Travel Aggregator Portals for Augmentation of the Consumer Price Index (CPI)
@@ -39,7 +39,7 @@ Lead-time aggregation
         ↓
 Route aggregation
         ↓
-All-India experimental Airfare Price Index (APIx)
+All-India experimental Airfare Price Index (AERIX)
         ↓
 CPI-compatible integration layer
 ```
@@ -58,13 +58,13 @@ This project should be described as an **experimental/analytical Airfare Price I
 ---
 
 
-## Implementation decision — T+21 and the exact APIx calculation hierarchy
+## Implementation decision — T+21 and the exact AERIX calculation hierarchy
 
 **Collection schedule (domestic):** T+1, T+7, T+15, **T+21**, T+30 and T+45. T+21 is an additional Indian CPI-alignment checkpoint; retain the five originally specified lead times as separately reportable series. For future international coverage, add T+60 as a separate checkpoint. Lead time is the calendar-day difference between the search date and the flight travel date. Do not silently fold T+21 into T+15 or T+30.
 
-**Source and implementation note:** The T+21 domestic and T+60 international checkpoints are based on the MoSPI CPI 2024 Expert Group discussion of advance booking. The other five lead times are project-defined analytical strata. The presence of T+21 does not, by itself, make APIx an official MoSPI index.
+**Source and implementation note:** The T+21 domestic and T+60 international checkpoints are based on the MoSPI CPI 2024 Expert Group discussion of advance booking. The other five lead times are project-defined analytical strata. The presence of T+21 does not, by itself, make AERIX an official MoSPI index.
 
-**Calculation order (mandatory):** valid consumer-payable INR observations → comparable product/offer identification → within-month geometric price for each product → matched product pairs across adjacent months → short-chain Jevons for each homogeneous route × lead-time × product-quality stratum → chain elementary indices → aggregate product-quality strata using documented expenditure/booking shares → aggregate lead times using booking shares → aggregate routes using route expenditure shares (or explicitly labelled DGCA passenger-share proxy) → APIx. Do not weight observations by how many rows a scraper returns.
+**Calculation order (mandatory):** valid consumer-payable INR observations → comparable product/offer identification → within-month geometric price for each product → matched product pairs across adjacent months → short-chain Jevons for each homogeneous route × lead-time × product-quality stratum → chain elementary indices → aggregate product-quality strata using documented expenditure/booking shares → aggregate lead times using booking shares → aggregate routes using route expenditure shares (or explicitly labelled DGCA passenger-share proxy) → AERIX. Do not weight observations by how many rows a scraper returns.
 
 For a matched homogeneous stratum s in month t, let M(s,t) be products with valid comparable monthly prices in both t−1 and t, and N(s,t) = |M(s,t)|. Let P(i,t) be the geometric mean of valid within-month observations of product i. The elementary link is:
 
@@ -88,7 +88,7 @@ Aggregate lead times using booking-behaviour shares B(l|r) (route-specific if av
 
 Aggregate routes using route weights W(r):
 
-    APIx(t) = SUM over r of W(r) × I(r,t)
+    AERIX(t) = SUM over r of W(r) × I(r,t)
 
 All weights at each aggregation level must sum to 1. Prefer route-level expenditure shares derived from in-scope transactions; if unavailable, DGCA passenger shares are a clearly labelled proxy, not household CPI expenditure weights. Use the official MoSPI airfare expenditure weight only when integrating the airfare sub-index into the broader CPI. The index reference must be 2024=100 only if a valid 2024 price reference exists; otherwise use an explicitly named project reference period.
 
@@ -113,7 +113,7 @@ The index should measure **price change**, not:
 A useful conceptual definition is:
 
 \[
-APIx_t =
+AERIX_t =
 \text{price level of the representative airfare basket at time }t
 \]
 
@@ -166,7 +166,7 @@ These weights must **never be conflated**.
 
 ---
 
-# 4. Scope of the final APIx
+# 4. Scope of the final AERIX
 
 ## 4.1 Primary product scope
 
@@ -670,7 +670,7 @@ subject to:
 Then aggregate route indices using route-representation weights:
 
 \[
-APIx_t=\sum_r W_r I_{r,t}
+AERIX_t=\sum_r W_r I_{r,t}
 \]
 
 subject to:
@@ -686,7 +686,7 @@ Comparable monthly product prices
         -> matched price relatives
         -> short-chain Jevons elementary index
         -> lead-time weighted route index
-        -> route-weighted all-India APIx
+        -> route-weighted all-India AERIX
 ```
 
 Here, `W_l` is the lead-time/booking-behaviour weight, `W_r` is the route-representation weight, `P-bar_(i,t)` is the monthly geometric price of a comparable product, and `I_(s,t)` is the chained elementary index. This hierarchy must be implemented instead of a simple arithmetic comparison of average scraped fares.
@@ -1189,7 +1189,7 @@ Then:
 and:
 
 \[
-APIx_t
+AERIX_t
 =
 \sum_r W_r I_{r,t}
 \]
@@ -1277,7 +1277,7 @@ The current Indian CPI reference is:
 Therefore, if historical 2024 airfare observations are available:
 
 \[
-APIx_{2024}=100
+AERIX_{2024}=100
 \]
 
 using the methodology-defined annual/reference-period normalization.
@@ -1287,7 +1287,7 @@ If the project begins collecting only in 2026, it must not falsely label the res
 In that situation use:
 
 ```text
-APIx Jan-2026 = 100
+AERIX Jan-2026 = 100
 ```
 
 or another clearly documented project reference period.
@@ -1377,7 +1377,7 @@ lead-time weighted indices
       ↓
 route weighted indices
       ↓
-monthly APIx
+monthly AERIX
 ```
 
 ---
@@ -1390,7 +1390,7 @@ Month-on-month:
 MoM_t
 =
 \left(
-\frac{APIx_t}{APIx_{t-1}}-1
+\frac{AERIX_t}{AERIX_{t-1}}-1
 \right)\times100
 \]
 
@@ -1400,7 +1400,7 @@ Year-on-year:
 YoY_t
 =
 \left(
-\frac{APIx_t}{APIx_{t-12}}-1
+\frac{AERIX_t}{AERIX_{t-12}}-1
 \right)\times100
 \]
 
@@ -1413,7 +1413,7 @@ For a daily series, use the equivalent previous-day comparison.
 The conceptual project formula is:
 
 \[
-APIx_t
+AERIX_t
 =
 \sum_r W_r
 \left[
@@ -1439,7 +1439,7 @@ Therefore:
 
 \[
 \boxed{
-APIx_t
+AERIX_t
 =
 \sum_r W_r
 \left[
@@ -1510,12 +1510,12 @@ Examples:
 - school holidays;
 - major national events.
 
-Do not seasonally adjust the main APIx.
+Do not seasonally adjust the main AERIX.
 
 If required, publish a separate:
 
 ```text
-APIx seasonally adjusted
+AERIX seasonally adjusted
 ```
 
 analytical series.
@@ -2081,7 +2081,7 @@ Before coding the index engine, freeze:
 Output:
 
 ```text
-APIx_Methodology_v1.0.md
+AERIX_Methodology_v1.0.md
 ```
 
 ---
@@ -2317,7 +2317,7 @@ weight_status = PROVISIONAL
 Calculate:
 
 \[
-APIx_t
+AERIX_t
 =
 \sum_r W_rI_{r,t}
 \]
@@ -2378,7 +2378,7 @@ Instead calculate:
 \[
 Error_t
 =
-APIx_t - Benchmark_t
+AERIX_t - Benchmark_t
 \]
 
 and:
@@ -2387,7 +2387,7 @@ and:
 APE_t
 =
 \left|
-\frac{APIx_t-Benchmark_t}
+\frac{AERIX_t-Benchmark_t}
 {Benchmark_t}
 \right|\times100
 \]
@@ -2395,7 +2395,7 @@ APE_t
 Also calculate correlation of changes:
 
 \[
-Corr(\Delta APIx,\Delta Benchmark)
+Corr(\Delta AERIX,\Delta Benchmark)
 \]
 
 and:
@@ -2406,7 +2406,7 @@ RMSE
 \sqrt{
 \frac{1}{T}
 \sum_t
-(APIx_t-Benchmark_t)^2
+(AERIX_t-Benchmark_t)^2
 }
 \]
 
@@ -2686,7 +2686,7 @@ The dashboard should show:
 ## Main KPI
 
 ```text
-Current APIx
+Current AERIX
 MoM
 YoY
 ```
@@ -2761,10 +2761,10 @@ The final project should produce:
 7. Monthly product-price table
 8. Elementary Jevons indices
 9. Route-level indices
-10. All-India APIx
-11. Daily APIx indicator
-12. Weekly APIx indicator
-13. Monthly CPI-compatible APIx
+10. All-India AERIX
+11. Daily AERIX indicator
+12. Weekly AERIX indicator
+13. Monthly CPI-compatible AERIX
 14. Inflation rates
 15. Backtest report
 16. Sensitivity report
@@ -2869,13 +2869,13 @@ methodology_version
 Example:
 
 ```text
-APIx v1.0
+AERIX v1.0
 ```
 
 A later improvement:
 
 ```text
-APIx v1.1
+AERIX v1.1
 ```
 
 might introduce:
@@ -2891,7 +2891,7 @@ Never silently change methodology.
 
 # 75. Recommended first production version
 
-Freeze the following as APIx v1.0:
+Freeze the following as AERIX v1.0:
 
 ### Product
 Domestic, one-way, adult, economy, standard fare, mandatory payable price.
@@ -2951,20 +2951,20 @@ Produce:
 1. current architecture,
 2. current data schema,
 3. all existing fields,
-4. missing fields required for the APIx methodology,
+4. missing fields required for the AERIX methodology,
 5. duplicate risks,
 6. source-specific inconsistencies,
 7. current test coverage,
 8. files that should be reused,
 9. files that should be refactored.
 
-Compare the existing project against APIx_Methodology_v1.0.md.
+Compare the existing project against AERIX_Methodology_v1.0.md.
 ```
 
 ## Prompt 2 — Canonical schema
 
 ```text
-Implement the canonical RawFareObservation and NormalizedFareObservation models from APIx_Methodology_v1.0.md.
+Implement the canonical RawFareObservation and NormalizedFareObservation models from AERIX_Methodology_v1.0.md.
 
 Do not change scraper behaviour yet.
 
@@ -3006,7 +3006,7 @@ Add fixture-based tests.
 ## Prompt 4 — Sampling
 
 ```text
-Implement the APIx sampling frame.
+Implement the AERIX sampling frame.
 
 Create:
 - route configuration,
@@ -3101,7 +3101,7 @@ route_lead_index[r,l,t]
 
 I_route[r,t] = sum_l W_l * I[r,l,t]
 
-APIx[t] = sum_r W_r * I_route[r,t]
+AERIX[t] = sum_r W_r * I_route[r,t]
 
 Store all intermediate calculations for auditability.
 ```
@@ -3109,7 +3109,7 @@ Store all intermediate calculations for auditability.
 ## Prompt 10 — Validation
 
 ```text
-Implement automated APIx validation.
+Implement automated AERIX validation.
 
 Check:
 - weight sums,
@@ -3171,7 +3171,7 @@ LEAD-TIME AGGREGATION
    ↓
 ROUTE AGGREGATION
    ↓
-APIx
+AERIX
    ↓
 MoM / YoY
    ↓
@@ -3205,7 +3205,7 @@ The following rules should be treated as non-negotiable in the implementation:
 17. **Use weighted arithmetic aggregation at higher levels.**
 18. **Use DGCA traffic as route representation only unless better expenditure weights exist.**
 19. **Use official MoSPI expenditure weight for CPI integration.**
-20. **Treat APIx as experimental until formally adopted.**
+20. **Treat AERIX as experimental until formally adopted.**
 
 ---
 

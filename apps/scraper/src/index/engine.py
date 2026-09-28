@@ -428,3 +428,7 @@ class APIxEngine:
             assert el.chained_index > Decimal("0"), f"Chained index for stratum {el.stratum_id} must be > 0"
             assert el.jevons_link is not None, f"Jevons link must exist for stratum {el.stratum_id}"
 
+
+# AERIX Engine Alias
+AERIXEngine = APIxEngine
+

@@ -1,6 +1,6 @@
 /**
  * Phase28View — Real Data Index Dashboard
- * Shows the live APIx score computed from Phase 28 DEL-BOM production data.
+ * Shows the live AERIX score computed from Phase 28 DEL-BOM production data.
  * Displays the formula, lead-time breakdown, stratum sub-indices, source comparison.
  */
 
@@ -229,10 +229,10 @@ function FormulaBlock({ data }: { data: IndexResult }) {
               <tr>
                 <th>Lead time</th>
                 <th>Travel date</th>
-                <th>Itineraries</th>
-                <th>Median fare</th>
-                <th>Weight</th>
-                <th>Contribution</th>
+                <th className="col-num">Itineraries</th>
+                <th className="col-num">Median fare</th>
+                <th className="col-num">Weight</th>
+                <th className="col-num">Contribution</th>
               </tr>
             </thead>
             <tbody>
@@ -243,15 +243,15 @@ function FormulaBlock({ data }: { data: IndexResult }) {
                     {/* approx travel date */}
                     +{d.lead_days}d
                   </td>
-                  <td className="font-num">{d.n_itineraries}</td>
-                  <td className="font-num"><strong>{INR(d.median_fare_inr)}</strong></td>
-                  <td className="font-num">{PCT(d.weight * 100)}</td>
-                  <td className="font-num">{INR(d.contribution_inr)}</td>
+                  <td className="font-num col-num">{d.n_itineraries}</td>
+                  <td className="font-num col-num"><strong>{INR(d.median_fare_inr)}</strong></td>
+                  <td className="font-num col-num">{PCT(d.weight * 100)}</td>
+                  <td className="font-num col-num">{INR(d.contribution_inr)}</td>
                 </tr>
               ))}
               <tr style={{ borderTop: '2px solid var(--ink)', fontWeight: 700 }}>
-                <td colSpan={5} style={{ textAlign: 'right' }}>Representative Route Price P<sub>route</sub> =</td>
-                <td className="font-num" style={{ color: 'var(--route-blue)' }}>
+                <td colSpan={5} className="col-num" style={{ textAlign: 'right' }}>Representative Route Price P<sub>route</sub> =</td>
+                <td className="font-num col-num" style={{ color: 'var(--route-blue)' }}>
                   {INR(headline.weighted_representative_price_inr)}
                 </td>
               </tr>
@@ -306,7 +306,11 @@ export default function Phase28View() {
 
   useEffect(() => {
     // Load the pre-computed result JSON directly
-    fetch('/apix_delbom_result.json')
+    fetch('/aerix_delbom_result.json')
+      .then(r => {
+        if (!r.ok) return fetch('/apix_delbom_result.json');
+        return r;
+      })
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -319,7 +323,7 @@ export default function Phase28View() {
   if (error || !data) return (
     <div className="page" style={{ color: 'var(--route-mag)' }}>
       Failed to load index data: {error}.<br />
-      Run <code>python scripts/compute_delbom_index.py</code> and copy <code>apix_delbom_result.json</code> to <code>web/public/</code>.
+      Run <code>python scripts/compute_delbom_index.py</code> and copy <code>aerix_delbom_result.json</code> to <code>web/public/</code>.
     </div>
   );
 
@@ -361,7 +365,7 @@ export default function Phase28View() {
           <div style={{ fontSize: 'var(--t-headline)', fontWeight: 700, lineHeight: 1, marginTop: 'var(--sp-2)', color: 'var(--route-blue)' }}>
             <AnimatedNumber value={headline.route_index} decimals={2} />
           </div>
-          <div style={{ fontSize: 'var(--t-ui)', color: 'var(--ink-2)', marginTop: 4 }}>APIx (DEL-BOM)</div>
+          <div style={{ fontSize: 'var(--t-ui)', color: 'var(--ink-2)', marginTop: 4 }}>AERIX (DEL-BOM)</div>
         </div>
         <div>
           <p style={{ fontSize: 18, fontWeight: 700, marginBottom: 'var(--sp-3)' }}>
@@ -562,10 +566,10 @@ export default function Phase28View() {
           <thead>
             <tr>
               <th>Airline</th>
-              <th>Observations</th>
-              <th>Median fare</th>
-              <th>Min fare</th>
-              <th>Max fare</th>
+              <th className="col-num">Observations</th>
+              <th className="col-num">Median fare</th>
+              <th className="col-num">Min fare</th>
+              <th className="col-num">Max fare</th>
               <th style={{ width: 160 }}>Share</th>
             </tr>
           </thead>
@@ -573,10 +577,10 @@ export default function Phase28View() {
             {Object.entries(airline_breakdown).map(([airline, d]) => (
               <tr key={airline}>
                 <td style={{ fontWeight: 600 }}>{airline}</td>
-                <td className="font-num">{d.n_obs}</td>
-                <td className="font-num">{INR(d.median_fare)}</td>
-                <td className="font-num" style={{ color: 'var(--route-teal)' }}>{INR(d.min_fare)}</td>
-                <td className="font-num" style={{ color: 'var(--route-mag)' }}>{INR(d.max_fare)}</td>
+                <td className="font-num col-num">{d.n_obs}</td>
+                <td className="font-num col-num">{INR(d.median_fare)}</td>
+                <td className="font-num col-num" style={{ color: 'var(--route-teal)' }}>{INR(d.min_fare)}</td>
+                <td className="font-num col-num" style={{ color: 'var(--route-mag)' }}>{INR(d.max_fare)}</td>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
                     <div style={{ flex: 1 }}>

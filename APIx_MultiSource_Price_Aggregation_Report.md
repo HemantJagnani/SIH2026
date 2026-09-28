@@ -1,10 +1,10 @@
-# APIx Multi-Source Price Reconciliation & Lineage Audit Report
+# AERIX Multi-Source Price Reconciliation & Lineage Audit Report
 
 **Audit Date:** 2026-09-28  
-**Specification Standard:** `APIx_PRODUCT_DEF_v2.0_FROZEN` / `APIx_METHODOLOGY_V1`  
+**Specification Standard:** `AERIX_PRODUCT_DEF_v2.0_FROZEN` / `AERIX_METHODOLOGY_V1`  
 **Target Matrix:** DGCA CY2024 Top-10 Scheduled Domestic Routes × 6 Lead Times ($T+1, T+7, T+15, T+21, T+30, T+45$) = **60 Cells**  
 **Audit Universe:** 5,218 Production Airfare Observations  
-**Engine & Pipeline Status:** Fully Verified (**27/27 Reconciliation Tests Passed**, **68/68 APIx Core Engine & Weights Tests Passed**)  
+**Engine & Pipeline Status:** Fully Verified (**27/27 Reconciliation Tests Passed**, **68/68 AERIX Core Engine & Weights Tests Passed**)  
 
 ---
 
@@ -16,7 +16,7 @@ In official price statistics (Eurostat HICP, UK ONS, US BLS, and Indian CPI stan
 Previously, when the same flight was observed across multiple sources with conflicting prices, the observation was flagged with `PRICE_CONFLICT_REVIEW` and excluded from the baseline index. Under the new methodology:
 
 > **Core Decision:** If the same underlying flight/product is observed across multiple sources with different prices, **the product is NOT marked as permanently excluded merely because prices differ**.  
-> Instead, multiple source observations of the **SAME canonical purchasable product** collapse into **ONE APIx observation** whose fare is the **arithmetic mean of all valid comparable source prices**:
+> Instead, multiple source observations of the **SAME canonical purchasable product** collapse into **ONE AERIX observation** whose fare is the **arithmetic mean of all valid comparable source prices**:
 >
 > $$\text{canonical\_fare} = \frac{1}{K} \sum_{k=1}^K p_k$$
 >
@@ -28,13 +28,13 @@ For flight **6E-204 (DEL $\to$ BOM, 2026-10-04, 10:00 AM, Economy Saver)**:
 - EaseMyTrip: ₹7,200
 - Ixigo: ₹6,800
 
-The reconciliation layer constructs **exactly ONE APIx product observation**:
+The reconciliation layer constructs **exactly ONE AERIX product observation**:
 $$\text{canonical\_fare} = \frac{6,500 + 7,200 + 6,800}{3} = \frac{20,500}{3} = \mathbf{₹6,833.33}$$
 
 ### Distinguishing Price Conflict Statuses
 - **`PRICE_CONSISTENT`**: Source prices are identical or within the configured rounding tolerance ($\le ₹1.00$).
 - **`PRICE_VARIANCE_AGGREGATED`**: Same canonical product confirmed across sources, but prices differ beyond tolerance. The arithmetic mean is computed, and the single canonical observation proceeds directly into the baseline index pipeline.
-- **`PRICE_CONFLICT_UNRESOLVED`**: Only assigned when the observations cannot confidently be established as the same purchasable product, or price semantics are incompatible (e.g., `DISPLAYED_TOTAL` + `DISPLAYED_FROM`). Only `PRICE_CONFLICT_UNRESOLVED` is excluded from the APIx baseline calculation.
+- **`PRICE_CONFLICT_UNRESOLVED`**: Only assigned when the observations cannot confidently be established as the same purchasable product, or price semantics are incompatible (e.g., `DISPLAYED_TOTAL` + `DISPLAYED_FROM`). Only `PRICE_CONFLICT_UNRESOLVED` is excluded from the AERIX baseline calculation.
 
 ---
 
@@ -74,7 +74,7 @@ Raw Multi-Channel Source Observations (Google Flights, EaseMyTrip, Ixigo, Future
                                               1 Canonical Product Observation
                                                           │
                                                           ▼  [Pass 6: Product Stratification]
-                                              APIx Product Observation
+                                              AERIX Product Observation
                                               (1 Product = Exactly 1 Weight)
                                                           │
                                                           ▼  [Pass 7: Price Formation]
@@ -85,9 +85,9 @@ Raw Multi-Channel Source Observations (Google Flights, EaseMyTrip, Ixigo, Future
 ### Key Architectural Safeguards
 1. **Multi-Dimensional Matching (No Flight Number Alone)**: Product identity requires agreement on route, travel date, airline, flight number, departure timing, stops, cabin, fare family baseline tier, non-standard baggage tier, and passenger type.
 2. **Equal Source Weights**: In accordance with the methodology decision, sources are weighted equally in the arithmetic mean ($1/K$). No OTA market-share weights, scraper row weights, or arbitrary source priorities are applied.
-3. **No Statistical Sample Size Inflation**: 3 OTA observations collapse into 1 canonical product, which produces exactly 1 APIx price observation in the elementary stratum. The number of OTA observations does NOT artificially increase the statistical weight of that flight in the Jevons aggregate.
+3. **No Statistical Sample Size Inflation**: 3 OTA observations collapse into 1 canonical product, which produces exactly 1 AERIX price observation in the elementary stratum. The number of OTA observations does NOT artificially increase the statistical weight of that flight in the Jevons aggregate.
 4. **Single-Source Preservation**: If observed by only 1 source, $\text{canonical\_fare} = p_{\text{source}}$, $\text{source\_count} = 1$, and $\text{aggregation\_method} = \text{"SINGLE\_SOURCE"}$. No synthetic prices are fabricated.
-5. **Audit Lineage**: Every canonical offer and APIx observation preserves:
+5. **Audit Lineage**: Every canonical offer and AERIX observation preserves:
    - `source_count: int`
    - `source_ids: List[str]`
    - `source_observation_ids: List[str]`
@@ -152,33 +152,33 @@ The complete 5,218 raw production observation dataset spanning all 60 cells of t
 | **Multi-Source Price Aggregations** | **0** | Baseline dataset observed non-overlapping carrier segments |
 | **Unresolved Price Conflicts** | **0** | No incompatible price semantics encountered |
 | **Excluded Observations (Cabotage Violations)** | **29** | Foreign transit carriers routing via overseas hubs |
-| **Valid Comparable Baseline APIx Observations** | **2,076** | Qualifying domestic adult economy baseline fares |
+| **Valid Comparable Baseline AERIX Observations** | **2,076** | Qualifying domestic adult economy baseline fares |
 | **Populated Matrix Cells** | **60 of 60 (100.0%)** | All 10 routes active across all 6 horizons |
 
 ### 4.2 Source-Count Distribution
 - **Canonical Offers Source-Count Distribution:**
   - $K = 1$: **2,105** offers (100.0%)
   - $K \ge 2$: **0** offers (0.0%)
-- **Valid APIx Observations Source-Count Distribution:**
+- **Valid AERIX Observations Source-Count Distribution:**
   - $K = 1$: **2,076** observations (100.0%)
   - $K \ge 2$: **0** observations (0.0%)
 
-### 4.3 Number of APIx Observations: Before vs. After Aggregation
+### 4.3 Number of AERIX Observations: Before vs. After Aggregation
 | Stage | Observation Count | Methodological Significance |
 | :--- | :---: | :--- |
 | **1. Raw Scraped Observations** | **5,218** | Verbatim raw data preserved for immutable lineage |
 | **2. Pre-Reconciliation Naive Filter** | **2,779** | Prior heuristic filtering (retained duplicate DOM renders across scraper runs) |
 | **3. Post-Reconciliation Canonical Offers** | **2,105** | Strict physical flight deduplication across all sources |
-| **4. Final APIx Baseline Observations** | **2,076** | Exactly 1 observation per qualifying physical product |
+| **4. Final AERIX Baseline Observations** | **2,076** | Exactly 1 observation per qualifying physical product |
 
-*Net reduction: 5,218 raw observations $\to$ 2,076 distinct APIx product observations (60.2% deduplication and standardization efficiency).*
+*Net reduction: 5,218 raw observations $\to$ 2,076 distinct AERIX product observations (60.2% deduplication and standardization efficiency).*
 
 ---
 
 ## 5. Route-Level and Lead-Time Cell Breakdown (All 60 Cells)
 
 ### 5.1 Route-Level Summary (10 Routes)
-| Rank | Route ID | City Pair | Raw Obs | Canonical Offers | Valid APIx Obs | Excluded Obs |
+| Rank | Route ID | City Pair | Raw Obs | Canonical Offers | Valid AERIX Obs | Excluded Obs |
 | :---: | :---: | :--- | :---: | :---: | :---: | :---: |
 | 1 | `DEL-BOM` | Delhi – Mumbai | 2,432 | 712 | **712** | 0 |
 | 2 | `BLR-DEL` | Bengaluru – Delhi | 478 | 239 | **239** | 0 |
@@ -193,7 +193,7 @@ The complete 5,218 raw production observation dataset spanning all 60 cells of t
 | **Total** | — | **Top 10 Routes** | **5,218** | **2,105** | **2,076** | **29** |
 
 ### 5.2 Lead-Time Horizon Summary (6 Horizons)
-| Horizon | Raw Obs | Canonical Offers | Valid APIx Obs | Excluded Obs |
+| Horizon | Raw Obs | Canonical Offers | Valid AERIX Obs | Excluded Obs |
 | :---: | :---: | :---: | :---: | :---: |
 | **T+1** | 596 | 346 | **342** | 4 |
 | **T+7** | 1,190 | 750 | **745** | 5 |
@@ -278,5 +278,5 @@ The following core index parameters and components were strictly audited and con
 4. **Base Reference Index Value**: Unchanged ($I_0 = 100.00$).
 5. **Jevons Index Formulation**: Unchanged. Unweighted geometric mean of price relatives:
    $$J_{(s,t)} = \exp\left(\frac{1}{N}\sum_{i=1}^N \ln\left(\frac{p_{i,t}}{p_{i,0}}\right)\right)$$
-6. **Product Definition Standard**: Unchanged (`APIx_PRODUCT_DEF_v2.0_FROZEN`).
+6. **Product Definition Standard**: Unchanged (`AERIX_PRODUCT_DEF_v2.0_FROZEN`).
 7. **Scraper Operations**: Unchanged. No changes to scraper request dispatching, navigation flows, or CAPTCHA fail-safe mechanisms.

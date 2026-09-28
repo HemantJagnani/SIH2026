@@ -63,9 +63,21 @@ export default function MethodView({ runs }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Search & Filter for DGCA Top-60 Routes
+  // Search & Filter & Sorting for DGCA Top-60 Routes
   const [routeQuery, setRouteQuery] = useState('');
   const [metroFilter, setMetroFilter] = useState<'all' | 'del' | 'bom' | 'blr' | 'goa'>('all');
+  type DGCASortKey = 'rank' | 'route' | 'volume' | 'share' | 'weight';
+  const [sortKey, setSortKey] = useState<DGCASortKey>('rank');
+  const [sortAsc, setSortAsc] = useState<boolean>(true);
+
+  const handleSort = (key: DGCASortKey) => {
+    if (sortKey === key) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortKey(key);
+      setSortAsc(key === 'rank' || key === 'route');
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -128,8 +140,20 @@ export default function MethodView({ runs }: Props) {
           r.destination_code.toLowerCase().includes(q)
       );
     }
+
+    // Sort (never mutates original DGCA data — display order only)
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === 'rank')   cmp = a.rank - b.rank;
+      if (sortKey === 'route')  cmp = a.route_id.localeCompare(b.route_id);
+      if (sortKey === 'volume') cmp = a.annual_passenger_volume - b.annual_passenger_volume;
+      if (sortKey === 'share')  cmp = a.dgca_share_percent - b.dgca_share_percent;
+      if (sortKey === 'weight') cmp = a.route_weight - b.route_weight;
+      return sortAsc ? cmp : -cmp;
+    });
+
     return list;
-  }, [routeQuery, metroFilter]);
+  }, [routeQuery, metroFilter, sortKey, sortAsc]);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -139,14 +163,14 @@ export default function MethodView({ runs }: Props) {
   };
 
   return (
-    <div className="page" style={{ padding: 'var(--sp-6) var(--sp-4)', maxWidth: '940px', margin: '0 auto' }}>
+    <div className="page">
       {/* ── 1. Hero & Governance Metadata Header ── */}
       <div className="method-hero">
         <h1 style={{ fontFamily: "'Newsreader Variable', 'Newsreader', Georgia, serif", fontSize: '32px', fontWeight: 400, color: 'var(--ink)', marginBottom: '8px' }}>
           Methodology & Econometric Framework
         </h1>
         <p style={{ fontFamily: "'Newsreader Variable', 'Newsreader', Georgia, serif", fontSize: '16px', color: 'var(--ink-2)', lineHeight: 1.5, maxWidth: '75ch' }}>
-          Technical specification and econometric aggregation design for the Indian Airfare Price Index (APIx).
+          Technical specification and econometric aggregation design for the Indian Airfare Price Index (AERIX).
           Conforms strictly to <strong>MoSPI CPI 2024 (Base 2024 = 100)</strong>, the <strong>DGCA CY2024 Top-60 Route Basket</strong>,
           and international standards codified in the <strong>Eurostat HICP Methodological Manual 2024</strong>.
         </p>
@@ -154,11 +178,11 @@ export default function MethodView({ runs }: Props) {
         <div className="method-pills-wrap">
           <span className="method-pill method-pill--accent">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            MoSPI CPI 2024 Compliant
+            MoSPI CPI 2024 Methodology Aligned
           </span>
           <span className="method-pill method-pill--teal">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Eurostat HICP 2024 Aligned
+            Eurostat HICP 2024 Methodological Reference
           </span>
           <span className="method-pill">
             COICOP: <code>07.3.3.1.2.01</code>
@@ -218,7 +242,7 @@ export default function MethodView({ runs }: Props) {
           <span className="method-section-num">§ 1.0</span>
         </h2>
         <p className="prose">
-          The Indian Airfare Price Index (APIx) is an analytical and experimental price index designed to measure the pure
+          The Indian Airfare Price Index (AERIX) is an analytical and experimental price index designed to measure the pure
           temporal movement in consumer-payable domestic airfares across India. It evaluates prices under strict matched-product
           stratification, holding constant airline carrier, departure timing, stopover characteristics, and advance booking lead times.
         </p>
@@ -272,7 +296,7 @@ export default function MethodView({ runs }: Props) {
         </h2>
         <p className="prose">
           Airfare dynamic pricing models adjust fares dynamically as departure approaches. To capture the full booking curve
-          without introducing artificial volatility, APIx establishes <strong>6 discrete advance-purchase strata</strong>:
+          without introducing artificial volatility, AERIX establishes <strong>6 discrete advance-purchase strata</strong>:
         </p>
 
         {/* T+21 MoSPI Checkpoint Callout */}
@@ -284,7 +308,7 @@ export default function MethodView({ runs }: Props) {
           <p style={{ fontSize: '13.5px', color: 'var(--ink)', margin: 0, lineHeight: 1.5 }}>
             The MoSPI CPI 2024 Expert Group specifically designated <strong>21-day advance booking</strong> as the standard
             domestic travel price collection specification for India's upcoming Consumer Price Index revision (and 60 days for international).
-            In APIx, <strong>T+21 is strictly scheduled, collected, and computed as an independent stratum</strong> with a verified
+            In AERIX, <strong>T+21 is strictly scheduled, collected, and computed as an independent stratum</strong> with a verified
             empirical weight of <strong>15.19%</strong>. It is never blended or aggregated into T+15 or T+30.
           </p>
         </div>
@@ -332,7 +356,7 @@ export default function MethodView({ runs }: Props) {
         </div>
 
         <p className="method-footnote">
-          <strong>Empirical Lead-Time Weighting:</strong> Lead-time weights are calculated from 300,153 verified transactions in <code>Clean_Dataset.csv</code> treating <code>days_left</code> as booking lead time. <strong>APIx explicitly does not assign equal weightage to lead times:</strong> advance booking horizons exhibit distinct demand profiles and yield elasticities, where early bookings (T+30, T+45) account for over 51% of domestic volume, whereas urgent travel (T+1) constitutes 5.09%. T+21 serves as the designated MoSPI CPI 2024 domestic reference checkpoint.
+          <strong>Empirical Lead-Time Weighting:</strong> Lead-time weights are calculated from 300,153 verified transactions in <code>Clean_Dataset.csv</code> treating <code>days_left</code> as booking lead time. <strong>AERIX explicitly does not assign equal weightage to lead times:</strong> advance booking horizons exhibit distinct demand profiles and yield elasticities, where early bookings (T+30, T+45) account for over 51% of domestic volume, whereas urgent travel (T+1) constitutes 5.09%. T+21 serves as the designated MoSPI CPI 2024 domestic reference checkpoint.
         </p>
       </section>
 
@@ -343,7 +367,7 @@ export default function MethodView({ runs }: Props) {
           <span className="method-section-num">§ 3.0</span>
         </h2>
         <p className="prose">
-          To ensure macroeconomic representativeness, APIx constructs its domestic route basket from official city-pair passenger
+          To ensure macroeconomic representativeness, AERIX constructs its domestic route basket from official city-pair passenger
           traffic data published by the <strong>Directorate General of Civil Aviation (DGCA)</strong> for Calendar Year 2024.
         </p>
 
@@ -432,13 +456,59 @@ export default function MethodView({ runs }: Props) {
             <table>
               <thead>
                 <tr>
-                  <th style={{ width: '45px' }}>Rank</th>
-                  <th>Route ID</th>
+                  <th
+                    className="sortable"
+                    style={{ width: '50px' }}
+                    onClick={() => handleSort('rank')}
+                    title="Sort by DGCA Rank"
+                  >
+                    Rank
+                    <span className={`sort-indicator${sortKey === 'rank' ? ' active' : ''}`}>
+                      {sortKey === 'rank' ? (sortAsc ? '▲' : '▼') : '⇅'}
+                    </span>
+                  </th>
+                  <th
+                    className="sortable"
+                    onClick={() => handleSort('route')}
+                    title="Sort alphabetically by Route ID"
+                  >
+                    Route ID
+                    <span className={`sort-indicator${sortKey === 'route' ? ' active' : ''}`}>
+                      {sortKey === 'route' ? (sortAsc ? '▲' : '▼') : '⇅'}
+                    </span>
+                  </th>
                   <th>Origin City</th>
                   <th>Destination City</th>
-                  <th style={{ textAlign: 'right' }}>Annual Pax (CY2024)</th>
-                  <th style={{ textAlign: 'right' }}>DGCA National Share</th>
-                  <th style={{ textAlign: 'right' }}>Basket Weight (W_r)</th>
+                  <th
+                    className="sortable col-num"
+                    onClick={() => handleSort('volume')}
+                    title="Sort by Annual Pax Volume"
+                  >
+                    Annual Pax (CY2024)
+                    <span className={`sort-indicator${sortKey === 'volume' ? ' active' : ''}`}>
+                      {sortKey === 'volume' ? (sortAsc ? '▲' : '▼') : '⇅'}
+                    </span>
+                  </th>
+                  <th
+                    className="sortable col-num"
+                    onClick={() => handleSort('share')}
+                    title="Sort by DGCA National Share %"
+                  >
+                    DGCA National Share
+                    <span className={`sort-indicator${sortKey === 'share' ? ' active' : ''}`}>
+                      {sortKey === 'share' ? (sortAsc ? '▲' : '▼') : '⇅'}
+                    </span>
+                  </th>
+                  <th
+                    className="sortable col-num"
+                    onClick={() => handleSort('weight')}
+                    title="Sort by Basket Weight W_r"
+                  >
+                    Basket Weight (W_r)
+                    <span className={`sort-indicator${sortKey === 'weight' ? ' active' : ''}`}>
+                      {sortKey === 'weight' ? (sortAsc ? '▲' : '▼') : '⇅'}
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -448,13 +518,20 @@ export default function MethodView({ runs }: Props) {
                     <td style={{ fontWeight: 700, color: 'var(--ink)' }}>{r.route_id}</td>
                     <td>{r.origin} ({r.origin_code})</td>
                     <td>{r.destination} ({r.destination_code})</td>
-                    <td className="font-num" style={{ textAlign: 'right' }}>{fmtPax(r.annual_passenger_volume)}</td>
-                    <td className="font-num" style={{ textAlign: 'right' }}>{r.dgca_share_percent.toFixed(4)}%</td>
-                    <td className="font-num" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--route-blue)' }}>
+                    <td className="font-num col-num">{fmtPax(r.annual_passenger_volume)}</td>
+                    <td className="font-num col-num">{r.dgca_share_percent.toFixed(4)}%</td>
+                    <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>
                       {(r.route_weight * 100).toFixed(4)}%
                     </td>
                   </tr>
                 ))}
+                {filteredRoutes.length === 0 && (
+                  <tr>
+                    <td colSpan={7}>
+                      <div className="data-table-empty">No routes match the current filter or search query.</div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -471,7 +548,7 @@ export default function MethodView({ runs }: Props) {
           <span className="method-section-num">§ 4.0</span>
         </h2>
         <p className="prose">
-          APIx is computed through a nine-step econometric pipeline that maps individual scraper observations into an All-India
+          AERIX is computed through a nine-step econometric pipeline that maps individual scraper observations into an All-India
           index and its macroeconomic CPI contribution, conforming to UN COICOP 2018 and MoSPI CPI 2024 specifications:
         </p>
 
@@ -556,7 +633,7 @@ export default function MethodView({ runs }: Props) {
             The 60 route indices are aggregated into the All-India Airfare Price Index using DGCA passenger traffic share weights $W_r$:
           </p>
           <div className="formula-box">
-            APIx_t = SUM_(r=1)^(60) [ W_r * I(r,t) ]    where SUM_(r=1)^(60) W_r = 1.0000
+            AERIX_t = SUM_(r=1)^(60) [ W_r * I(r,t) ]    where SUM_(r=1)^(60) W_r = 1.0000
           </div>
           <div className="formula-caption">Normalized to Reference Base 2024 = 100.</div>
         </div>
@@ -565,11 +642,11 @@ export default function MethodView({ runs }: Props) {
         <div className="step-card">
           <div className="step-title">STEP 8: MACROECONOMIC MOSPI CPI INTEGRATION LAYER</div>
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink)' }}>
-            When integrating the experimental APIx series into the official MoSPI Consumer Price Index (Item <code>07.3.3.1.2.01</code>),
+            When integrating the experimental AERIX series into the official MoSPI Consumer Price Index (Item <code>07.3.3.1.2.01</code>),
             the macroeconomic percentage point contribution is computed using the official HCES 2023-24 weight:
           </p>
           <div className="formula-box">
-            DELTA CPI_(pp,t) = ( APIx_t - APIx_(t-1) ) * W_(CPI)
+            DELTA CPI_(pp,t) = ( AERIX_t - AERIX_(t-1) ) * W_(CPI)
             where W_(CPI) = 0.0002951  (0.02951% of national household expenditure basket)
           </div>
           <div className="formula-caption">Source: MoSPI CPI 2024 "Weights of item CPI 2024" (Annexure 5.3d).</div>
@@ -582,8 +659,8 @@ export default function MethodView({ runs }: Props) {
             Month-over-Month (MoM) and Year-over-Year (YoY) headline inflation rates:
           </p>
           <div className="formula-box">
-            pi_(MoM,t) = [ ( APIx_t / APIx_(t-30) ) - 1 ] * 100
-            pi_(YoY,t) = [ ( APIx_t / APIx_(t-365) ) - 1 ] * 100
+            pi_(MoM,t) = [ ( AERIX_t / AERIX_(t-30) ) - 1 ] * 100
+            pi_(YoY,t) = [ ( AERIX_t / AERIX_(t-365) ) - 1 ] * 100
           </div>
         </div>
       </section>
@@ -596,7 +673,7 @@ export default function MethodView({ runs }: Props) {
         </h2>
         <p className="prose">
           To prevent methodological cross-contamination between macroeconomic statistics and market micro-structures,
-          APIx enforces an impenetrable <strong>Tri-Layer Weight Architecture</strong>:
+          AERIX enforces an impenetrable <strong>Tri-Layer Weight Architecture</strong>:
         </p>
 
         <div className="tri-layer-grid">
@@ -645,7 +722,7 @@ export default function MethodView({ runs }: Props) {
           <span className="method-section-num">§ 6.0</span>
         </h2>
         <p className="prose">
-          To eliminate sample selection bias and distinguish genuine flight cancellations from sold-out flights, APIx integrates
+          To eliminate sample selection bias and distinguish genuine flight cancellations from sold-out flights, AERIX integrates
           the <strong>DGCA Summer and Winter 2024 Approved Flight Schedules</strong> as an authoritative regulatory denominator.
         </p>
 
@@ -754,7 +831,7 @@ export default function MethodView({ runs }: Props) {
 
         {/* Backtest Metrics Table */}
         <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)', marginBottom: '8px' }}>
-          30-Day Market Backtest Performance (APIx vs Naive Scraped Average)
+          30-Day Market Backtest Performance (AERIX vs Naive Scraped Average)
         </h3>
         {backtest?.summary ? (
           <div style={{ overflowX: 'auto', marginBottom: 'var(--sp-4)' }}>
@@ -762,21 +839,21 @@ export default function MethodView({ runs }: Props) {
               <thead>
                 <tr>
                   <th>Econometric Metric</th>
-                  <th>APIx Certified Engine</th>
-                  <th>Naive Scraped Average</th>
-                  <th>Performance Delta</th>
+                  <th className="col-num">AERIX Certified Engine</th>
+                  <th className="col-num">Naive Scraped Average</th>
+                  <th className="col-num">Performance Delta</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td>Mean Absolute Error (MAE)</td>
-                  <td className="font-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>
+                  <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>
                     {backtest.summary.mean_absolute_error_mae.toFixed(4)}
                   </td>
-                  <td className="font-num" style={{ color: 'var(--ink-2)' }}>
+                  <td className="font-num col-num" style={{ color: 'var(--ink-2)' }}>
                     {backtest.summary.naive_mae.toFixed(4)}
                   </td>
-                  <td className="font-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>
+                  <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>
                     {backtest.summary.mean_absolute_error_mae < backtest.summary.naive_mae
                       ? `-${Math.abs(((backtest.summary.mean_absolute_error_mae - backtest.summary.naive_mae) / backtest.summary.naive_mae) * 100).toFixed(2)}% Error Reduction`
                       : `+${(((backtest.summary.mean_absolute_error_mae - backtest.summary.naive_mae) / backtest.summary.naive_mae) * 100).toFixed(2)}% Difference`}
@@ -784,13 +861,13 @@ export default function MethodView({ runs }: Props) {
                 </tr>
                 <tr>
                   <td>Root Mean Squared Error (RMSE)</td>
-                  <td className="font-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>
+                  <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>
                     {backtest.summary.root_mean_squared_error_rmse.toFixed(4)}
                   </td>
-                  <td className="font-num" style={{ color: 'var(--ink-2)' }}>
+                  <td className="font-num col-num" style={{ color: 'var(--ink-2)' }}>
                     {backtest.summary.naive_rmse.toFixed(4)}
                   </td>
-                  <td className="font-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>
+                  <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-teal)' }}>
                     {backtest.summary.root_mean_squared_error_rmse < backtest.summary.naive_rmse
                       ? `-${Math.abs(((backtest.summary.root_mean_squared_error_rmse - backtest.summary.naive_rmse) / backtest.summary.naive_rmse) * 100).toFixed(2)}% Error Reduction`
                       : `+${(((backtest.summary.root_mean_squared_error_rmse - backtest.summary.naive_rmse) / backtest.summary.naive_rmse) * 100).toFixed(2)}% Difference`}
@@ -798,13 +875,13 @@ export default function MethodView({ runs }: Props) {
                 </tr>
                 <tr>
                   <td>Daily Volatility (Std. Dev.)</td>
-                  <td className="font-num">
-                    {backtest.summary.apix_daily_volatility_percent.toFixed(2)}%
+                  <td className="font-num col-num">
+                    {(backtest.summary.aerix_daily_volatility_percent ?? backtest.summary.apix_daily_volatility_percent).toFixed(2)}%
                   </td>
-                  <td className="font-num">
+                  <td className="font-num col-num">
                     {backtest.summary.naive_scraped_daily_volatility_percent.toFixed(2)}%
                   </td>
-                  <td className="font-num">
+                  <td className="font-num col-num">
                     {backtest.summary.volatility_reduction_ratio
                       ? `${backtest.summary.volatility_reduction_ratio.toFixed(2)}x Ratio`
                       : '—'}
@@ -812,19 +889,19 @@ export default function MethodView({ runs }: Props) {
                 </tr>
                 <tr>
                   <td>Benchmark Correlation (R)</td>
-                  <td className="font-num" style={{ fontWeight: 700 }}>
+                  <td className="font-num col-num" style={{ fontWeight: 700 }}>
                     {backtest.summary.benchmark_correlation.toFixed(4)}
                   </td>
-                  <td className="font-num" style={{ color: 'var(--ink-2)' }}>—</td>
-                  <td className="font-num">Ground Truth Benchmark Tracking</td>
+                  <td className="font-num col-num" style={{ color: 'var(--ink-2)' }}>—</td>
+                  <td className="font-num col-num">Ground Truth Benchmark Tracking</td>
                 </tr>
                 <tr>
                   <td>Maximum Drawdown</td>
-                  <td className="font-num">
+                  <td className="font-num col-num">
                     {backtest.summary.maximum_drawdown_percent.toFixed(2)}%
                   </td>
-                  <td className="font-num" style={{ color: 'var(--ink-2)' }}>—</td>
-                  <td className="font-num">30-Day Period Evaluation</td>
+                  <td className="font-num col-num" style={{ color: 'var(--ink-2)' }}>—</td>
+                  <td className="font-num col-num">30-Day Period Evaluation</td>
                 </tr>
               </tbody>
             </table>
@@ -887,8 +964,8 @@ export default function MethodView({ runs }: Props) {
                   <th>Status</th>
                   <th>Started</th>
                   <th>Finished</th>
-                  <th>Pages OK</th>
-                  <th>Pages Failed</th>
+                  <th className="col-num">Pages OK</th>
+                  <th className="col-num">Pages Failed</th>
                   <th>Source Platform</th>
                   <th>Notes</th>
                 </tr>
@@ -904,8 +981,8 @@ export default function MethodView({ runs }: Props) {
                     </td>
                     <td className="font-num">{fmtDateTime(r.started_at)}</td>
                     <td className="font-num">{fmtDateTime(r.finished_at)}</td>
-                    <td className="font-num">{r.pages_ok}</td>
-                    <td className="font-num">{r.pages_failed}</td>
+                    <td className="font-num col-num">{r.pages_ok}</td>
+                    <td className="font-num col-num">{r.pages_failed}</td>
                     <td style={{ fontSize: '12px', fontWeight: 600 }}>{r.source}</td>
                     <td style={{ color: 'var(--ink-2)', fontSize: '12px' }}>{r.notes ?? '—'}</td>
                   </tr>
@@ -936,7 +1013,7 @@ export default function MethodView({ runs }: Props) {
                     <th>Departs</th>
                     <th>Arrives</th>
                     <th>Stops</th>
-                    <th style={{ textAlign: 'right' }}>Consumer Fare</th>
+                    <th className="col-num">Consumer Fare</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -967,7 +1044,7 @@ export default function MethodView({ runs }: Props) {
                         <td className="font-num">{departs}</td>
                         <td className="font-num">{arrives}</td>
                         <td>{stopsLabel}</td>
-                        <td className="font-num" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--ink)' }}>
+                        <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--ink)' }}>
                           ₹{Math.round(obs.total_fare).toLocaleString('en-IN')}
                         </td>
                       </tr>

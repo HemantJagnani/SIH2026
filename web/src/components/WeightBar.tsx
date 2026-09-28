@@ -19,20 +19,7 @@ const SEGMENT_COLORS_LEAD: Record<number, string> = {
   45: '#5C4382',
 };
 
-const DYNAMIC_PALETTE = [
-  '#2A5FA5', '#B0286A', '#2F7D6D', '#E65100', '#6A1B9A',
-  '#00838F', '#2E7D32', '#C2185B', '#1565C0', '#F57F17',
-  '#4527A0', '#00695C', '#D84315', '#37474F',
-];
-
-function getRouteColor(route: string, idx: number): string {
-  if (route === 'DEL-BOM' || route === 'BOM-DEL') return '#2A5FA5';
-  if (route === 'DEL-BLR' || route === 'BLR-DEL') return '#B0286A';
-  if (route === 'BOM-BLR' || route === 'BLR-BOM') return '#2F7D6D';
-  if (route === 'DEL-CCU' || route === 'CCU-DEL') return '#E65100';
-  if (route === 'BLR-HYD' || route === 'HYD-BLR') return '#6A1B9A';
-  return DYNAMIC_PALETTE[idx % DYNAMIC_PALETTE.length];
-}
+import { getRouteColor } from '../lib/palette';
 
 const LEAD_DESCRIPTIONS: Record<number, string> = {
   1: 'Spot / Departure - 1d (5.09%)',
@@ -97,8 +84,7 @@ export default function WeightBar({
   const weights = mode === 'lead' ? leadWeights : routeWeights;
   const colors = (k: string | number) => {
     if (mode === 'lead') return SEGMENT_COLORS_LEAD[k as number] ?? '#2A5FA5';
-    const idx = keys.indexOf(k);
-    return getRouteColor(String(k), idx >= 0 ? idx : 0);
+    return getRouteColor(String(k));
   };
 
   const segLabel = (k: string | number) =>

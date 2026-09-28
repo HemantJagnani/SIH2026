@@ -1,4 +1,4 @@
-# APIx Final 360-Cell Production Baseline Audit & Governance Report
+# AERIX Final 360-Cell Production Baseline Audit & Governance Report
 
 **Audit Date**: September 28, 2026  
 **Auditor**: Antigravity Autonomous Reconciliation & Governance Auditor  
@@ -12,14 +12,14 @@
 
 ## 1. Executive Summary
 
-This formal audit documents the finalization and closure of the APIx Top-60 Matrix. Following the successful destination resolution fix (`GAU` $\rightarrow$ `"Guwahati"`) and the targeted recollections of the 13 previously missing cells, the 3 targeted outputs were merged into the canonical production classification dataset under strict stratum-aware governance.
+This formal audit documents the finalization and closure of the AERIX Top-60 Matrix. Following the successful destination resolution fix (`GAU` $\rightarrow$ `"Guwahati"`) and the targeted recollections of the 13 previously missing cells, the 3 targeted outputs were merged into the canonical production classification dataset under strict stratum-aware governance.
 
 ### Core Metrics Comparison
 
 | Metric | Pre-Merge Baseline Snapshot (Immutable) | Recollected Additions (13 Cells) | Final Merged 360-Cell Production Matrix |
 | :--- | :---: | :---: | :---: |
 | **Total Raw Observations** | 11,430 | +286 | **11,716** |
-| **Valid APIx Baseline Observations** | 5,834 | +143 | **5,977** |
+| **Valid AERIX Baseline Observations** | 5,834 | +143 | **5,977** |
 | **Duplicate Observations** | 4,772 | +143 | **4,915** |
 | **Higher Fare Family Exclusions** | 666 | 0 | **666** |
 | **Foreign Transit Exclusions** | 158 | 0 | **158** |

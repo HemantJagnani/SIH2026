@@ -1,7 +1,7 @@
-# APIx Production Coverage Report: DGCA CY2024 Top-60 Matrix (360 Cells)
+# AERIX Production Coverage Report: DGCA CY2024 Top-60 Matrix (360 Cells)
 
 **Execution Date:** 2026-09-27 17:59:57 UTC  
-**Governance Standard:** `APIx_PRODUCT_DEF_v2.0_FROZEN` / `APIX_METHODOLOGY_V1`  
+**Governance Standard:** `AERIX_PRODUCT_DEF_v2.0_FROZEN` / `APIX_METHODOLOGY_V1`  
 **Target Matrix:** 60 DGCA CY2024 Top Routes × 6 Standardized Lead Times ($T+1, T+7, T+15, T+21, T+30, T+45$) = **360 Cells**  
 **Regulatory Baseline:** DGCA CY2024 Domestic Scheduled Passenger Traffic (57.02% National Coverage)  
 
@@ -16,7 +16,7 @@
 | **3** | **Failed Runs** | **0** | 0 tolerated | Safe Handling |
 | **4** | **Blocked / CAPTCHA Runs** | **0** | 0 blocks | Safe Stop Respected |
 | **5** | **Total Raw Observations** | **11,430** | — | Preserved 100% |
-| **6** | **Valid APIx Baseline Observations** | **5,834** | — | Clean Economic Fares |
+| **6** | **Valid AERIX Baseline Observations** | **5,834** | — | Clean Economic Fares |
 | **7** | **Duplicate Observations** | **4,772** | — | Deduplicated |
 | **8** | **Higher Fare Family Exclusions** | **666** | — | Flex/Business Filtered |
 | **9** | **Foreign Transit Exclusions** | **158** | — | Non-Domestic Filtered |
@@ -35,7 +35,7 @@
 > 1. DGCA Top-60 route basket unchanged.  
 > 2. Empirical lead-time weights unchanged.  
 > 3. Reconciliation layer unchanged.  
-> 4. APIx product definition unchanged.  
+> 4. AERIX product definition unchanged.  
 > 5. **Reference price ($P_{\text{ref}}$) was NOT calculated.**  
 > 6. Missing cells were NOT filled with estimates or synthetic data.  
 > 7. Benchmark ₹6,632.67 was NOT used.  

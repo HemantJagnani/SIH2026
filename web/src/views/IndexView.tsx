@@ -4,7 +4,7 @@ import * as d3Shape from 'd3-shape';
 import * as d3Array from 'd3-array';
 import {
   api,
-  type APIxIndexResponse,
+  type AERIXIndexResponse,
   type BacktestResponse,
   type Run,
   type CoverageResponse,
@@ -14,6 +14,7 @@ import {
 import WeightBar from '../components/WeightBar';
 import RecordStrip from '../components/RecordStrip';
 import { DGCA_TOP60_ROUTES } from '../data/dgcaTop60';
+import { getRouteColor } from '../lib/palette';
 
 interface IndexViewProps {
   selectedDate?: string | null;
@@ -52,27 +53,11 @@ DGCA_TOP60_ROUTES.forEach((r) => {
   }
 });
 
-const DYNAMIC_PALETTE = [
-  '#E65100', '#6A1B9A', '#00838F', '#2E7D32', '#C2185B',
-  '#1565C0', '#F57F17', '#4527A0', '#00695C', '#D84315',
-  '#37474F', '#827717', '#880E4F',
-];
-
-function getRouteColor(route: string): string {
-  if (route === 'DEL-BOM' || route === 'BOM-DEL') return 'var(--route-blue)';
-  if (route === 'DEL-BLR' || route === 'BLR-DEL') return 'var(--route-mag)';
-  if (route === 'BOM-BLR' || route === 'BLR-BOM') return 'var(--route-teal)';
-
-  let hash = 0;
-  for (let i = 0; i < route.length; i++) hash = (hash << 5) - hash + route.charCodeAt(i);
-  return DYNAMIC_PALETTE[Math.abs(hash) % DYNAMIC_PALETTE.length];
-}
-
 const ROUTE_COLORS: Record<string, string> = {
   overall: 'var(--ink)',
-  'DEL-BOM': 'var(--route-blue)',
-  'DEL-BLR': 'var(--route-mag)',
-  'BOM-BLR': 'var(--route-teal)',
+  'DEL-BOM': getRouteColor('DEL-BOM'),
+  'DEL-BLR': getRouteColor('DEL-BLR'),
+  'BOM-BLR': getRouteColor('BOM-BLR'),
 };
 
 const DEFAULT_ROUTE_WEIGHTS: Record<string, number> = {
@@ -110,7 +95,7 @@ interface DailyPoint {
   bom_blr: number | null;
   overall: number;
   mom_rate: number;
-  baseline_apix: number;
+  baseline_aerix: number;
 }
 
 interface LeadPoint {
@@ -136,7 +121,7 @@ function fmtDateLong(s: string): string {
 }
 
 export default function IndexView({ selectedDate, onSelectDate, onNavigate }: IndexViewProps) {
-  const [indexData, setIndexData] = useState<APIxIndexResponse | null>(null);
+  const [indexData, setIndexData] = useState<AERIXIndexResponse | null>(null);
   const [backtest, setBacktest] = useState<BacktestResponse | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
   const [coverage, setCoverage] = useState<CoverageResponse | null>(null);
@@ -281,7 +266,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
     const pts: DailyPoint[] = [];
     for (const b of baseSeries) {
-      const delBom = b.route_indices?.['DEL-BOM'] ?? b.apix_index;
+      const delBom = b.route_indices?.['DEL-BOM'] ?? b.aerix_index ?? b.apix_index;
       const delBlr = b.route_indices?.['DEL-BLR'] ?? null;
       const bomBlr = b.route_indices?.['BOM-BLR'] ?? null;
 
@@ -290,11 +275,11 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       let accountedWeight = 0;
       for (const [r, w] of Object.entries(normalizedRouteWeights)) {
         if (w <= 0) continue;
-        const rVal = b.route_indices?.[r] ?? b.apix_index;
+        const rVal = b.route_indices?.[r] ?? b.aerix_index ?? b.apix_index;
         weightedRouteSum += w * rVal;
         accountedWeight += w;
       }
-      const baseOverall = accountedWeight > 0 ? weightedRouteSum / accountedWeight : b.apix_index;
+      const baseOverall = accountedWeight > 0 ? weightedRouteSum / accountedWeight : (b.aerix_index ?? b.apix_index);
 
       // Both route weights AND lead-time weights govern the overall index
       const simulatedOverall = baseOverall * leadFactor;
@@ -306,7 +291,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         bom_blr: bomBlr != null ? Number(bomBlr.toFixed(2)) : null,
         overall: Number(simulatedOverall.toFixed(2)),
         mom_rate: Number(b.daily_mom_inflation_rate.toFixed(2)),
-        baseline_apix: b.apix_index,
+        baseline_aerix: b.aerix_index ?? b.apix_index,
       });
     }
 
@@ -368,7 +353,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       del_blr: indexData?.route_indices?.['DEL-BLR'] != null ? Number(indexData.route_indices['DEL-BLR']) : null,
       bom_blr: indexData?.route_indices?.['BOM-BLR'] != null ? Number(indexData.route_indices['BOM-BLR']) : null,
       mom_rate: indexData?.mom_percent != null ? Number(indexData.mom_percent) : 0.0,
-      baseline_apix: indexData?.index_value != null ? Number(indexData.index_value) : 100.0,
+      baseline_aerix: indexData?.index_value != null ? Number(indexData.index_value) : 100.0,
     };
   }, [fullDailySeries, indexData]);
 
@@ -376,7 +361,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     ? displaySeries[scrubIndex]
     : latestPoint;
 
-  const apixVal = activePoint.overall;
+  const aerixVal = activePoint.overall;
   const momRate = activePoint.mom_rate;
   const isPositive = Number(momRate) >= 0;
 
@@ -483,13 +468,13 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     }
   };
 
-  // Sensitivity calculation for WeightBar comparing simulated overall against baseline apix
+  // Sensitivity calculation for WeightBar comparing simulated overall against baseline aerix
   const sensitivityData = useMemo(() => {
     if (fullDailySeries.length === 0) return { maxDev: 0, maxDate: null };
     let maxDiff = 0;
     let maxDate: string | null = null;
     for (const d of fullDailySeries) {
-      const diff = Math.abs(d.overall - d.baseline_apix);
+      const diff = Math.abs(d.overall - d.baseline_aerix);
       if (diff > maxDiff) {
         maxDiff = diff;
         maxDate = d.date;
@@ -615,9 +600,15 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       return pts.length > 0 ? pts : null;
     }
 
-    // Never fabricate trigonometric values! Return null so UI renders explicit "Insufficient observations"
+    // Lead curve profile from matrix cells for all 60 routes (T+45 down to T+1)
+    const curvePts = leadCurves[route]?.points;
+    if (curvePts && curvePts.length >= 2) {
+      const sorted = [...curvePts].sort((a, b) => a.lead_days - b.lead_days);
+      return sorted.map((p) => p.price);
+    }
+
     return null;
-  }, [fullDailySeries]);
+  }, [fullDailySeries, leadCurves]);
 
   // Helper for route current level
   const getRouteLevel = useCallback((route: string): string => {
@@ -631,7 +622,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   }, [latestPoint, leadCurves]);
 
   return (
-    <div className="page" style={{ padding: 'var(--sp-6) var(--sp-4)' }}>
+    <div className="page">
       {/* Restrained Error Banner */}
       {error && (
         <div className="callout" style={{ borderLeft: '3px solid var(--route-mag)', marginBottom: 'var(--sp-4)' }}>
@@ -650,7 +641,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             </>
           ) : (
             <>
-              The index is {Number(apixVal).toFixed(2)} (2024 = 100). Fares {isPositive ? 'rose' : 'fell'}{' '}
+              The index is {Number(aerixVal).toFixed(2)} (2024 = 100). Fares {isPositive ? 'rose' : 'fell'}{' '}
               {Math.abs(Number(momRate)).toFixed(2)}% since last month, mostly on DEL-BOM.
             </>
           )}
@@ -659,7 +650,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
           Production fares collected across {coverage ? coverage.routes_with_data_count : 24} DGCA routes and 6 advance lead horizons (T+1 to T+45).
         </p>
         <div className="font-num text-secondary" style={{ fontSize: '13px' }}>
-          Index {Number(apixVal).toFixed(2)} &nbsp;&nbsp; Change {isPositive ? '+' : ''}
+          Index {Number(aerixVal).toFixed(2)} &nbsp;&nbsp; Change {isPositive ? '+' : ''}
           {Number(momRate).toFixed(2)}% since last month &nbsp;&nbsp; {coverage ? `${coverage.routes_with_data_count} of 60 routes scraped` : '24 of 60 routes live'} &nbsp;&nbsp; {coverage ? `${coverage.populated_cells} cells populated` : '141 cells populated'} &nbsp;&nbsp; 6 lead windows tracked
         </div>
       </div>
@@ -758,7 +749,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             width={chartWidth}
             height={CHART_H}
             role="img"
-            aria-label={`APIx airfare price index trajectory, currently ${apixVal}`}
+            aria-label={`AERIX airfare price index trajectory, currently ${aerixVal}`}
             onPointerMove={handlePointerMove}
             onPointerLeave={handlePointerLeave}
             style={{ cursor: 'crosshair', userSelect: 'none' }}
@@ -862,7 +853,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 opacity={soloRoute && soloRoute !== 'DEL-BOM' ? 0.2 : 0.85}
               />
 
-              {/* Overall APIx Series (Darkest, dominant line) */}
+              {/* Overall AERIX Series (Darkest, dominant line) */}
               <path
                 d={lineOverall(displaySeries) ?? ''}
                 fill="none"
@@ -891,12 +882,25 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               {/* Direct End-of-Line Labels (§3) */}
               {displaySeries.length > 0 && (() => {
                 const last = displaySeries[displaySeries.length - 1];
-                const endLabels: { id: string; name: string; val: number; color: string; y: number }[] = [
+                const rawLabels: { id: string; name: string; val: number; color: string; y: number }[] = [
                   { id: 'overall', name: 'Overall', val: last.overall, color: ROUTE_COLORS.overall, y: yScale(last.overall) },
                   { id: 'DEL-BOM', name: 'DEL-BOM', val: last.del_bom, color: ROUTE_COLORS['DEL-BOM'], y: yScale(last.del_bom) },
                   ...(last.del_blr != null ? [{ id: 'DEL-BLR', name: 'DEL-BLR', val: last.del_blr, color: ROUTE_COLORS['DEL-BLR'], y: yScale(last.del_blr) }] : []),
                   ...(last.bom_blr != null ? [{ id: 'BOM-BLR', name: 'BOM-BLR', val: last.bom_blr, color: ROUTE_COLORS['BOM-BLR'], y: yScale(last.bom_blr) }] : []),
                 ];
+
+                // Collision avoidance: sort by y and enforce minimum 14px vertical gap
+                const endLabels = [...rawLabels].sort((a, b) => a.y - b.y);
+                const MIN_GAP = 14;
+                for (let i = 1; i < endLabels.length; i++) {
+                  const prev = endLabels[i - 1];
+                  const curr = endLabels[i];
+                  if (curr.y - prev.y < MIN_GAP) {
+                    const overlap = MIN_GAP - (curr.y - prev.y);
+                    prev.y -= overlap / 2;
+                    curr.y += overlap / 2;
+                  }
+                }
 
                 return endLabels.map((lbl) => {
                   const isSolo = soloRoute === lbl.id;
@@ -907,6 +911,8 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                       y={lbl.y}
                       dominantBaseline="middle"
                       fontSize="11px"
+                      fontFamily="'B612', monospace"
+                      className="font-num"
                       fontWeight={isSolo || lbl.id === 'overall' ? 700 : 500}
                       fill={lbl.color}
                       opacity={soloRoute && !isSolo ? 0.3 : 1}
@@ -987,30 +993,30 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>APIx overall</th>
-                  <th>DEL-BOM</th>
-                  <th>DEL-BLR</th>
-                  <th>BOM-BLR</th>
-                  <th>Daily change</th>
+                  <th className="col-num">AERIX overall</th>
+                  <th className="col-num">DEL-BOM</th>
+                  <th className="col-num">DEL-BLR</th>
+                  <th className="col-num">BOM-BLR</th>
+                  <th className="col-num">Daily change</th>
                 </tr>
               </thead>
               <tbody>
                 {displaySeries.slice(-20).map((d) => (
                   <tr key={d.date}>
                     <td className="font-num">{d.date}</td>
-                    <td className="font-num" style={{ fontWeight: 700 }}>
+                    <td className="font-num col-num" style={{ fontWeight: 700 }}>
                       {d.overall.toFixed(2)}
                     </td>
-                    <td className="font-num" style={{ color: 'var(--route-blue)' }}>
+                    <td className="font-num col-num" style={{ color: 'var(--route-blue)' }}>
                       {d.del_bom.toFixed(2)}
                     </td>
-                    <td className="font-num" style={{ color: 'var(--route-mag)' }}>
+                    <td className="font-num col-num" style={{ color: 'var(--route-mag)' }}>
                       {d.del_blr != null ? d.del_blr.toFixed(2) : '—'}
                     </td>
-                    <td className="font-num" style={{ color: 'var(--route-teal)' }}>
+                    <td className="font-num col-num" style={{ color: 'var(--route-teal)' }}>
                       {d.bom_blr != null ? d.bom_blr.toFixed(2) : '—'}
                     </td>
-                    <td className="font-num">{d.mom_rate >= 0 ? `+${d.mom_rate}%` : `${d.mom_rate}%`}</td>
+                    <td className="font-num col-num">{d.mom_rate >= 0 ? `+${d.mom_rate}%` : `${d.mom_rate}%`}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1135,22 +1141,15 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               <div
                 key={route}
                 onClick={() => handleToggleSolo(route)}
+                onKeyDown={(e) => e.key === 'Enter' || e.key === ' ' ? handleToggleSolo(route) : null}
                 role="button"
                 tabIndex={0}
                 aria-pressed={isSolo}
                 aria-label={`Solo route ${route}`}
+                className={`route-strip-row${isSolo ? ' is-solo' : ''}`}
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '160px 130px 85px 65px 1fr auto',
-                  alignItems: 'center',
-                  gap: 'var(--sp-4)',
-                  padding: 'var(--sp-3) var(--sp-4)',
-                  border: isSolo ? `1px solid ${routeColor}` : '1px solid var(--contour)',
-                  background: isSolo ? 'rgba(42, 95, 165, 0.04)' : 'transparent',
-                  cursor: 'pointer',
-                  fontFamily: "'B612', monospace",
-                  fontSize: 'var(--t-ui)',
-                  transition: 'background 0.15s, border-color 0.15s',
+                  border: isSolo ? `1px solid ${routeColor}` : undefined,
+                  background: isSolo ? `rgba(42, 95, 165, 0.04)` : undefined,
                 }}
               >
                 <div>
@@ -1170,21 +1169,18 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 </div>
 
                 {/* Compact Sparkline or Insufficient Observations */}
-                {sparkPoints && sparkPoints.length > 1 ? (
-                  <svg width={sparkW} height={sparkH} style={{ overflow: 'visible' }}>
-                    <path d={sparkPath} fill="none" stroke={routeColor} strokeWidth={1.5} strokeLinejoin="round" />
-                    <circle
-                      cx={lastX}
-                      cy={lastY}
-                      r={2.5}
-                      fill={routeColor}
-                    />
-                  </svg>
-                ) : (
-                  <span style={{ fontSize: '11px', color: 'var(--ink-2)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
-                    Insufficient observations
-                  </span>
-                )}
+                <div className="spark-wrap">
+                  {sparkPoints && sparkPoints.length > 1 ? (
+                    <svg width={sparkW} height={sparkH} style={{ overflow: 'visible', display: 'block' }}>
+                      <path d={sparkPath} fill="none" stroke={routeColor} strokeWidth={1.5} strokeLinejoin="round" />
+                      <circle cx={lastX} cy={lastY} r={2.5} fill={routeColor} />
+                    </svg>
+                  ) : (
+                    <span style={{ fontSize: '11px', color: 'var(--ink-2)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
+                      Insufficient observations
+                    </span>
+                  )}
+                </div>
 
                 <span className="font-num" style={{ fontWeight: 700, color: 'var(--ink)' }}>
                   {typeof currentLevel === 'number' ? (currentLevel as number).toFixed(2) : currentLevel}
@@ -1192,7 +1188,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 <span className="font-num" style={{ color: 'var(--ink-2)' }}>
                   {changePct}
                 </span>
-                <span style={{ color: 'var(--ink-2)', fontSize: '13px' }}>{statusText}</span>
+                <span className="route-strip-col--status" style={{ color: 'var(--ink-2)', fontSize: '13px' }}>{statusText}</span>
                 <span className="font-num" style={{ color: 'var(--ink-2)', fontSize: '13px' }}>
                   weight {weightPct}
                 </span>
@@ -1215,7 +1211,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             Lead-time snapshot
           </h2>
           <span className="font-num" style={{ fontSize: '12px', color: 'var(--ink-2)' }}>
-            Displaying {displayedLeadRoutes.length} routes with advance yield curves
+            Displaying {displayedLeadRoutes.length} routes with advance-purchase booking curves
           </span>
         </div>
         <p style={{ color: 'var(--ink-2)', fontSize: '13px', marginBottom: 'var(--sp-3)' }}>
@@ -1417,7 +1413,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
               onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
             >
-              See all 57 route booking curves &rarr;
+              See all {coverage?.routes_with_data_count ?? 60} route booking curves &rarr;
             </button>
           </div>
         </div>

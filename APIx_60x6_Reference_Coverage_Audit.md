@@ -1,7 +1,7 @@
-# APIx Reference Coverage Audit: DGCA Top-60 Routes × 6 Lead-Time Matrix
+# AERIX Reference Coverage Audit: DGCA Top-60 Routes × 6 Lead-Time Matrix
 
 **Audit Date:** 2026-09-27  
-**Standard:** `APIX_METHODOLOGY_V1` / `APIx_PRODUCT_DEF_v2.0_FROZEN`  
+**Standard:** `APIX_METHODOLOGY_V1` / `AERIX_PRODUCT_DEF_v2.0_FROZEN`  
 **Target Universe:** 60 DGCA Domestic Routes × 6 Lead-Time Classes ($T+1, T+7, T+15, T+21, T+30, T+45$) = **360 Cells**  
 **Weights Framework:** Finalized DGCA CY2024 Top-60 Route Weights ($W_r$) & Empirical Booking Lead-Time Weights ($w_L$)  
 

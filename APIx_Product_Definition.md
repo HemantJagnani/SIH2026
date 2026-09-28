@@ -1,4 +1,4 @@
-# APIx Product Definition & Methodology Specification
+# AERIX Product Definition & Methodology Specification
 
 **Version:** 1.0.0-PROD  
 **Methodology Identifier:** `APIX_METHODOLOGY_V1`  
@@ -9,7 +9,7 @@
 
 ## 1. Scope & Primary Target Product
 
-The APIx Consumer Price Index (CPI) airfare component measures the pure price change over time for scheduled domestic passenger air transport in India, holding product characteristics strictly constant.
+The AERIX Consumer Price Index (CPI) airfare component measures the pure price change over time for scheduled domestic passenger air transport in India, holding product characteristics strictly constant.
 
 ### 1.1 Minimum Core Product Definition
 Each scraped price observation entering the primary CPI airfare index must satisfy the following immutable product attributes:
@@ -34,7 +34,7 @@ Airline reservation systems and online travel aggregators (OTAs) offer multiple 
 
 ### 2.1 The Two-Tier Strategy
 
-APIx implements **Strategy A (Fare-Family-Specific Product Strata)** combined with **Strategy B (Defined Qualifying Baseline Selection)**:
+AERIX implements **Strategy A (Fare-Family-Specific Product Strata)** combined with **Strategy B (Defined Qualifying Baseline Selection)**:
 
 ```
                                   [ Flight Itinerary ]
@@ -51,10 +51,10 @@ APIx implements **Strategy A (Fare-Family-Specific Product Strata)** combined wi
                                        non-refundable)      reduced change fee)    free date change)   20kg baggage)
 ```
 
-1. **Primary CPI Headline Airfare Index ($I_{APIx}^{Headline}$):**
+1. **Primary CPI Headline Airfare Index ($I_{AERIX}^{Headline}$):**
    * Employs the **Defined Qualifying Baseline Selection Rule**: selects the lowest mandatory payable standard economy fare per itinerary (typically `Saver` or `Value` or standard lowest card offer).
    * Ensures backward compatibility and represents the minimum entry price available to a price-conscious consumer.
-2. **Detailed Product Strata Sub-Indices ($I_{APIx}^{stratum}$):**
+2. **Detailed Product Strata Sub-Indices ($I_{AERIX}^{stratum}$):**
    * Observations are partitioned into 4 distinct homogeneous strata:
      1. **Stratum 1 (`STANDARD_SAVER`):** Basic economy; 7 kg cabin baggage, 15 kg check-in baggage; standard seat; non-refundable/strict cancellation penalty. (Includes: `Saver`, `Value`, `SpiceSaver`).
      2. **Stratum 2 (`FLEXIBLE_ECONOMY`):** Economy ticket with complimentary standard seat selection and meal, and reduced date-change penalty. (Includes: `Flex`, `FlexiPlus`, `Classic`, `SpiceFlex`).

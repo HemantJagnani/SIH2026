@@ -1,8 +1,8 @@
-# APIx Implementation Progress Tracker
+# AERIX Implementation Progress Tracker
 
 > **Last Updated:** 2026-09-26T00:44:00+05:30  
 > **Current Phase:** All Phases (Phase 1, 2, 3, 4) Completed — Production Ready  
-> **Governing Methodology:** [`APIx_Final_Index_Methodology_and_Antigravity_Implementation.md`](file:///c:/sih%202026/apix/APIx_Final_Index_Methodology_and_Antigravity_Implementation.md)  
+> **Governing Methodology:** [`AERIX_Final_Index_Methodology_and_Antigravity_Implementation.md`](file:///c:/sih%202026/apix/AERIX_Final_Index_Methodology_and_Antigravity_Implementation.md)  
 > **Official Methodology Document:** [`METHODOLOGY.md`](file:///c:/sih%202026/apix/METHODOLOGY.md)  
 > **Backtest Evaluation Report:** [`BACKTEST_REPORT.md`](file:///c:/sih%202026/apix/BACKTEST_REPORT.md)  
 > **Sensitivity Analysis Report:** [`SENSITIVITY_REPORT.md`](file:///c:/sih%202026/apix/SENSITIVITY_REPORT.md)  
@@ -49,7 +49,7 @@
 ## 📝 Phase 3 Task Checklist (Completed)
 
 - [x] **Task 3.1: Data Models for Index Compilation**
-  - Created [`MonthlyProductPrice`](file:///c:/sih%202026/apix/apps/scraper/src/index/models.py), [`MatchedProduct`](file:///c:/sih%202026/apix/apps/scraper/src/index/models.py), [`ElementaryIndexResult`](file:///c:/sih%202026/apix/apps/scraper/src/index/models.py), [`LeadTimeIndexResult`](file:///c:/sih%202026/apix/apps/scraper/src/index/models.py), [`RouteIndexResult`](file:///c:/sih%202026/apix/apps/scraper/src/index/models.py), and [`APIxSeriesResult`](file:///c:/sih%202026/apix/apps/scraper/src/index/models.py).
+  - Created [`MonthlyProductPrice`](file:///c:/sih%202026/apix/apps/scraper/src/index/models.py), [`MatchedProduct`](file:///c:/sih%202026/apix/apps/scraper/src/index/models.py), [`ElementaryIndexResult`](file:///c:/sih%202026/apix/apps/scraper/src/index/models.py), [`LeadTimeIndexResult`](file:///c:/sih%202026/apix/apps/scraper/src/index/models.py), [`RouteIndexResult`](file:///c:/sih%202026/apix/apps/scraper/src/index/models.py), and [`AERIXSeriesResult`](file:///c:/sih%202026/apix/apps/scraper/src/index/models.py).
 - [x] **Task 3.2: Monthly Geometric Product Pricing**
   - Implemented [`compute_monthly_product_prices`](file:///c:/sih%202026/apix/apps/scraper/src/index/monthly_pricing.py) evaluating $\bar{P}_{i,t} = \exp(1/D \sum \ln P)$ with log formulation for numerical stability.
 - [x] **Task 3.3: Product Matching Engine**
@@ -59,9 +59,9 @@
 - [x] **Task 3.5: Versioned Weight Registry**
   - Implemented [`WeightRegistry`](file:///c:/sih%202026/apix/apps/scraper/src/index/weights.py) with strict $\sum W = 1.0000$ validation for DGCA route weights and lead-time booking weights (including $T+21$).
 - [x] **Task 3.6: Index Aggregation Engine**
-  - Implemented [`IndexAggregationEngine`](file:///c:/sih%202026/apix/apps/scraper/src/index/aggregation.py) for Stratum $\to$ Lead-Time ($I_{r,l,t}$) $\to$ Route ($I_{r,t} = \sum W_l I_{r,l,t}$) $\to$ All-India APIx ($\sum W_r I_{r,t}$), MoM, and YoY calculation.
-- [x] **Task 3.7: Master APIx Engine & CLI Runner**
-  - Implemented [`APIxEngine`](file:///c:/sih%202026/apix/apps/scraper/src/index/engine.py) orchestrating the complete pipeline.
+  - Implemented [`IndexAggregationEngine`](file:///c:/sih%202026/apix/apps/scraper/src/index/aggregation.py) for Stratum $\to$ Lead-Time ($I_{r,l,t}$) $\to$ Route ($I_{r,t} = \sum W_l I_{r,l,t}$) $\to$ All-India AERIX ($\sum W_r I_{r,t}$), MoM, and YoY calculation.
+- [x] **Task 3.7: Master AERIX Engine & CLI Runner**
+  - Implemented [`AERIXEngine`](file:///c:/sih%202026/apix/apps/scraper/src/index/engine.py) orchestrating the complete pipeline.
   - Created [`scripts/compute_index.py`](file:///c:/sih%202026/apix/scripts/compute_index.py) exporting [`apix_compiled_index.json`](file:///c:/sih%202026/apix/apix_compiled_index.json).
   - Created package bridge [`src/apix/index_math.py`](file:///c:/sih%202026/apix/src/apix/index_math.py).
 - [x] **Task 3.8: Unit Test Suite & Antigravity Acceptance Gates**

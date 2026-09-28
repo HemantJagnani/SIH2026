@@ -1,7 +1,7 @@
-# APIx Remaining Mathematical and Data Requirements Report
+# AERIX Remaining Mathematical and Data Requirements Report
 ## Comprehensive Gap Analysis: Internal Econometric & Scraper Architecture vs. External Administrative & Macroeconomic Data
 
-> **Document Version:** `APIx_ROADMAP_v1.0`  
+> **Document Version:** `AERIX_ROADMAP_v1.0`  
 > **Status:** Official Architectural Gap Analysis & Implementation Roadmap  
 > **Target Alignment:** MoSPI CPI 2024 Revision Framework & Eurostat HICP Standards  
 > **Current Pipeline Status:** DEL-BOM Production Engine Active (`Index = 102.6407`, 15/15 Acceptance Gates Passed)  
@@ -11,7 +11,7 @@
 
 ## 1. Executive Summary & Purpose
 
-The Indian Airfare Price Index (APIx) has achieved a major milestone in Phase 29: the complete mathematical compilation hierarchy conforming to **MoSPI CPI 2024** and **Eurostat HICP 2024** has been built, tested, and validated on live production data for the primary test corridor (`DEL-BOM`). The core statistical engine (offer selection, homogeneous stratification, monthly geometric pricing, short-chain Jevons linking, recursive period chaining, lead-time aggregation, route aggregation, and CPI integration) is mathematically complete and operational today.
+The Indian Airfare Price Index (AERIX) has achieved a major milestone in Phase 29: the complete mathematical compilation hierarchy conforming to **MoSPI CPI 2024** and **Eurostat HICP 2024** has been built, tested, and validated on live production data for the primary test corridor (`DEL-BOM`). The core statistical engine (offer selection, homogeneous stratification, monthly geometric pricing, short-chain Jevons linking, recursive period chaining, lead-time aggregation, route aggregation, and CPI integration) is mathematically complete and operational today.
 
 However, to transition from the current **DEL-BOM High-Frequency Experimental Prototype** to a **Full-Scale All-India Production CPI Augmentation Engine**, specific mathematical modules and data streams remain to be completed.
 
@@ -26,7 +26,7 @@ This report provides an exhaustive, granular breakdown of:
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        APIx PRODUCTION MATURITY SPECTRUM                               │
+│                        AERIX PRODUCTION MATURITY SPECTRUM                               │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                        │
 │   COMPONENT                 CURRENT STATUS             TARGET END-STATE                │
@@ -50,7 +50,7 @@ This report provides an exhaustive, granular breakdown of:
 
 ## 3. Internal Requirements (From Scrapers & Econometric Engine)
 
-These items reside entirely within the engineering boundary of the APIx software repository. They require algorithm development, crawler enhancements, and econometric model training using scraped fare observations.
+These items reside entirely within the engineering boundary of the AERIX software repository. They require algorithm development, crawler enhancements, and econometric model training using scraped fare observations.
 
 ---
 
@@ -118,7 +118,7 @@ These items reside entirely within the engineering boundary of the APIx software
 ### 3.4 Scraper Dimension Capture Expansion (Closing the 9 Missing Dimensions)
 
 - **Current Implementation:**  
-  As audited in [`APIx_Scraper_Missing_Data_Remediation_Report.md`](file:///APIx_Scraper_Missing_Data_Remediation_Report.md), the scraper currently extracts **14 of 29** product dimensions directly from search listing cards. To prevent statistical contamination, unsafe assumptions were removed and missing fields are recorded as `NULL/UNKNOWN`.
+  As audited in [`AERIX_Scraper_Missing_Data_Remediation_Report.md`](file:///AERIX_Scraper_Missing_Data_Remediation_Report.md), the scraper currently extracts **14 of 29** product dimensions directly from search listing cards. To prevent statistical contamination, unsafe assumptions were removed and missing fields are recorded as `NULL/UNKNOWN`.
 
 - **What Is Left (DOM Extraction Engineering):**  
   The remaining 9 product dimensions are not missing from the source; they are hidden behind interactive UI elements:
@@ -187,8 +187,8 @@ These data items cannot be obtained via web scraping alone. They represent macro
   $$W_{\text{DEL-BOM}} = 1.000000$$
 
 - **What Is Left (Administrative DGCA Ingestion):**  
-  The Directorate General of Civil Aviation (DGCA) publishes monthly domestic traffic statistics detailing city-pair passenger volumes across India. To compile the **All-India APIx Index**, the single-route weight must be replaced with the 60-route domestic traffic matrix:
-  $$\text{APIx}_t = \sum_{r=1}^{60} W_r \cdot I_{r,t} \quad \text{where } \sum_{r=1}^{60} W_r = 1.000000$$
+  The Directorate General of Civil Aviation (DGCA) publishes monthly domestic traffic statistics detailing city-pair passenger volumes across India. To compile the **All-India AERIX Index**, the single-route weight must be replaced with the 60-route domestic traffic matrix:
+  $$\text{AERIX}_t = \sum_{r=1}^{60} W_r \cdot I_{r,t} \quad \text{where } \sum_{r=1}^{60} W_r = 1.000000$$
   
 - **Representative Top Route Weights (DGCA Domestic Traffic Proxy Shares):**
   - `DEL-BOM` (Delhi ⇄ Mumbai): ~11.2%
@@ -268,7 +268,7 @@ These data items cannot be obtained via web scraping alone. They represent macro
 
 ```mermaid
 gantt
-    title APIx Production Maturation Roadmap
+    title AERIX Production Maturation Roadmap
     dateFormat  YYYY-MM-DD
     section Phase 29 (Completed)
     MoSPI CPI 2024 + Eurostat Core Engine   :done, p29, 2026-09-20, 2026-09-27

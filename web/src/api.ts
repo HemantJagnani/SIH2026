@@ -1,11 +1,11 @@
 /**
- * Production APIx Client for Frontend Dashboard.
+ * Production AERIX Client for Frontend Dashboard.
  * Interacts with FastAPI backend at http://localhost:8000
  */
 
 const BASE = 'http://localhost:8000/api';
 
-export interface APIxIndexResponse {
+export interface AERIXIndexResponse {
   index_name: string;
   frequency: string;
   period: string;
@@ -20,6 +20,8 @@ export interface APIxIndexResponse {
   weight_version: string;
   published_at: string;
 }
+
+export type APIxIndexResponse = AERIXIndexResponse;
 
 export interface QualityMetrics {
   status: string;
@@ -104,6 +106,7 @@ export interface BacktestSummary {
   root_mean_squared_error_rmse: number;
   benchmark_correlation: number;
   apix_daily_volatility_percent: number;
+  aerix_daily_volatility_percent?: number;
   naive_scraped_daily_volatility_percent: number;
   volatility_reduction_ratio: number;
   naive_mae: number;
@@ -118,6 +121,7 @@ export interface BacktestDailyPoint {
   day: number;
   date: string;
   apix_index: number;
+  aerix_index?: number;
   naive_scraped_index: number;
   ground_truth_benchmark: number;
   daily_mom_inflation_rate: number;
@@ -261,7 +265,7 @@ export interface Relative {
 }
 
 export const api = {
-  // Official Production APIx Endpoints
+  // Official Production AERIX Endpoints
   getAirfareIndex: async (params?: { route?: string; lead_time?: string }): Promise<APIxIndexResponse> => {
     const q = new URLSearchParams();
     if (params?.route) q.set('route', params.route);

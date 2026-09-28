@@ -1,4 +1,4 @@
-# APIx Frontend Completion Plan (v3): Master Brief for Cursor / Antigravity
+# AERIX Frontend Completion Plan (v3): Master Brief for Cursor / Antigravity
 
 > How to use: put this in the project root. Tell the agent: "Read APIX_FRONTEND_COMPLETION.md end to end before changing anything. Follow section 9 in order. Show screenshots after each step and wait for my go-ahead."
 >
@@ -48,7 +48,7 @@ A "Data" tab now exists (it wasn't in the v2 brief) showing 122 raw rows from `g
 - **The fares repeat identically across many rows**: every Air India nonstop shows either ₹6314 or ₹6425 regardless of departure time, every IndiGo nonstop shows ₹6474, every IndiGo one-stop shows ₹6083. Real per-flight fares vary flight to flight. If the collector is actually returning one templated price per carrier/stop-count rather than per-flight prices, that's a data problem to fix at the source, not a frontend problem — but the frontend must not present templated numbers as if they were 122 independent observations. See section 8 and section 7 for what to do about this.
 
 ### 2.9 There is no way to arrive at the site
-Every screenshot lands directly on a working view. There's no page that says what APIx is, who it's for, and what's real versus synthetic before the visitor is looking at a chart. Section 4 specifies it.
+Every screenshot lands directly on a working view. There's no page that says what AERIX is, who it's for, and what's real versus synthetic before the visitor is looking at a chart. Section 4 specifies it.
 
 ### 2.10 Small formatting things to sweep up while in each file
 - "1 Routes" → pluralise correctly, or better, say "DEL-BOM (2 of 3 routes not yet collecting)".
@@ -62,7 +62,7 @@ Every screenshot lands directly on a working view. There's no page that says wha
 Flat, five items, plain words, no nested tab bars layered on top of a page:
 
 ```
-APIx        Overview   Index   Booking curves   Method
+AERIX        Overview   Index   Booking curves   Method
 ```
 
 - **Overview** (new — this is the landing page, section 4). Default route for first-time visits.
@@ -82,10 +82,10 @@ Purpose: a first-time visitor understands in one screen what this is, who would 
 
 ```
 +--------------------------------------------------------------------+
-| APIx        Overview   Index   Booking curves   Method              |
+| AERIX        Overview   Index   Booking curves   Method              |
 +--------------------------------------------------------------------+
 |                                                                      |
-|  APIx                                                                |
+|  AERIX                                                                |
 |  A daily airfare price index for Indian domestic routes,             |
 |  built the way the CPI is built.                                     |
 |                                                                      |
@@ -94,7 +94,7 @@ Purpose: a first-time visitor understands in one screen what this is, who would 
 |                                                                      |
 |  Prices for the same flights move by 200 to 400 percent in a         |
 |  single day depending on how far ahead you book. Official inflation  |
-|  data mostly can't see that. APIx tracks a fixed set of routes and   |
+|  data mostly can't see that. AERIX tracks a fixed set of routes and   |
 |  booking windows every day and turns the changes into one number,    |
 |  using the same kind of method behind India's Consumer Price Index.  |
 |                                                                      |

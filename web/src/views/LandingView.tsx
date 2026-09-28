@@ -49,7 +49,7 @@ export default function LandingView({ onEnterApp, onLogin, currentUser }: Landin
       organization: 'MoSPI Civil Aviation Analytics',
       role: 'Senior Statistical Officer',
     };
-    setStatusMessage('Authentication verified. Connecting to APIx Terminal...');
+    setStatusMessage('Authentication verified. Connecting to AERIX Terminal...');
     setTimeout(() => {
       onLogin(user);
       onEnterApp('overview');
@@ -59,7 +59,7 @@ export default function LandingView({ onEnterApp, onLogin, currentUser }: Landin
   const handleQuickDemo = () => {
     const demoUser: UserAccount = {
       name: 'Admin User',
-      email: 'admin@apix.gov.in',
+      email: 'admin@aerix.gov.in',
       organization: 'MoSPI National Accounts',
       role: 'System Administrator / Lead Analyst',
     };
@@ -93,8 +93,8 @@ export default function LandingView({ onEnterApp, onLogin, currentUser }: Landin
     <div className="akasa-landing-root">
       <div className="akasa-landing-shell">
         <div className="akasa-modal-card">
-          {/* ── LEFT PANEL: Warm Neutral with apix, Features & Aeroplane Under It ── */}
-          <section className="akasa-left-panel" aria-label="APIx Introduction">
+          {/* ── LEFT PANEL: Warm Neutral with aerix, Features & Aeroplane Under It ── */}
+          <section className="akasa-left-panel" aria-label="AERIX Introduction">
             <div className="akasa-left-content">
               {/* Accreditation Badge */}
               <div className="akasa-accreditation-pill">
@@ -102,9 +102,9 @@ export default function LandingView({ onEnterApp, onLogin, currentUser }: Landin
                 <span>SIH 2026 • MoSPI ALIGNED • CPI 2024 = 100</span>
               </div>
 
-              {/* apix Brand Heading */}
+              {/* aerix Brand Heading */}
               <div className="akasa-brand-header">
-                <h1 className="akasa-brand-title">apix</h1>
+                <h1 className="akasa-brand-title">aerix</h1>
                 <span className="akasa-brand-sub">E L E V A T E</span>
               </div>
 
@@ -321,7 +321,7 @@ export default function LandingView({ onEnterApp, onLogin, currentUser }: Landin
                   setStatusMessage(null);
                 }}
               >
-                Join APIx Terminal
+                Join AERIX Terminal
               </button>
 
               <div className="akasa-cta-divider">
@@ -491,7 +491,7 @@ export default function LandingView({ onEnterApp, onLogin, currentUser }: Landin
             {authMode === 'signup' && (
               <form className="akasa-auth-form" onSubmit={handleSignUp}>
                 <div className="akasa-form-header">
-                  <h3 className="akasa-form-title">Join APIx Terminal</h3>
+                  <h3 className="akasa-form-title">Join AERIX Terminal</h3>
                   <p className="akasa-form-sub">
                     Register for authorized analyst privileges on the Indian Airfare Price Index.
                   </p>

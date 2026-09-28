@@ -1,5 +1,5 @@
 """
-APIx Statistical Index Compilation Package (Phase 29: MoSPI CPI 2024 + Eurostat HICP Aligned).
+AERIX Statistical Index Compilation Package (Phase 29: MoSPI CPI 2024 + Eurostat HICP Aligned).
 """
 
 from .models import (
@@ -9,6 +9,7 @@ from .models import (
     LeadTimeIndexResult,
     RouteIndexResult,
     APIxSeriesResult,
+    APIxSeriesResult as AERIXSeriesResult,
 )
 from .monthly_pricing import compute_monthly_product_prices
 from .matching import ProductMatchingEngine
@@ -50,7 +51,7 @@ from .lead_time_weights import (
     LEAD_TIME_CLASSES,
 )
 from .aggregation import IndexAggregationEngine
-from .engine import APIxEngine
+from .engine import APIxEngine, AERIXEngine
 from .classification import (
     COICOPClassification,
     CPIIntegrationLayer,
@@ -171,6 +172,8 @@ __all__ = [
     "assert_no_cpi_weight_contamination",
     "IndexAggregationEngine",
     "APIxEngine",
+    "AERIXEngine",
+    "AERIXSeriesResult",
     "COICOPClassification",
     "CPIIntegrationLayer",
     "CPIAirfareWeightConfig",

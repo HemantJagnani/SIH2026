@@ -1,9 +1,9 @@
-# APIx Provisional Basket-Based Reference Price (P_ref) Report
+# AERIX Provisional Basket-Based Reference Price (P_ref) Report
 
 **Report Date**: September 28, 2026  
 **Status / Classification**: `PROVISIONAL_PROJECT_REFERENCE`  
-**Methodology Version**: `APIX_METHODOLOGY_V1` / `APIx_PRODUCT_DEF_v2.0_FROZEN`  
-**Underlying Dataset**: Finalized 360-Cell APIx Production Matrix (`runtime/top60_observation_classification.json`, 11,716 observations)  
+**Methodology Version**: `APIX_METHODOLOGY_V1` / `AERIX_PRODUCT_DEF_v2.0_FROZEN`  
+**Underlying Dataset**: Finalized 360-Cell AERIX Production Matrix (`runtime/top60_observation_classification.json`, 11,716 observations)  
 
 > [!IMPORTANT]
 > **PROVISIONAL_PROJECT_REFERENCE NOTICE**  
@@ -14,7 +14,7 @@
 ## 1. Executive Summary & Final Calculation
 
 The provisional reference price $P_{\text{ref}}$ is calculated using a two-stage aggregation across all 360 populated cells:
-1. **Stage 1 (Lead-Time Class Geometric Mean)**: For each route $r$ and lead-time horizon $L \in \{T+1, T+7, T+15, T+21, T+30, T+45\}$, compute the geometric mean of valid APIx baseline fares: $P_{(r,L)} = \exp\left(\frac{1}{N_{r,L}} \sum_{i=1}^{N_{r,L}} \ln(p_i)\right)$.
+1. **Stage 1 (Lead-Time Class Geometric Mean)**: For each route $r$ and lead-time horizon $L \in \{T+1, T+7, T+15, T+21, T+30, T+45\}$, compute the geometric mean of valid AERIX baseline fares: $P_{(r,L)} = \exp\left(\frac{1}{N_{r,L}} \sum_{i=1}^{N_{r,L}} \ln(p_i)\right)$.
 2. **Stage 2 (Route Reference Price)**: Compute the weighted average across lead times using frozen empirical weights: $P_r = \sum_L w_L \cdot P_{(r,L)}$.
 3. **Stage 3 (Basket Reference Price)**: Compute the final index reference price weighted by DGCA CY2024 passenger traffic: $P_{\text{ref}} = \sum_r W_r \cdot P_r$.
 
