@@ -1,0 +1,25 @@
+{
+  "pythonVersion": "3.13",
+  "venvPath": "C:/pdf_proj_venv",
+  "venv": ".",
+  "pythonPlatform": "Windows",
+  "extraPaths": [
+    "apps/scraper/src",
+    "apps/api/src"
+  ],
+  "include": [
+    "apps",
+    "tests",
+    "scripts",
+    "src"
+  ],
+  "exclude": [
+    "scratch",
+    "node_modules",
+    "**/\__pycache__",
+    "runtime",
+    "storage"
+  ],
+  "reportMissingModuleSource": "none",
+  "typeCheckingMode": "basic"
+}
