@@ -407,8 +407,6 @@ export const api = {
     return (fallback.default || fallback) as unknown as BacktestResponse;
   },
 
-  },
-
   getRealBacktest: async (): Promise<RealBacktestResponse> => {
     const res = await fetch(`${BASE}/v1/backtest?mode=real`);
     if (!res.ok) throw new Error(`API error ${res.status}: /v1/backtest?mode=real`);
