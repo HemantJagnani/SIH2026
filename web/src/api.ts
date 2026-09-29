@@ -3,7 +3,9 @@
  * Interacts with FastAPI backend at http://localhost:8000
  */
 
-const BASE = 'http://localhost:8000/api';
+const rawBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || 'http://localhost:8000';
+const cleanBase = rawBase.replace(/\/+$/, '');
+const BASE = cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
 
 export interface AERIXIndexResponse {
   index_name: string;

@@ -374,10 +374,28 @@ AERIX is an automated, high-frequency airfare data-collection and price index co
     openapi_tags=tags_metadata
 )
 
-# Enable CORS for dashboard access
+# Enable CORS for dashboard access with FRONTEND_ORIGIN support
+frontend_origins_env = os.environ.get("FRONTEND_ORIGIN", "")
+allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:4173",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:4173",
+]
+if frontend_origins_env:
+    for o in frontend_origins_env.split(","):
+        cleaned = o.strip()
+        if cleaned and cleaned not in allowed_origins:
+            allowed_origins.append(cleaned)
+elif os.environ.get("ENVIRONMENT", "development").lower() != "production":
+    # In local development if unconfigured, also allow localhost API origin
+    allowed_origins.extend(["http://localhost:8000", "http://127.0.0.1:8000"])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -982,18 +1000,22 @@ async def health_check():
                 except Exception:
                     pass
 
-    # Redis health check
-    redis_status = "DISCONNECTED"
+    # Redis health check (optional caching tier)
     redis_url = os.environ.get("REDIS_URL")
     if redis_url:
+        redis_status = "DISCONNECTED"
         try:
             r = redis.from_url(redis_url, decode_responses=True)
             if r.ping():
                 redis_status = "CONNECTED"
         except Exception as e:
             redis_status = f"ERROR: {e}"
+    else:
+        redis_status = "NOT_CONFIGURED"
 
-    all_healthy = (db_status == "CONNECTED") and (redis_status == "CONNECTED")
+    db_healthy = (db_status == "CONNECTED")
+    redis_healthy = redis_status in ("CONNECTED", "NOT_CONFIGURED")
+    all_healthy = db_healthy and redis_healthy
 
     return {
         "status": "HEALTHY" if all_healthy else "DEGRADED",
@@ -1004,7 +1026,7 @@ async def health_check():
             "fare_observations_count": obs_count
         },
         "redis": {
-            "type": "Render Key-Value (Hosted)",
+            "type": "Render Key-Value (Hosted)" if redis_url else "None",
             "status": redis_status
         },
         "timestamp": datetime.now(timezone.utc).isoformat()

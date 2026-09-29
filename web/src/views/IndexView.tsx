@@ -222,7 +222,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             isReal: true,
             points: res.value.curve_points.map((p) => ({
               lead_days: p.lead_days,
-              price: p.geometric_mean_inr || p.average_fare_inr || p.median_fare_inr,
+              price: p.geometric_mean_inr || p.average_fare_inr || p.median_fare_inr || 0,
             })),
           };
         }
