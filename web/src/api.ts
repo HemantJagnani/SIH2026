@@ -194,7 +194,45 @@ export interface BacktestDailyPoint {
   overall_coverage_ratio: number;
 }
 
+export interface RealBacktestDailyPoint {
+  day: number;
+  date: string;
+  observation_count: number;
+  route_count: number;
+  sample_routes: string[];
+  collection_sources: string[];
+  mean_fare_inr: number;
+  median_fare_inr: number;
+  geometric_mean_inr: number;
+  min_fare_inr: number;
+  max_fare_inr: number;
+  route_median_fares?: Record<string, number>;
+  data_status: string;
+}
+
+export interface RealBacktestResponse {
+  backtest_type: string;
+  data_status: string;
+  evaluation_window: string;
+  evaluation_start: string;
+  evaluation_end: string;
+  observation_days: number;
+  total_real_observations: number;
+  benchmark_source: string;
+  provenance_note: string;
+  metrics: Record<string, any>;
+  summary: Record<string, any>;
+  limitations: string[];
+  daily_series: RealBacktestDailyPoint[];
+  last_updated: string;
+}
+
 export interface BacktestResponse {
+  backtest_type?: string;
+  data_status?: string;
+  evaluation_window?: string;
+  observation_days?: number;
+  total_real_observations?: number;
   summary: BacktestSummary;
   route_comparisons?: RouteComparison[];
   pairwise_directional_accuracy?: PairwiseDirectionalAccuracy[];
@@ -357,13 +395,24 @@ export const api = {
     return res.json();
   },
 
-  getBacktest: async (): Promise<BacktestResponse> => {
+  getBacktest: async (mode?: 'synthetic' | 'real'): Promise<BacktestResponse> => {
+    const q = new URLSearchParams();
+    if (mode) q.set('mode', mode);
     try {
-      const res = await fetch(`${BASE}/v1/backtest`);
+      const res = await fetch(`${BASE}/v1/backtest${mode ? `?${q.toString()}` : ''}`);
       if (res.ok) return await res.json();
     } catch {}
+    // Graceful fallback to bundled results if backend is offline or during testing
     const fallback = await import('./data/backtest_results.json');
     return (fallback.default || fallback) as unknown as BacktestResponse;
+  },
+
+  },
+
+  getRealBacktest: async (): Promise<RealBacktestResponse> => {
+    const res = await fetch(`${BASE}/v1/backtest?mode=real`);
+    if (!res.ok) throw new Error(`API error ${res.status}: /v1/backtest?mode=real`);
+    return res.json();
   },
 
   getSensitivity: async (): Promise<SensitivityResponse> => {

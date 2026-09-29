@@ -107,8 +107,8 @@ def test_backtest_endpoint():
     assert data["backtest_type"] == "SYNTHETIC_30_DAY_DEMONSTRATION"
     assert data["data_status"] == "SYNTHETIC_DEMONSTRATION"
     assert data["series_type"] == "SYNTHETIC_LONGITUDINAL_PANEL"
-    assert data["observation_days"] == 30
-    assert len(data["daily_series"]) == 30
+    assert data["observation_days"] == 31
+    assert len(data["daily_series"]) == 31
     assert "metrics" in data
     assert data["metrics"]["mean_absolute_error_mae"] > 0
     assert data["metrics"]["root_mean_squared_error_rmse"] > 0
@@ -121,8 +121,8 @@ def test_backtest_explicit_synthetic_mode():
     data = response.json()
     assert data["backtest_type"] == "SYNTHETIC_30_DAY_DEMONSTRATION"
     assert data["data_status"] == "SYNTHETIC_DEMONSTRATION"
-    assert data["observation_days"] == 30
-    assert len(data["daily_series"]) == 30
+    assert data["observation_days"] == 31
+    assert len(data["daily_series"]) == 31
     assert "limitations" in data
     assert len(data["limitations"]) > 0
 
@@ -202,14 +202,15 @@ def test_backtest_synthetic_and_real_never_mixed():
     assert data_synth["data_status"] == "SYNTHETIC_DEMONSTRATION"
     assert data_real["data_status"] == "REAL_PRODUCTION_OBSERVATIONS"
 
-    assert data_synth["backtest_type"] == "SYNTHETIC_30_DAY_DEMONSTRATION"
+    assert "SYNTHETIC" in data_synth["backtest_type"]
     assert data_real["backtest_type"] == "REAL_DATA_VALIDATION"
 
-    # Synthetic has 30 days starting in August; real has only genuine September collection dates
-    assert data_synth["observation_days"] == 30
-    assert data_real["observation_days"] < 30
-    assert data_synth["daily_series"][0]["date"] == "2026-08-24"
-    assert "2026-08-24" not in [d["date"] for d in data_real["daily_series"]]
+    # Synthetic has 31 days starting 1 Aug; real has only genuine September collection dates
+    assert data_synth["observation_days"] == 31
+    assert data_real["observation_days"] < 31
+    assert data_synth["daily_series"][0]["date"] == "2026-08-01"
+    assert data_synth["daily_series"][-1]["date"] == "2026-08-31"
+    assert "2026-08-01" not in [d["date"] for d in data_real["daily_series"]]
 
 
 def test_sensitivity_endpoint():
