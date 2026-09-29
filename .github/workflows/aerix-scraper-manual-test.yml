@@ -31,7 +31,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install "crawlee[playwright]"
+          pip install "crawlee[playwright]" beautifulsoup4 pyyaml
 
       - name: Install Playwright & Chromium browser dependencies
         run: |
