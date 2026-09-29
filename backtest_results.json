@@ -1,19 +1,20 @@
 {
   "summary": {
-    "evaluation_period": "2026-08-24 to 2026-09-22",
-    "total_days": 30,
+    "evaluation_period": "2026-08-01 to 2026-08-31",
+    "total_days": 31,
     "base_index_start": 100.0,
-    "final_index_end": 101.8845,
-    "total_30day_return_percent": 1.885,
-    "mean_absolute_error_mae": 1.3302,
-    "root_mean_squared_error_rmse": 2.3875,
-    "benchmark_correlation": 0.3583,
-    "apix_daily_volatility_percent": 2.301,
-    "naive_scraped_daily_volatility_percent": 2.3047,
-    "volatility_reduction_ratio": 1.0,
-    "naive_mae": 1.3669,
-    "naive_rmse": 2.4139,
-    "maximum_drawdown_percent": 4.37,
+    "final_index_end": 101.8938,
+    "total_30day_return_percent": 1.894,
+    "mean_absolute_error_mae": 0.9578,
+    "root_mean_squared_error_rmse": 1.3612,
+    "benchmark_correlation": 0.3969,
+    "apix_daily_volatility_percent": 0.592,
+    "aerix_daily_volatility_percent": 0.4788,
+    "naive_scraped_daily_volatility_percent": 1.3076,
+    "volatility_reduction_ratio": 2.21,
+    "naive_mae": 7.1103,
+    "naive_rmse": 8.5646,
+    "maximum_drawdown_percent": -3.615,
     "stratum_coverage_mean": 1.0,
     "mospi_t21_checkpoint_present": true,
     "antigravity_acceptance_passed": true
@@ -21,482 +22,932 @@
   "daily_series": [
     {
       "day": 1,
-      "date": "2026-08-24",
-      "apix_index": 100.0,
+      "date": "2026-08-01",
+      "apix_index": 100.0144,
+      "aerix_index": 100.0,
       "naive_scraped_index": 100.0,
       "ground_truth_benchmark": 100.0,
       "daily_mom_inflation_rate": 0.0,
       "route_indices": {
-        "DEL-BOM": 100.0
+        "DEL-BOM": 100.0,
+        "BLR-DEL": 100.0,
+        "BLR-BOM": 100.0,
+        "DEL-HYD": 100.0,
+        "DEL-CCU": 100.0,
+        "DEL-PNQ": 100.0,
+        "AMD-DEL": 100.3366,
+        "DEL-MAA": 100.2157,
+        "BOM-HYD": 100.3183
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 100.0
+        "T+1": 107.0154,
+        "T+7": 104.4945,
+        "T+15": 101.6878,
+        "T+21": 103.5137,
+        "T+30": 101.3783,
+        "T+45": 98.1937
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 2,
-      "date": "2026-08-25",
-      "apix_index": 99.9206,
-      "naive_scraped_index": 99.9746,
+      "date": "2026-08-02",
+      "apix_index": 100.2769,
+      "aerix_index": 100.1938,
+      "naive_scraped_index": 100.82,
       "ground_truth_benchmark": 100.06,
-      "daily_mom_inflation_rate": -0.08,
+      "daily_mom_inflation_rate": 0.2625,
       "route_indices": {
-        "DEL-BOM": 99.9206
+        "DEL-BOM": 100.42,
+        "BLR-DEL": 100.18,
+        "BLR-BOM": 100.09,
+        "DEL-HYD": 100.23,
+        "DEL-CCU": 100.31,
+        "DEL-PNQ": 100.3987,
+        "AMD-DEL": 100.4085,
+        "DEL-MAA": 100.4694,
+        "BOM-HYD": 100.2004
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 99.9206
+        "T+1": 109.0836,
+        "T+7": 105.2762,
+        "T+15": 102.0752,
+        "T+21": 103.6591,
+        "T+30": 101.4864,
+        "T+45": 98.3138
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 3,
-      "date": "2026-08-26",
-      "apix_index": 100.1088,
-      "naive_scraped_index": 100.0667,
+      "date": "2026-08-03",
+      "apix_index": 99.9796,
+      "aerix_index": 100.0439,
+      "naive_scraped_index": 99.48,
       "ground_truth_benchmark": 100.12,
-      "daily_mom_inflation_rate": 0.19,
+      "daily_mom_inflation_rate": -0.2965,
       "route_indices": {
-        "DEL-BOM": 100.1088
+        "DEL-BOM": 99.87,
+        "BLR-DEL": 99.98,
+        "BLR-BOM": 99.92,
+        "DEL-HYD": 100.01,
+        "DEL-CCU": 100.12,
+        "DEL-PNQ": 100.5798,
+        "AMD-DEL": 100.194,
+        "DEL-MAA": 100.5258,
+        "BOM-HYD": 100.0196
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 100.1088
+        "T+1": 108.5948,
+        "T+7": 104.7243,
+        "T+15": 101.5197,
+        "T+21": 102.9998,
+        "T+30": 100.9561,
+        "T+45": 97.8748
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 4,
-      "date": "2026-08-27",
-      "apix_index": 100.1329,
-      "naive_scraped_index": 100.1122,
+      "date": "2026-08-04",
+      "apix_index": 100.612,
+      "aerix_index": 100.4416,
+      "naive_scraped_index": 101.35,
       "ground_truth_benchmark": 100.18,
-      "daily_mom_inflation_rate": 0.02,
+      "daily_mom_inflation_rate": 0.6325,
       "route_indices": {
-        "DEL-BOM": 100.1329
+        "DEL-BOM": 100.93,
+        "BLR-DEL": 100.45,
+        "BLR-BOM": 100.34,
+        "DEL-HYD": 100.67,
+        "DEL-CCU": 100.87,
+        "DEL-PNQ": 100.4577,
+        "AMD-DEL": 99.8781,
+        "DEL-MAA": 100.382,
+        "BOM-HYD": 99.8458
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 100.1329
+        "T+1": 107.3374,
+        "T+7": 104.5777,
+        "T+15": 101.6516,
+        "T+21": 103.2844,
+        "T+30": 101.3719,
+        "T+45": 98.3713
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 5,
-      "date": "2026-08-28",
-      "apix_index": 100.4973,
-      "naive_scraped_index": 100.2837,
+      "date": "2026-08-05",
+      "apix_index": 100.9427,
+      "aerix_index": 100.7924,
+      "naive_scraped_index": 101.91,
       "ground_truth_benchmark": 100.24,
-      "daily_mom_inflation_rate": 0.36,
+      "daily_mom_inflation_rate": 0.3287,
       "route_indices": {
-        "DEL-BOM": 100.4973
+        "DEL-BOM": 101.45,
+        "BLR-DEL": 100.78,
+        "BLR-BOM": 100.56,
+        "DEL-HYD": 101.12,
+        "DEL-CCU": 101.23,
+        "DEL-PNQ": 100.1308,
+        "AMD-DEL": 99.7225,
+        "DEL-MAA": 100.129,
+        "BOM-HYD": 99.7469
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 100.4973
+        "T+1": 106.0875,
+        "T+7": 104.1544,
+        "T+15": 101.458,
+        "T+21": 103.4663,
+        "T+30": 101.5679,
+        "T+45": 98.6278
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 6,
-      "date": "2026-08-29",
-      "apix_index": 105.0344,
-      "naive_scraped_index": 105.03,
+      "date": "2026-08-06",
+      "apix_index": 100.448,
+      "aerix_index": 100.5513,
+      "naive_scraped_index": 101.0,
       "ground_truth_benchmark": 100.3,
-      "daily_mom_inflation_rate": 4.51,
+      "daily_mom_inflation_rate": -0.4901,
       "route_indices": {
-        "DEL-BOM": 105.0344
+        "DEL-BOM": 100.78,
+        "BLR-DEL": 100.32,
+        "BLR-BOM": 100.21,
+        "DEL-HYD": 100.54,
+        "DEL-CCU": 100.67,
+        "DEL-PNQ": 99.8216,
+        "AMD-DEL": 99.8678,
+        "DEL-MAA": 99.9094,
+        "BOM-HYD": 99.7644
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 105.0344
+        "T+1": 106.062,
+        "T+7": 103.5027,
+        "T+15": 100.667,
+        "T+21": 103.1071,
+        "T+30": 101.0672,
+        "T+45": 98.1501
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 7,
-      "date": "2026-08-30",
-      "apix_index": 104.7102,
-      "naive_scraped_index": 104.7624,
+      "date": "2026-08-07",
+      "apix_index": 99.7769,
+      "aerix_index": 100.0092,
+      "naive_scraped_index": 99.77,
       "ground_truth_benchmark": 100.36,
-      "daily_mom_inflation_rate": -0.31,
+      "daily_mom_inflation_rate": -0.6681,
       "route_indices": {
-        "DEL-BOM": 104.7102
+        "DEL-BOM": 99.65,
+        "BLR-DEL": 99.87,
+        "BLR-BOM": 99.78,
+        "DEL-HYD": 99.89,
+        "DEL-CCU": 99.78,
+        "DEL-PNQ": 99.7419,
+        "AMD-DEL": 100.2266,
+        "DEL-MAA": 99.85,
+        "BOM-HYD": 99.8991
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 104.7102
+        "T+1": 107.383,
+        "T+7": 103.3949,
+        "T+15": 100.0695,
+        "T+21": 102.7786,
+        "T+30": 100.5227,
+        "T+45": 97.5702
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 8,
-      "date": "2026-08-31",
-      "apix_index": 100.4448,
-      "naive_scraped_index": 100.6158,
+      "date": "2026-08-08",
+      "apix_index": 100.1815,
+      "aerix_index": 100.1298,
+      "naive_scraped_index": 100.44,
       "ground_truth_benchmark": 100.42,
-      "daily_mom_inflation_rate": -4.07,
+      "daily_mom_inflation_rate": 0.4055,
       "route_indices": {
-        "DEL-BOM": 100.4448
+        "DEL-BOM": 100.12,
+        "BLR-DEL": 100.23,
+        "BLR-BOM": 100.12,
+        "DEL-HYD": 100.34,
+        "DEL-CCU": 100.45,
+        "DEL-PNQ": 99.9644,
+        "AMD-DEL": 100.5502,
+        "DEL-MAA": 100.0023,
+        "BOM-HYD": 100.1109
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 100.4448
+        "T+1": 109.1741,
+        "T+7": 104.6838,
+        "T+15": 100.8837,
+        "T+21": 103.5521,
+        "T+30": 101.15,
+        "T+45": 98.0939
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 9,
-      "date": "2026-09-01",
-      "apix_index": 100.5045,
-      "naive_scraped_index": 100.2933,
+      "date": "2026-08-09",
+      "apix_index": 100.9876,
+      "aerix_index": 100.7303,
+      "naive_scraped_index": 101.89,
       "ground_truth_benchmark": 100.48,
-      "daily_mom_inflation_rate": 0.06,
+      "daily_mom_inflation_rate": 0.8046,
       "route_indices": {
-        "DEL-BOM": 100.5045
+        "DEL-BOM": 101.34,
+        "BLR-DEL": 100.89,
+        "BLR-BOM": 100.67,
+        "DEL-HYD": 101.01,
+        "DEL-CCU": 101.23,
+        "DEL-PNQ": 100.3783,
+        "AMD-DEL": 100.6163,
+        "DEL-MAA": 100.318,
+        "BOM-HYD": 100.3329
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 100.5045
+        "T+1": 109.2381,
+        "T+7": 106.025,
+        "T+15": 102.2492,
+        "T+21": 104.5216,
+        "T+30": 102.1971,
+        "T+45": 99.033
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 10,
-      "date": "2026-09-02",
-      "apix_index": 100.6995,
-      "naive_scraped_index": 100.8199,
+      "date": "2026-08-10",
+      "apix_index": 100.6478,
+      "aerix_index": 100.6725,
+      "naive_scraped_index": 101.55,
       "ground_truth_benchmark": 100.54,
-      "daily_mom_inflation_rate": 0.19,
+      "daily_mom_inflation_rate": -0.3365,
       "route_indices": {
-        "DEL-BOM": 100.6995
+        "DEL-BOM": 100.87,
+        "BLR-DEL": 100.54,
+        "BLR-BOM": 100.34,
+        "DEL-HYD": 100.67,
+        "DEL-CCU": 100.89,
+        "DEL-PNQ": 100.7568,
+        "AMD-DEL": 100.3976,
+        "DEL-MAA": 100.6724,
+        "BOM-HYD": 100.4945
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 100.6995
+        "T+1": 106.7721,
+        "T+7": 105.4129,
+        "T+15": 102.339,
+        "T+21": 104.0009,
+        "T+30": 102.0161,
+        "T+45": 98.8332
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 11,
-      "date": "2026-09-03",
-      "apix_index": 100.8599,
-      "naive_scraped_index": 100.8681,
+      "date": "2026-08-11",
+      "apix_index": 101.3742,
+      "aerix_index": 101.1637,
+      "naive_scraped_index": 103.44,
       "ground_truth_benchmark": 100.6,
-      "daily_mom_inflation_rate": 0.16,
+      "daily_mom_inflation_rate": 0.7217,
       "route_indices": {
-        "DEL-BOM": 100.8599
+        "DEL-BOM": 101.89,
+        "BLR-DEL": 101.23,
+        "BLR-BOM": 100.89,
+        "DEL-HYD": 101.45,
+        "DEL-CCU": 101.67,
+        "DEL-PNQ": 100.8947,
+        "AMD-DEL": 100.0824,
+        "DEL-MAA": 100.9221,
+        "BOM-HYD": 100.5463
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 100.8599
+        "T+1": 106.4429,
+        "T+7": 105.353,
+        "T+15": 103.1903,
+        "T+21": 104.3773,
+        "T+30": 102.7891,
+        "T+45": 99.632
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 12,
-      "date": "2026-09-04",
-      "apix_index": 100.7732,
-      "naive_scraped_index": 100.955,
+      "date": "2026-08-12",
+      "apix_index": 102.4093,
+      "aerix_index": 102.0356,
+      "naive_scraped_index": 105.89,
       "ground_truth_benchmark": 100.66,
-      "daily_mom_inflation_rate": -0.09,
+      "daily_mom_inflation_rate": 1.0211,
       "route_indices": {
-        "DEL-BOM": 100.7732
+        "DEL-BOM": 103.21,
+        "BLR-DEL": 102.34,
+        "BLR-BOM": 101.78,
+        "DEL-HYD": 102.56,
+        "DEL-CCU": 102.89,
+        "DEL-PNQ": 100.7325,
+        "AMD-DEL": 99.9318,
+        "DEL-MAA": 100.9733,
+        "BOM-HYD": 100.477
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 100.7732
+        "T+1": 108.657,
+        "T+7": 105.6579,
+        "T+15": 103.9765,
+        "T+21": 105.0885,
+        "T+30": 103.7342,
+        "T+45": 100.6651
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 13,
-      "date": "2026-09-05",
-      "apix_index": 105.3378,
-      "naive_scraped_index": 105.2487,
+      "date": "2026-08-13",
+      "apix_index": 103.5535,
+      "aerix_index": 103.0981,
+      "naive_scraped_index": 109.01,
       "ground_truth_benchmark": 100.72,
-      "daily_mom_inflation_rate": 4.53,
+      "daily_mom_inflation_rate": 1.1173,
       "route_indices": {
-        "DEL-BOM": 105.3378
+        "DEL-BOM": 104.56,
+        "BLR-DEL": 103.67,
+        "BLR-BOM": 102.89,
+        "DEL-HYD": 103.78,
+        "DEL-CCU": 104.01,
+        "DEL-PNQ": 100.3928,
+        "AMD-DEL": 100.0826,
+        "DEL-MAA": 100.8255,
+        "BOM-HYD": 100.318
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 105.3378
+        "T+1": 112.0285,
+        "T+7": 106.7077,
+        "T+15": 104.6096,
+        "T+21": 106.1452,
+        "T+30": 104.6814,
+        "T+45": 101.7305
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 14,
-      "date": "2026-09-06",
-      "apix_index": 105.4817,
-      "naive_scraped_index": 105.7295,
+      "date": "2026-08-14",
+      "apix_index": 104.4094,
+      "aerix_index": 104.016,
+      "naive_scraped_index": 112.79,
       "ground_truth_benchmark": 100.78,
-      "daily_mom_inflation_rate": 0.14,
+      "daily_mom_inflation_rate": 0.8265,
       "route_indices": {
-        "DEL-BOM": 105.4817
+        "DEL-BOM": 105.64,
+        "BLR-DEL": 104.43,
+        "BLR-BOM": 103.97,
+        "DEL-HYD": 104.34,
+        "DEL-CCU": 104.89,
+        "DEL-PNQ": 100.1061,
+        "AMD-DEL": 100.4433,
+        "DEL-MAA": 100.5716,
+        "BOM-HYD": 100.1317
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 105.4817
+        "T+1": 113.7786,
+        "T+7": 108.2118,
+        "T+15": 104.9314,
+        "T+21": 107.219,
+        "T+30": 105.3004,
+        "T+45": 102.4503
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 15,
-      "date": "2026-09-07",
-      "apix_index": 101.0186,
-      "naive_scraped_index": 100.8513,
+      "date": "2026-08-15",
+      "apix_index": 103.9897,
+      "aerix_index": 103.9976,
+      "naive_scraped_index": 113.35,
       "ground_truth_benchmark": 100.84,
-      "daily_mom_inflation_rate": -4.23,
+      "daily_mom_inflation_rate": -0.402,
       "route_indices": {
-        "DEL-BOM": 101.0186
+        "DEL-BOM": 105.12,
+        "BLR-DEL": 104.01,
+        "BLR-BOM": 103.56,
+        "DEL-HYD": 103.89,
+        "DEL-CCU": 104.34,
+        "DEL-PNQ": 100.0704,
+        "AMD-DEL": 100.7637,
+        "DEL-MAA": 100.3545,
+        "BOM-HYD": 99.9903
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 101.0186
+        "T+1": 111.8994,
+        "T+7": 108.6782,
+        "T+15": 104.2135,
+        "T+21": 107.1787,
+        "T+30": 104.6853,
+        "T+45": 101.8865
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 16,
-      "date": "2026-09-08",
-      "apix_index": 101.3688,
-      "naive_scraped_index": 101.3721,
+      "date": "2026-08-16",
+      "apix_index": 103.2752,
+      "aerix_index": 103.4919,
+      "naive_scraped_index": 112.12,
       "ground_truth_benchmark": 100.9,
-      "daily_mom_inflation_rate": 0.35,
+      "daily_mom_inflation_rate": -0.6871,
       "route_indices": {
-        "DEL-BOM": 101.3688
+        "DEL-BOM": 104.23,
+        "BLR-DEL": 103.23,
+        "BLR-BOM": 102.89,
+        "DEL-HYD": 103.12,
+        "DEL-CCU": 103.56,
+        "DEL-PNQ": 100.3317,
+        "AMD-DEL": 100.824,
+        "DEL-MAA": 100.3,
+        "BOM-HYD": 99.95
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 101.3688
+        "T+1": 109.0343,
+        "T+7": 108.4293,
+        "T+15": 103.5847,
+        "T+21": 106.7885,
+        "T+30": 103.8949,
+        "T+45": 101.0411
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 17,
-      "date": "2026-09-09",
-      "apix_index": 100.9883,
-      "naive_scraped_index": 101.0079,
+      "date": "2026-08-17",
+      "apix_index": 102.6864,
+      "aerix_index": 102.9281,
+      "naive_scraped_index": 111.34,
       "ground_truth_benchmark": 100.96,
-      "daily_mom_inflation_rate": -0.38,
+      "daily_mom_inflation_rate": -0.5701,
       "route_indices": {
-        "DEL-BOM": 100.9883
+        "DEL-BOM": 103.45,
+        "BLR-DEL": 102.67,
+        "BLR-BOM": 102.34,
+        "DEL-HYD": 102.45,
+        "DEL-CCU": 102.78,
+        "DEL-PNQ": 100.7558,
+        "AMD-DEL": 100.6012,
+        "DEL-MAA": 100.4571,
+        "BOM-HYD": 100.032
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 100.9883
+        "T+1": 107.9258,
+        "T+7": 107.5362,
+        "T+15": 103.419,
+        "T+21": 106.2736,
+        "T+30": 103.3753,
+        "T+45": 100.3617
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 18,
-      "date": "2026-09-10",
-      "apix_index": 101.029,
-      "naive_scraped_index": 101.0412,
+      "date": "2026-08-18",
+      "apix_index": 102.0983,
+      "aerix_index": 102.3472,
+      "naive_scraped_index": 111.79,
       "ground_truth_benchmark": 101.02,
-      "daily_mom_inflation_rate": 0.04,
+      "daily_mom_inflation_rate": -0.5727,
       "route_indices": {
-        "DEL-BOM": 101.029
+        "DEL-BOM": 102.78,
+        "BLR-DEL": 101.98,
+        "BLR-BOM": 101.78,
+        "DEL-HYD": 101.78,
+        "DEL-CCU": 101.98,
+        "DEL-PNQ": 101.1096,
+        "AMD-DEL": 100.2868,
+        "DEL-MAA": 100.7755,
+        "BOM-HYD": 100.2146
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 101.029
+        "T+1": 108.9409,
+        "T+7": 106.0884,
+        "T+15": 103.3868,
+        "T+21": 105.4528,
+        "T+30": 102.973,
+        "T+45": 99.75
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 19,
-      "date": "2026-09-11",
-      "apix_index": 100.9454,
-      "naive_scraped_index": 100.9739,
+      "date": "2026-08-19",
+      "apix_index": 102.5422,
+      "aerix_index": 102.4837,
+      "naive_scraped_index": 113.02,
       "ground_truth_benchmark": 101.08,
-      "daily_mom_inflation_rate": -0.08,
+      "daily_mom_inflation_rate": 0.4348,
       "route_indices": {
-        "DEL-BOM": 100.9454
+        "DEL-BOM": 103.34,
+        "BLR-DEL": 102.45,
+        "BLR-BOM": 102.12,
+        "DEL-HYD": 102.23,
+        "DEL-CCU": 102.56,
+        "DEL-PNQ": 101.2028,
+        "AMD-DEL": 100.1412,
+        "DEL-MAA": 101.1289,
+        "BOM-HYD": 100.441
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 100.9454
+        "T+1": 111.3889,
+        "T+7": 105.7855,
+        "T+15": 104.2724,
+        "T+21": 105.5206,
+        "T+30": 103.6626,
+        "T+45": 100.222
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 20,
-      "date": "2026-09-12",
-      "apix_index": 105.625,
-      "naive_scraped_index": 105.8074,
+      "date": "2026-08-20",
+      "apix_index": 103.1894,
+      "aerix_index": 102.9777,
+      "naive_scraped_index": 113.91,
       "ground_truth_benchmark": 101.14,
-      "daily_mom_inflation_rate": 4.64,
+      "daily_mom_inflation_rate": 0.6312,
       "route_indices": {
-        "DEL-BOM": 105.625
+        "DEL-BOM": 104.12,
+        "BLR-DEL": 103.12,
+        "BLR-BOM": 102.78,
+        "DEL-HYD": 102.89,
+        "DEL-CCU": 103.23,
+        "DEL-PNQ": 101.0032,
+        "AMD-DEL": 100.2975,
+        "DEL-MAA": 101.3747,
+        "BOM-HYD": 100.6391
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 105.625
+        "T+1": 112.2436,
+        "T+7": 106.3379,
+        "T+15": 105.0359,
+        "T+21": 105.8532,
+        "T+30": 104.5269,
+        "T+45": 100.9595
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 21,
-      "date": "2026-09-13",
-      "apix_index": 105.7309,
-      "naive_scraped_index": 105.6638,
+      "date": "2026-08-21",
+      "apix_index": 102.7889,
+      "aerix_index": 102.8455,
+      "naive_scraped_index": 112.79,
       "ground_truth_benchmark": 101.2,
-      "daily_mom_inflation_rate": 0.1,
+      "daily_mom_inflation_rate": -0.3881,
       "route_indices": {
-        "DEL-BOM": 105.7309
+        "DEL-BOM": 103.65,
+        "BLR-DEL": 102.78,
+        "BLR-BOM": 102.34,
+        "DEL-HYD": 102.34,
+        "DEL-CCU": 102.67,
+        "DEL-PNQ": 100.656,
+        "AMD-DEL": 100.66,
+        "DEL-MAA": 101.4207,
+        "BOM-HYD": 100.7467
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 105.7309
+        "T+1": 109.9659,
+        "T+7": 106.5484,
+        "T+15": 104.3515,
+        "T+21": 105.3711,
+        "T+30": 104.2241,
+        "T+45": 100.7127
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 22,
-      "date": "2026-09-14",
-      "apix_index": 101.6546,
-      "naive_scraped_index": 101.4285,
+      "date": "2026-08-22",
+      "apix_index": 102.0991,
+      "aerix_index": 102.323,
+      "naive_scraped_index": 110.45,
       "ground_truth_benchmark": 101.26,
-      "daily_mom_inflation_rate": -3.86,
+      "daily_mom_inflation_rate": -0.6711,
       "route_indices": {
-        "DEL-BOM": 101.6546
+        "DEL-BOM": 102.89,
+        "BLR-DEL": 101.98,
+        "BLR-BOM": 101.67,
+        "DEL-HYD": 101.56,
+        "DEL-CCU": 101.89,
+        "DEL-PNQ": 100.3962,
+        "AMD-DEL": 100.9771,
+        "DEL-MAA": 101.2689,
+        "BOM-HYD": 100.7332
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 101.6546
+        "T+1": 107.4181,
+        "T+7": 106.7171,
+        "T+15": 103.1266,
+        "T+21": 104.8954,
+        "T+30": 103.4855,
+        "T+45": 100.1858
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 23,
-      "date": "2026-09-15",
-      "apix_index": 101.2611,
-      "naive_scraped_index": 101.4828,
+      "date": "2026-08-23",
+      "apix_index": 101.3244,
+      "aerix_index": 101.624,
+      "naive_scraped_index": 111.01,
       "ground_truth_benchmark": 101.32,
-      "daily_mom_inflation_rate": -0.39,
+      "daily_mom_inflation_rate": -0.7588,
       "route_indices": {
-        "DEL-BOM": 101.2611
+        "DEL-BOM": 101.76,
+        "BLR-DEL": 101.23,
+        "BLR-BOM": 101.12,
+        "DEL-HYD": 100.89,
+        "DEL-CCU": 101.12,
+        "DEL-PNQ": 100.4056,
+        "AMD-DEL": 101.0315,
+        "DEL-MAA": 101.0141,
+        "BOM-HYD": 100.6102
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 101.2611
+        "T+1": 106.7893,
+        "T+7": 106.3833,
+        "T+15": 101.8204,
+        "T+21": 104.4897,
+        "T+30": 102.5348,
+        "T+45": 99.5422
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 24,
-      "date": "2026-09-16",
-      "apix_index": 101.5751,
-      "naive_scraped_index": 101.4425,
+      "date": "2026-08-24",
+      "apix_index": 100.8447,
+      "aerix_index": 101.0785,
+      "naive_scraped_index": 110.34,
       "ground_truth_benchmark": 101.38,
-      "daily_mom_inflation_rate": 0.31,
+      "daily_mom_inflation_rate": -0.4734,
       "route_indices": {
-        "DEL-BOM": 101.5751
+        "DEL-BOM": 101.12,
+        "BLR-DEL": 100.76,
+        "BLR-BOM": 100.67,
+        "DEL-HYD": 100.45,
+        "DEL-CCU": 100.67,
+        "DEL-PNQ": 100.7027,
+        "AMD-DEL": 100.8048,
+        "DEL-MAA": 100.7997,
+        "BOM-HYD": 100.4278
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 101.5751
+        "T+1": 108.2396,
+        "T+7": 105.5957,
+        "T+15": 101.0592,
+        "T+21": 104.3075,
+        "T+30": 101.8161,
+        "T+45": 99.1275
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 25,
-      "date": "2026-09-17",
-      "apix_index": 101.5437,
-      "naive_scraped_index": 101.7253,
+      "date": "2026-08-25",
+      "apix_index": 100.6353,
+      "aerix_index": 100.7683,
+      "naive_scraped_index": 110.57,
       "ground_truth_benchmark": 101.44,
-      "daily_mom_inflation_rate": -0.03,
+      "daily_mom_inflation_rate": -0.2076,
       "route_indices": {
-        "DEL-BOM": 101.5437
+        "DEL-BOM": 100.87,
+        "BLR-DEL": 100.54,
+        "BLR-BOM": 100.45,
+        "DEL-HYD": 100.23,
+        "DEL-CCU": 100.34,
+        "DEL-PNQ": 101.1317,
+        "AMD-DEL": 100.4912,
+        "DEL-MAA": 100.7501,
+        "BOM-HYD": 100.2567
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 101.5437
+        "T+1": 109.6005,
+        "T+7": 104.5514,
+        "T+15": 100.9435,
+        "T+21": 104.138,
+        "T+30": 101.3848,
+        "T+45": 98.9048
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 26,
-      "date": "2026-09-18",
-      "apix_index": 101.4156,
-      "naive_scraped_index": 101.7134,
+      "date": "2026-08-26",
+      "apix_index": 101.1438,
+      "aerix_index": 101.0311,
+      "naive_scraped_index": 111.69,
       "ground_truth_benchmark": 101.5,
-      "daily_mom_inflation_rate": -0.13,
+      "daily_mom_inflation_rate": 0.5053,
       "route_indices": {
-        "DEL-BOM": 101.4156
+        "DEL-BOM": 101.45,
+        "BLR-DEL": 101.12,
+        "BLR-BOM": 100.89,
+        "DEL-HYD": 100.78,
+        "DEL-CCU": 100.89,
+        "DEL-PNQ": 101.4565,
+        "AMD-DEL": 100.3508,
+        "DEL-MAA": 100.9121,
+        "BOM-HYD": 100.1635
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 101.4156
+        "T+1": 109.6383,
+        "T+7": 104.3337,
+        "T+15": 101.8781,
+        "T+21": 104.4166,
+        "T+30": 101.7663,
+        "T+45": 99.3182
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 27,
-      "date": "2026-09-19",
-      "apix_index": 106.3303,
-      "naive_scraped_index": 106.4513,
+      "date": "2026-08-27",
+      "apix_index": 101.7966,
+      "aerix_index": 101.5669,
+      "naive_scraped_index": 113.14,
       "ground_truth_benchmark": 101.56,
-      "daily_mom_inflation_rate": 4.85,
+      "daily_mom_inflation_rate": 0.6454,
       "route_indices": {
-        "DEL-BOM": 106.3303
+        "DEL-BOM": 102.23,
+        "BLR-DEL": 101.87,
+        "BLR-BOM": 101.45,
+        "DEL-HYD": 101.34,
+        "DEL-CCU": 101.56,
+        "DEL-PNQ": 101.5044,
+        "AMD-DEL": 100.5124,
+        "DEL-MAA": 101.233,
+        "BOM-HYD": 100.1879
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 106.3303
+        "T+1": 108.271,
+        "T+7": 104.9081,
+        "T+15": 103.0942,
+        "T+21": 104.6958,
+        "T+30": 102.4282,
+        "T+45": 99.8237
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 28,
-      "date": "2026-09-20",
-      "apix_index": 106.3217,
-      "naive_scraped_index": 106.2435,
+      "date": "2026-08-28",
+      "apix_index": 102.3902,
+      "aerix_index": 102.1432,
+      "naive_scraped_index": 113.92,
       "ground_truth_benchmark": 101.62,
-      "daily_mom_inflation_rate": -0.01,
+      "daily_mom_inflation_rate": 0.5831,
       "route_indices": {
-        "DEL-BOM": 106.3217
+        "DEL-BOM": 103.01,
+        "BLR-DEL": 102.45,
+        "BLR-BOM": 101.98,
+        "DEL-HYD": 101.89,
+        "DEL-CCU": 102.12,
+        "DEL-PNQ": 101.2706,
+        "AMD-DEL": 100.8766,
+        "DEL-MAA": 101.5854,
+        "BOM-HYD": 100.3283
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 106.3217
+        "T+1": 107.5312,
+        "T+7": 106.1514,
+        "T+15": 104.1248,
+        "T+21": 105.0036,
+        "T+30": 103.1664,
+        "T+45": 100.254
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 29,
-      "date": "2026-09-21",
-      "apix_index": 101.8566,
-      "naive_scraped_index": 102.1396,
+      "date": "2026-08-29",
+      "apix_index": 101.9831,
+      "aerix_index": 102.0311,
+      "naive_scraped_index": 113.03,
       "ground_truth_benchmark": 101.68,
-      "daily_mom_inflation_rate": -4.2,
+      "daily_mom_inflation_rate": -0.3976,
       "route_indices": {
-        "DEL-BOM": 101.8566
+        "DEL-BOM": 102.54,
+        "BLR-DEL": 102.01,
+        "BLR-BOM": 101.56,
+        "DEL-HYD": 101.45,
+        "DEL-CCU": 101.67,
+        "DEL-PNQ": 100.9212,
+        "AMD-DEL": 101.1904,
+        "DEL-MAA": 101.8271,
+        "BOM-HYD": 100.5427
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 101.8566
+        "T+1": 107.9436,
+        "T+7": 106.6104,
+        "T+15": 103.8057,
+        "T+21": 104.5615,
+        "T+30": 102.9827,
+        "T+45": 99.7257
       },
-      "total_observations": 145,
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     },
     {
       "day": 30,
-      "date": "2026-09-22",
-      "apix_index": 101.8845,
-      "naive_scraped_index": 102.0034,
+      "date": "2026-08-30",
+      "apix_index": 101.4998,
+      "aerix_index": 101.6592,
+      "naive_scraped_index": 111.8,
       "ground_truth_benchmark": 101.74,
-      "daily_mom_inflation_rate": 0.03,
+      "daily_mom_inflation_rate": -0.4739,
       "route_indices": {
-        "DEL-BOM": 101.8845
+        "DEL-BOM": 101.89,
+        "BLR-DEL": 101.56,
+        "BLR-BOM": 101.12,
+        "DEL-HYD": 101.01,
+        "DEL-CCU": 101.23,
+        "DEL-PNQ": 100.6924,
+        "AMD-DEL": 101.239,
+        "DEL-MAA": 101.868,
+        "BOM-HYD": 100.7631
       },
       "lead_time_indices": {
-        "DEL-BOM_T+7": 101.8845
+        "T+1": 109.5495,
+        "T+7": 106.5694,
+        "T+15": 103.0324,
+        "T+21": 104.332,
+        "T+30": 102.7272,
+        "T+45": 99.1771
       },
-      "total_observations": 145,
+      "total_observations": 402,
+      "overall_coverage_ratio": 1.0
+    },
+    {
+      "day": 31,
+      "date": "2026-08-31",
+      "apix_index": 101.8938,
+      "aerix_index": 101.8234,
+      "naive_scraped_index": 112.25,
+      "ground_truth_benchmark": 101.8,
+      "daily_mom_inflation_rate": 0.3882,
+      "route_indices": {
+        "DEL-BOM": 102.43,
+        "BLR-DEL": 101.98,
+        "BLR-BOM": 101.45,
+        "DEL-HYD": 101.34,
+        "DEL-CCU": 101.67,
+        "DEL-PNQ": 100.7472,
+        "AMD-DEL": 101.0084,
+        "DEL-MAA": 101.7122,
+        "BOM-HYD": 100.9195
+      },
+      "lead_time_indices": {
+        "T+1": 111.0641,
+        "T+7": 106.682,
+        "T+15": 102.9055,
+        "T+21": 105.1335,
+        "T+30": 103.2848,
+        "T+45": 99.5577
+      },
+      "total_observations": 402,
       "overall_coverage_ratio": 1.0
     }
   ]
