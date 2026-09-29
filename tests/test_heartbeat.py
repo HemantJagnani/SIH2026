@@ -249,3 +249,36 @@ async def test_no_duplicate_heartbeat_loop_during_startup():
     # Clean shutdown
     await stop_heartbeat_task()
     assert not is_heartbeat_loop_running()
+
+
+# -----------------------------------------------------------------------------
+# 9. Scraper Trigger & Status Endpoints Test
+# -----------------------------------------------------------------------------
+def test_scraper_status_initial_idle():
+    """Verify /api/scraper/status returns IDLE when no process is running."""
+    response = client.get("/api/scraper/status")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] in ("IDLE", "COMPLETED")
+    assert "timestamp" in data
+
+
+def test_scraper_trigger_with_mocked_subprocess(monkeypatch):
+    """Verify /api/scraper/trigger spawns a non-blocking process and returns ACCEPTED."""
+    mock_proc = MagicMock()
+    mock_proc.pid = 99999
+    mock_proc.poll.return_value = None  # simulate running
+
+    with patch("subprocess.Popen", return_value=mock_proc):
+        response = client.post("/api/scraper/trigger")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "ACCEPTED"
+        assert data["pid"] == 99999
+
+        # Triggering a second time while active should return ALREADY_RUNNING
+        second_resp = client.post("/api/scraper/trigger")
+        assert second_resp.status_code == 200
+        second_data = second_resp.json()
+        assert second_data["status"] == "ALREADY_RUNNING"
+

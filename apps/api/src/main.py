@@ -1102,6 +1102,79 @@ async def service_heartbeat():
     }
 
 
+# Track asynchronous background scraper process
+_scraper_subprocess = None
+
+@app.post("/api/scraper/trigger", tags=["🛡️ Quality Assurance & Governance"])
+async def trigger_scraper(x_api_key: Optional[str] = Header(None)):
+    """
+    Endpoint called by S2 to trigger the production airfare scraper asynchronously.
+    Non-blocking: launches background process and responds immediately with HTTP 202.
+    """
+    global _scraper_subprocess
+    expected_key = os.environ.get("SCRAPER_API_KEY", "").strip()
+    if expected_key and x_api_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid or missing X-API-KEY")
+
+    if _scraper_subprocess is not None and _scraper_subprocess.poll() is None:
+        return {
+            "status": "ALREADY_RUNNING",
+            "message": "Scraper execution is already active in background.",
+            "pid": _scraper_subprocess.pid,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+    script_path = os.path.join(ROOT, "apps", "scraper", "src", "scripts", "run_production_matrix_top60.py")
+    if not os.path.exists(script_path):
+        raise HTTPException(status_code=500, detail="Scraper script run_production_matrix_top60.py not found on disk")
+
+    import subprocess
+    env = os.environ.copy()
+    env["PYTHONPATH"] = "."
+    env["SCRAPER_HEADLESS"] = "true"
+    env["SCRAPER_BROWSER_TYPE"] = "chromium"
+
+    _scraper_subprocess = subprocess.Popen(
+        [sys.executable, script_path],
+        cwd=ROOT,
+        env=env
+    )
+
+    return {
+        "status": "ACCEPTED",
+        "message": "Production scraper successfully spawned in background.",
+        "pid": _scraper_subprocess.pid,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@app.get("/api/scraper/status", tags=["🛡️ Quality Assurance & Governance"])
+async def get_scraper_status():
+    """Returns current execution status of the background scraper process."""
+    global _scraper_subprocess
+    if _scraper_subprocess is None:
+        status = "IDLE"
+        pid = None
+        exit_code = None
+    else:
+        poll_res = _scraper_subprocess.poll()
+        if poll_res is None:
+            status = "RUNNING"
+            pid = _scraper_subprocess.pid
+            exit_code = None
+        else:
+            status = "COMPLETED" if poll_res == 0 else f"EXITED_WITH_CODE_{poll_res}"
+            pid = _scraper_subprocess.pid
+            exit_code = poll_res
+
+    return {
+        "status": status,
+        "pid": pid,
+        "exit_code": exit_code,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
 @app.get("/api/observations", tags=["📊 Yield Curves & Route Matrix"])
 async def get_observations(limit: int = Query(500, ge=1, le=1000, description="Max observations to return (1-1000)")):
     """
