@@ -3,9 +3,10 @@ import { api, type Run } from './api';
 import OverviewView from './views/OverviewView';
 import IndexView from './views/IndexView';
 import BookingCurvesView from './views/BookingCurvesView';
+import BacktestView from './views/BacktestView';
 import MethodView from './views/MethodView';
 
-export type Tab = 'overview' | 'index' | 'curves' | 'method';
+export type Tab = 'overview' | 'index' | 'curves' | 'backtest' | 'method';
 
 /** Read/write the selected date from the URL search params. */
 function getDateFromUrl(): string | null {
@@ -33,10 +34,11 @@ const TAB_LABELS: Record<Tab, string> = {
   overview: 'Overview',
   index: 'Index',
   curves: 'Booking curves',
+  backtest: 'Backtest / Validation',
   method: 'Method',
 };
 
-const TABS: Tab[] = ['overview', 'index', 'curves', 'method'];
+const TABS: Tab[] = ['overview', 'index', 'curves', 'backtest', 'method'];
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('overview');
@@ -134,6 +136,14 @@ export default function App() {
               onSelectDate={handleSetDate}
             />
           )}
+        </div>
+        <div
+          id="panel-backtest"
+          role="tabpanel"
+          aria-labelledby="tab-backtest"
+          hidden={tab !== 'backtest'}
+        >
+          {tab === 'backtest' && <BacktestView />}
         </div>
         <div
           id="panel-method"

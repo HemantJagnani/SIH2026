@@ -115,6 +115,62 @@ export interface BacktestSummary {
   stratum_coverage_mean: number;
   mospi_t21_checkpoint_present: boolean;
   antigravity_acceptance_passed: boolean;
+  target_universe?: string;
+  primary_benchmark_route?: string;
+  del_bom_macro_benchmark_inr?: number;
+  del_bom_apix_monthly_avg_inr?: number;
+  del_bom_delta_inr?: number;
+  del_bom_mape_percent?: number;
+  overall_weighted_mape_percent?: number;
+  overall_naive_mape_percent?: number;
+  mape_target_threshold_percent?: number;
+  mape_acceptance_passed?: boolean;
+  top5_mean_spread_inr?: number;
+  top5_spread_variance?: number;
+  pearson_correlation_r?: number;
+  directional_accuracy_percent?: number;
+  naive_daily_volatility_percent?: number;
+  booking_curve_weights?: Record<string, number>;
+  benchmark_line_label?: string;
+  acceptance_status?: string;
+}
+
+export interface RouteComparison {
+  rank: number;
+  route_id: string;
+  route_name: string;
+  origin_code?: string;
+  destination_code?: string;
+  flight_count?: number;
+  distance_km?: number;
+  annual_pax: number;
+  route_weight: number;
+  dgca_monthly_avg_net: number;
+  dgca_monthly_avg_gross: number;
+  udf_psf_gst: number;
+  apix_monthly_avg_net: number;
+  apix_monthly_avg_gross: number;
+  delta_inr: number;
+  abs_delta_inr: number;
+  mape_percent: number;
+  naive_monthly_avg_net: number;
+  naive_delta_inr: number;
+  naive_mape_percent: number;
+  status: 'EXCELLENT' | 'PASS' | 'INVESTIGATE';
+  benchmark_label?: string;
+  footnote_notes: string;
+}
+
+export interface PairwiseDirectionalAccuracy {
+  pair: string;
+  route_a: string;
+  route_b: string;
+  dgca_ratio: number;
+  apix_ratio: number;
+  dgca_premium_percent: number;
+  apix_premium_percent: number;
+  ratio_error_percent: number;
+  concordant: boolean;
 }
 
 export interface BacktestDailyPoint {
@@ -122,18 +178,32 @@ export interface BacktestDailyPoint {
   date: string;
   apix_index: number;
   aerix_index?: number;
-  naive_scraped_index: number;
-  ground_truth_benchmark: number;
+  apix_composite_fare_inr?: number;
+  naive_composite_fare_inr?: number;
+  dgca_benchmark_composite_inr?: number;
+  del_bom_benchmark?: number;
   daily_mom_inflation_rate: number;
-  route_indices: Record<string, number>;
-  lead_time_indices: Record<string, number>;
+  route_simulated_fares?: Record<string, number>;
+  route_naive_fares?: Record<string, number>;
+  route_lead_breakdown?: Record<string, Record<string, number>>;
+  route_indices?: Record<string, number>;
+  lead_time_indices?: Record<string, number>;
+  naive_scraped_index?: number;
+  ground_truth_benchmark?: number;
   total_observations: number;
   overall_coverage_ratio: number;
 }
 
 export interface BacktestResponse {
   summary: BacktestSummary;
+  route_comparisons?: RouteComparison[];
+  pairwise_directional_accuracy?: PairwiseDirectionalAccuracy[];
   daily_series: BacktestDailyPoint[];
+  methodology_notes?: {
+    booking_curve_weights_rationale: string;
+    dgca_footnote_reconciliation: string;
+    microfounded_index_formula: string;
+  };
 }
 
 export interface SensitivityVariant {
@@ -288,9 +358,12 @@ export const api = {
   },
 
   getBacktest: async (): Promise<BacktestResponse> => {
-    const res = await fetch(`${BASE}/v1/backtest`);
-    if (!res.ok) throw new Error(`API error ${res.status}: /v1/backtest`);
-    return res.json();
+    try {
+      const res = await fetch(`${BASE}/v1/backtest`);
+      if (res.ok) return await res.json();
+    } catch {}
+    const fallback = await import('./data/backtest_results.json');
+    return (fallback.default || fallback) as unknown as BacktestResponse;
   },
 
   getSensitivity: async (): Promise<SensitivityResponse> => {
