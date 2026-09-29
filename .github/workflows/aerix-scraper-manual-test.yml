@@ -1,0 +1,132 @@
+name: AERIX Scraper Manual Test (Cloud Runner Evaluation)
+
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: 'Optional execution note or test label'
+        required: false
+        default: 'Single manual evaluation run'
+
+permissions:
+  contents: read
+
+jobs:
+  manual-scraper-test:
+    name: Execute Production Scraper Matrix (Top-60)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright & Chromium browser dependencies
+        run: |
+          echo "================================================================================"
+          echo "INSTALLING CHROMIUM BROWSER & LINUX SYSTEM DEPENDENCIES"
+          echo "================================================================================"
+          playwright install --with-deps chromium
+
+      - name: Run Production Airfare Matrix Collection
+        id: scraper_run
+        env:
+          PYTHONPATH: "."
+          SCRAPER_HEADLESS: "true"
+          SCRAPER_BROWSER_TYPE: "chromium"
+        run: |
+          echo "================================================================================"
+          echo "AERIX SCRAPER STARTED: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "Host: Ubuntu Runner | Python: $(python --version)"
+          echo "Headless: $SCRAPER_HEADLESS | Browser: $SCRAPER_BROWSER_TYPE"
+          echo "================================================================================"
+
+          # Execute unmodified production scraper script
+          python apps/scraper/src/scripts/run_production_matrix_top60.py
+
+      - name: Parse & Report Scraper Execution Telemetry
+        if: always()
+        run: |
+          echo "================================================================================"
+          echo "SCRAPER EXECUTION TELEMETRY & RUN SUMMARY"
+          echo "================================================================================"
+
+          python -c '
+          import os, json, sys
+
+          report_path = "APIx_All60_Production_Coverage_Report.json"
+          if os.path.exists(report_path):
+              try:
+                  with open(report_path, "r", encoding="utf-8") as f:
+                      data = json.load(f)
+
+                  metrics = data.get("metrics", {})
+                  attempted = metrics.get("total_runs_attempted", 0)
+                  successful = metrics.get("successful_runs", 0)
+                  failed = metrics.get("failed_runs", 0)
+                  blocked = metrics.get("blocked_runs", 0)
+                  raw_obs = metrics.get("raw_observations", 0)
+                  valid_obs = metrics.get("valid_baseline", 0)
+                  pop_cells = metrics.get("populated_cells", 0)
+                  missing_cells = metrics.get("missing_cells", 0)
+                  cov = metrics.get("dgca_weighted_coverage", 0.0)
+
+                  status = "COMPLETED_CLEAN" if blocked == 0 and failed == 0 else ("BLOCKED_OR_CHALLENGED" if blocked > 0 else "PARTIAL_FAILURE")
+
+                  print("\n--- Summary Metrics ---")
+                  print(f"Final Scraper Status     : {status}")
+                  print(f"Cells/Runs Attempted     : {attempted} / 360")
+                  print(f"Successful Runs          : {successful}")
+                  print(f"Failed Runs              : {failed}")
+                  print(f"Blocked/CAPTCHA Events   : {blocked}")
+                  print(f"Raw Observations Scraped : {raw_obs}")
+                  print(f"Valid Baseline Fares     : {valid_obs}")
+                  print(f"Populated Matrix Cells   : {pop_cells} / 360")
+                  print(f"Missing Matrix Cells     : {missing_cells}")
+                  print(f"DGCA Weighted Coverage   : {cov:.4%}")
+
+                  # Output GitHub Step Summary markdown
+                  summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
+                  if summary_file:
+                      with open(summary_file, "a", encoding="utf-8") as s:
+                          s.write("## 🛫 AERIX Scraper Manual Test Results\n\n")
+                          s.write(f"- **Final Scraper Status**: `{status}`\n")
+                          s.write(f"- **Cells Attempted**: `{attempted} / 360`\n")
+                          s.write(f"- **Successful Runs**: `{successful}`\n")
+                          s.write(f"- **Blocked/CAPTCHA Events**: `{blocked}`\n")
+                          s.write(f"- **Raw Observations**: `{raw_obs}`\n")
+                          s.write(f"- **Valid Baseline Fares**: `{valid_obs}`\n")
+                          s.write(f"- **Populated Matrix Cells**: `{pop_cells} / 360`\n")
+                          s.write(f"- **DGCA Weighted Coverage**: `{cov:.2%}`\n\n")
+                          if blocked > 0:
+                              s.write("> [!WARNING]\n> **Cloud IP Blocking Detected:** Google Flights presented bot challenges/CAPTCHA on " + str(blocked) + " runs from this GitHub Actions runner IP.\n\n")
+              except Exception as e:
+                  print(f"Error parsing report: {e}")
+          else:
+              print("Report file APIx_All60_Production_Coverage_Report.json not found. Check previous step logs for premature exits.")
+          '
+
+      - name: Upload Scraper Output & Evidence Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aerix-scraper-manual-test-artifacts
+          path: |
+            APIx_All60_Production_Coverage_Report.json
+            APIx_All60_Production_Coverage_Report.md
+            runtime/top60_fare_observations.json
+            runtime/top60_observation_classification.json
+            runtime/evidence/
+          retention-days: 14
+          if-no-files-found: warn
