@@ -222,7 +222,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             isReal: true,
             points: res.value.curve_points.map((p) => ({
               lead_days: p.lead_days,
-              price: p.median_fare_inr || p.average_fare_inr,
+              price: p.geometric_mean_inr || p.average_fare_inr || p.median_fare_inr,
             })),
           };
         }
@@ -524,9 +524,12 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       if (!byLt[c.lead_time]) {
         byLt[c.lead_time] = { fares: [], routes: {}, count: 0 };
       }
-      const val = c.median_fare_inr || c.mean_fare_inr;
+      // Use geometric mean: more sensitive than median (which collapses to discrete values)
+      // and less skewed than arithmetic mean when fare distribution is wide
+      const val = c.geometric_mean_inr || c.mean_fare_inr || c.median_fare_inr;
       byLt[c.lead_time].fares.push(val);
-      byLt[c.lead_time].routes[c.route] = val;
+      // Store per-route geometric mean for individual route lines
+      byLt[c.lead_time].routes[c.route] = c.geometric_mean_inr || c.mean_fare_inr || c.median_fare_inr;
       byLt[c.lead_time].count += c.observation_count;
     }
 
