@@ -4,7 +4,6 @@ A concise, step-by-step guide to deploying the **AERIX Sovereign Airfare Price I
 - **Frontend**: Vercel (React 19 / Vite)
 - **Backend**: Render (FastAPI Web Service)
 - **Database**: Neon (Serverless PostgreSQL)
-- **Scraper**: Render (Scheduled Cron Job / Background Worker)
 
 ---
 
@@ -62,32 +61,7 @@ A concise, step-by-step guide to deploying the **AERIX Sovereign Airfare Price I
 
 ---
 
-## Step C: Deploy Scraper Cron Job to Render (Optional / Daily Schedule)
-
-> **Important**: The scraper is an independent scheduled process and is **never** run inside the web service.
-
-1. In the Render Dashboard, click **New +** $\to$ **Cron Job**.
-2. Configure settings:
-   - **Name**: `aerix-daily-scraper`
-   - **Schedule**: `30 23 * * *` *(Daily at 05:00 IST / 23:30 UTC)*
-   - **Command**: `python apps/scraper/src/scripts/run_production_matrix_top60.py`
-3. Build Command:
-   ```bash
-   pip install -r requirements.txt && playwright install --with-deps chromium
-   ```
-4. Set Environment Variables:
-   ```env
-   ENVIRONMENT=production
-   PYTHONPATH=.
-   SCRAPER_HEADLESS=true
-   SCRAPER_BROWSER_TYPE=chromium
-   DATABASE_URL=postgresql+asyncpg://<user>:<password>@<neon-host>.neon.tech/neondb?sslmode=require
-   DATABASE_URL_SYNC=postgresql://<user>:<password>@<neon-host>.neon.tech/neondb?sslmode=require
-   ```
-
----
-
-## Step D: Deploy React Frontend to Vercel
+## Step C: Deploy React Frontend to Vercel
 
 1. Log in to [Vercel](https://vercel.com/) and click **Add New...** $\to$ **Project**.
 2. Select your `SIH2026` Git repository.
@@ -107,7 +81,7 @@ A concise, step-by-step guide to deploying the **AERIX Sovereign Airfare Price I
 
 ---
 
-## Step E: Connect Frontend to API (CORS Interlock)
+## Step D: Connect Frontend to API (CORS Interlock)
 
 To allow the Vercel frontend to call your Render FastAPI backend securely without CORS blocks:
 

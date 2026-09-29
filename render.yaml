@@ -1,6 +1,6 @@
 services:
   # ----------------------------------------------------------------------------
-  # 1. FastAPI Web Service (AERIX API)
+  # FastAPI Web Service (AERIX API)
   # ----------------------------------------------------------------------------
   - type: web
     name: aerix-api
@@ -23,30 +23,3 @@ services:
       - key: REDIS_URL
         sync: false
 
-  # ----------------------------------------------------------------------------
-  # 2. Daily Scraper Cron Job (Render Cron Service)
-  # ----------------------------------------------------------------------------
-  # Runs the full 360-cell production matrix sweep daily at 05:00 IST (23:30 UTC).
-  # NOTE: Render Cron services require a standard paid plan ($7/mo) to execute
-  # multi-minute browser tasks with Chromium dependencies installed.
-  - type: cron
-    name: aerix-daily-scraper
-    runtime: python
-    schedule: "30 23 * * *"
-    buildCommand: pip install -r requirements.txt && playwright install --with-deps chromium
-    startCommand: python apps/scraper/src/scripts/run_production_matrix_top60.py
-    envVars:
-      - key: ENVIRONMENT
-        value: production
-      - key: PYTHONPATH
-        value: .
-      - key: SCRAPER_HEADLESS
-        value: "true"
-      - key: SCRAPER_BROWSER_TYPE
-        value: "chromium"
-      - key: DATABASE_URL
-        sync: false
-      - key: DATABASE_URL_SYNC
-        sync: false
-      - key: REDIS_URL
-        sync: false
