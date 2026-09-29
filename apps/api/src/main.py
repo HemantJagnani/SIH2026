@@ -1106,7 +1106,12 @@ async def service_heartbeat():
 _scraper_subprocess = None
 
 @app.post("/api/scraper/trigger", tags=["🛡️ Quality Assurance & Governance"])
-async def trigger_scraper(x_api_key: Optional[str] = Header(None)):
+async def trigger_scraper(
+    start_rank: Optional[int] = Query(None, description="Starting route rank (default: 1)"),
+    end_rank: Optional[int] = Query(None, description="Ending route rank (default: 60)"),
+    force_all: bool = Query(True, description="Force re-running cells"),
+    x_api_key: Optional[str] = Header(None)
+):
     """
     Endpoint called by S2 to trigger the production airfare scraper asynchronously.
     Non-blocking: launches background process and responds immediately with HTTP 202.
@@ -1134,11 +1139,20 @@ async def trigger_scraper(x_api_key: Optional[str] = Header(None)):
     env["SCRAPER_HEADLESS"] = "true"
     env["SCRAPER_BROWSER_TYPE"] = "chromium"
 
+    cmd = [sys.executable, script_path]
+    if force_all:
+        cmd.append("--force-all")
+    if start_rank is not None:
+        cmd.extend(["--start-rank", str(start_rank)])
+    if end_rank is not None:
+        cmd.extend(["--end-rank", str(end_rank)])
+
     _scraper_subprocess = subprocess.Popen(
-        [sys.executable, script_path],
+        cmd,
         cwd=ROOT,
         env=env
     )
+
 
     return {
         "status": "ACCEPTED",

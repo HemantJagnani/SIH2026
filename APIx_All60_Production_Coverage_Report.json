@@ -1,9 +1,9 @@
 {
-  "timestamp_utc": "2026-09-27T17:59:54.407618+00:00",
+  "timestamp_utc": "2026-09-29T23:41:27.684257+00:00",
   "phase": "APIx Full DGCA CY2024 Top-60 Matrix Expansion",
   "total_routes": 60,
   "total_target_cells": 360,
-  "jobs_count": 368,
+  "jobs_count": 374,
   "completed_cells_count": 347,
   "jobs": [
     {
@@ -20346,6 +20346,225 @@
       "block_reason": null,
       "source_health": "HEALTHY",
       "evidence_dir": "runtime\\evidence\\2026-09-27\\source=google_flights\\run=9ae4b696-25aa-440c-86b4-42a14c922c4e"
+    },
+    {
+      "source": "google_flights",
+      "route": "DEL-BOM",
+      "route_rank": 1,
+      "lead_time": "T+1",
+      "lead_days": 1,
+      "travel_date": "2026-09-30",
+      "extraction_mode": "CORE_ONLY",
+      "state": "DONE",
+      "collection_duration_seconds": 34.3,
+      "cards_detected": 98,
+      "observations_count": 98,
+      "unique_itineraries": 49,
+      "unique_offers": 49,
+      "duplicate_offers": 49,
+      "offers_per_itinerary_avg": 2.0,
+      "distributions": {
+        "airlines": {
+          "Air India": 36,
+          "IndiGo": 40,
+          "Air India Express": 4,
+          "Akasa Air": 14,
+          "SpiceJet": 4
+        },
+        "stops": {
+          "0": 98
+        },
+        "fare_families": {
+          "NOT_PROVIDED": 98
+        }
+      },
+      "blocked": false,
+      "block_reason": null,
+      "source_health": "HEALTHY",
+      "evidence_dir": "runtime\\evidence\\2026-09-29\\source=google_flights\\run=3556a609-b304-4f76-92b7-82563d9ed4aa"
+    },
+    {
+      "source": "google_flights",
+      "route": "DEL-BOM",
+      "route_rank": 1,
+      "lead_time": "T+7",
+      "lead_days": 7,
+      "travel_date": "2026-10-06",
+      "extraction_mode": "CORE_ONLY",
+      "state": "DONE",
+      "collection_duration_seconds": 12.29,
+      "cards_detected": 124,
+      "observations_count": 124,
+      "unique_itineraries": 62,
+      "unique_offers": 62,
+      "duplicate_offers": 62,
+      "offers_per_itinerary_avg": 2.0,
+      "distributions": {
+        "airlines": {
+          "Air India": 44,
+          "IndiGo": 58,
+          "Akasa Air": 14,
+          "Air India Express": 4,
+          "SpiceJet": 4
+        },
+        "stops": {
+          "0": 112,
+          "1": 12
+        },
+        "fare_families": {
+          "NOT_PROVIDED": 124
+        }
+      },
+      "blocked": false,
+      "block_reason": null,
+      "source_health": "HEALTHY",
+      "evidence_dir": "runtime\\evidence\\2026-09-29\\source=google_flights\\run=202f8610-3036-4909-9abd-4d950e279edf"
+    },
+    {
+      "source": "google_flights",
+      "route": "DEL-BOM",
+      "route_rank": 1,
+      "lead_time": "T+15",
+      "lead_days": 15,
+      "travel_date": "2026-10-14",
+      "extraction_mode": "CORE_ONLY",
+      "state": "DONE",
+      "collection_duration_seconds": 12.1,
+      "cards_detected": 118,
+      "observations_count": 118,
+      "unique_itineraries": 59,
+      "unique_offers": 59,
+      "duplicate_offers": 59,
+      "offers_per_itinerary_avg": 2.0,
+      "distributions": {
+        "airlines": {
+          "Air India": 50,
+          "Air India Express": 4,
+          "IndiGo": 46,
+          "Akasa Air": 12,
+          "SpiceJet": 6
+        },
+        "stops": {
+          "0": 118
+        },
+        "fare_families": {
+          "NOT_PROVIDED": 118
+        }
+      },
+      "blocked": false,
+      "block_reason": null,
+      "source_health": "HEALTHY",
+      "evidence_dir": "runtime\\evidence\\2026-09-29\\source=google_flights\\run=928751ad-8854-4a4e-a2fa-8498fe0a537a"
+    },
+    {
+      "source": "google_flights",
+      "route": "DEL-BOM",
+      "route_rank": 1,
+      "lead_time": "T+21",
+      "lead_days": 21,
+      "travel_date": "2026-10-20",
+      "extraction_mode": "CORE_ONLY",
+      "state": "DONE",
+      "collection_duration_seconds": 13.27,
+      "cards_detected": 122,
+      "observations_count": 122,
+      "unique_itineraries": 61,
+      "unique_offers": 61,
+      "duplicate_offers": 61,
+      "offers_per_itinerary_avg": 2.0,
+      "distributions": {
+        "airlines": {
+          "Akasa Air": 14,
+          "Air India": 46,
+          "IndiGo": 54,
+          "SpiceJet": 4,
+          "Air India Express": 4
+        },
+        "stops": {
+          "0": 114,
+          "1": 8
+        },
+        "fare_families": {
+          "NOT_PROVIDED": 122
+        }
+      },
+      "blocked": false,
+      "block_reason": null,
+      "source_health": "HEALTHY",
+      "evidence_dir": "runtime\\evidence\\2026-09-29\\source=google_flights\\run=e0f2087c-8726-47f7-b5be-0446df7eb9e3"
+    },
+    {
+      "source": "google_flights",
+      "route": "DEL-BOM",
+      "route_rank": 1,
+      "lead_time": "T+30",
+      "lead_days": 30,
+      "travel_date": "2026-10-29",
+      "extraction_mode": "CORE_ONLY",
+      "state": "DONE",
+      "collection_duration_seconds": 13.0,
+      "cards_detected": 124,
+      "observations_count": 124,
+      "unique_itineraries": 62,
+      "unique_offers": 62,
+      "duplicate_offers": 62,
+      "offers_per_itinerary_avg": 2.0,
+      "distributions": {
+        "airlines": {
+          "Air India Express": 4,
+          "SpiceJet": 6,
+          "Akasa Air": 12,
+          "Air India": 54,
+          "IndiGo": 48
+        },
+        "stops": {
+          "0": 124
+        },
+        "fare_families": {
+          "NOT_PROVIDED": 124
+        }
+      },
+      "blocked": false,
+      "block_reason": null,
+      "source_health": "HEALTHY",
+      "evidence_dir": "runtime\\evidence\\2026-09-29\\source=google_flights\\run=72be486b-42ac-4718-8e3e-312b6aa50050"
+    },
+    {
+      "source": "google_flights",
+      "route": "DEL-BOM",
+      "route_rank": 1,
+      "lead_time": "T+45",
+      "lead_days": 45,
+      "travel_date": "2026-11-13",
+      "extraction_mode": "CORE_ONLY",
+      "state": "DONE",
+      "collection_duration_seconds": 12.77,
+      "cards_detected": 126,
+      "observations_count": 126,
+      "unique_itineraries": 63,
+      "unique_offers": 63,
+      "duplicate_offers": 63,
+      "offers_per_itinerary_avg": 2.0,
+      "distributions": {
+        "airlines": {
+          "IndiGo": 54,
+          "SpiceJet": 10,
+          "Air India Express": 4,
+          "Akasa Air": 12,
+          "Air India": 46
+        },
+        "stops": {
+          "1": 6,
+          "0": 120
+        },
+        "fare_families": {
+          "NOT_PROVIDED": 126
+        }
+      },
+      "blocked": false,
+      "block_reason": null,
+      "source_health": "HEALTHY",
+      "evidence_dir": "runtime\\evidence\\2026-09-29\\source=google_flights\\run=a9c3e16f-d30d-446c-871b-a4069f533e62"
     }
   ]
 }
