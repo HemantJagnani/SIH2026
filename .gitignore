@@ -35,6 +35,7 @@ test-results/
 *.db-shm
 *.db-wal
 data/*.db*
+data/historical_march_2022/
 storage/
 scratch/
 image.png
