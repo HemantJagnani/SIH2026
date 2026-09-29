@@ -10,9 +10,31 @@ import psycopg2
 import redis
 import csv
 import io
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Query, Header, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+
+try:
+    from apps.api.src.heartbeat import (
+        start_heartbeat_task,
+        stop_heartbeat_task,
+        load_persistent_heartbeat_state,
+        is_heartbeat_loop_running,
+        get_heartbeat_interval_seconds,
+        get_s2_heartbeat_url,
+        get_service_id,
+    )
+except ImportError:
+    from heartbeat import (
+        start_heartbeat_task,
+        stop_heartbeat_task,
+        load_persistent_heartbeat_state,
+        is_heartbeat_loop_running,
+        get_heartbeat_interval_seconds,
+        get_s2_heartbeat_url,
+        get_service_id,
+    )
 
 # Ensure scraper src is in path for canonical models and index engine
 scraper_src = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'scraper', 'src'))
@@ -355,6 +377,18 @@ tags_metadata = [
     },
 ]
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifespan manager.
+    Idempotently starts the S1 <-> S2 background heartbeat loop on startup,
+    and terminates it cleanly on shutdown.
+    """
+    start_heartbeat_task(get_db_connection)
+    yield
+    await stop_heartbeat_task()
+
+
 app = FastAPI(
     title="AERIX - Sovereign Indian Airfare Price Index API",
     description=r"""
@@ -371,7 +405,8 @@ AERIX is an automated, high-frequency airfare data-collection and price index co
 > **Institutional Governance Notice:** AERIX is an independent academic prototype developed for SIH 2026. It is **not** officially adopted, certified, or released by the Ministry of Statistics and Programme Implementation (MoSPI), the National Statistical Office (NSO), or the Reserve Bank of India (RBI).
 """,
     version="2.0.0",
-    openapi_tags=tags_metadata
+    openapi_tags=tags_metadata,
+    lifespan=lifespan,
 )
 
 # Enable CORS for dashboard access with FRONTEND_ORIGIN support
@@ -1030,6 +1065,40 @@ async def health_check():
             "status": redis_status
         },
         "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@app.get("/api/heartbeat", tags=["🛡️ Quality Assurance & Governance"])
+@app.get("/heartbeat", include_in_schema=False)
+async def service_heartbeat():
+    """
+    Lightweight mutual health & heartbeat ping endpoint for S1 (AERIX).
+    Returns HTTP 200 fast (< 5ms) without waiting or performing heavy work.
+    Provides persistent heartbeat telemetry tracked in Neon PostgreSQL.
+    """
+    service_id = get_service_id()
+    persistent_state = load_persistent_heartbeat_state(get_db_connection, service_id)
+    target_url = get_s2_heartbeat_url()
+    interval_sec = get_heartbeat_interval_seconds()
+    loop_active = is_heartbeat_loop_running()
+
+    return {
+        "service": service_id,
+        "service_name": "AERIX Sovereign Airfare Price Index API",
+        "status": persistent_state.get("status", "HEALTHY"),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "diagnostics": {
+            "target_s2_url": target_url or "UNCONFIGURED",
+            "heartbeat_interval_seconds": interval_sec,
+            "background_loop_active": loop_active,
+            "last_heartbeat_attempt": persistent_state.get("last_attempt_at"),
+            "last_successful_heartbeat": persistent_state.get("last_success_at"),
+            "last_failure": persistent_state.get("last_failure_at"),
+            "last_error": persistent_state.get("last_error"),
+            "consecutive_successes": persistent_state.get("consecutive_successes", 0),
+            "consecutive_failures": persistent_state.get("consecutive_failures", 0),
+            "state_persistence": "Neon PostgreSQL (service_heartbeats)",
+        }
     }
 
 
