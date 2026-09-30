@@ -727,11 +727,16 @@ async def get_rbi_nowcast(
     Provides daily inflation momentum, rolling 7-day and 30-day annualized rates,
     lead-time surge elasticity, and tracking accuracy against DGCA benchmarks.
     """
-    bt_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'backtest_results.json')
-    if not os.path.exists(bt_path):
+    candidate_paths = [
+        os.path.join(ROOT, 'backtest_results.json'),
+        os.path.join(ROOT, 'runtime', 'backtest_results.json'),
+        os.path.join(ROOT, 'web', 'src', 'data', 'backtest_results.json'),
+    ]
+    bt_path = next((p for p in candidate_paths if os.path.exists(p)), None)
+    if not bt_path:
         raise HTTPException(
             status_code=503,
-            detail="Nowcast dataset unavailable. 'backtest_results.json' not found. Run scripts/run_backtest.py to generate historical series."
+            detail="Nowcast dataset unavailable. 'backtest_results.json' not found."
         )
 
     try:
@@ -746,6 +751,8 @@ async def get_rbi_nowcast(
     if not series:
         raise HTTPException(status_code=503, detail="Nowcast daily trajectory is empty in backtest_results.json.")
 
+    if as_of_date is not None and not isinstance(as_of_date, str):
+        as_of_date = None
     target_point = series[-1]
     if as_of_date:
         matched = [p for p in series if p.get("date") == as_of_date]

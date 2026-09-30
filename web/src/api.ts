@@ -7,6 +7,9 @@ const rawBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim(
 const cleanBase = rawBase.replace(/\/+$/, '');
 const BASE = cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
 
+export const API_BASE = BASE;
+export const API_HOST = cleanBase.endsWith('/api') ? cleanBase.slice(0, -4) : cleanBase;
+
 export interface AERIXIndexResponse {
   index_name: string;
   frequency: string;

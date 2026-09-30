@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api, type CoverageResponse } from '../api';
 import { InstitutionalBadge } from '../components/SovereignLogos';
+import { GovernmentApiFeeds } from '../components/GovernmentApiFeeds';
 
 interface OverviewViewProps {
   onNavigate: (tab: 'index' | 'curves' | 'method' | 'flow') => void;
@@ -172,6 +173,9 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
           </p>
         )}
       </div>
+
+      {/* Institutional Data Ingestion Feeds for MoSPI / RBI */}
+      <GovernmentApiFeeds />
 
       <p
         style={{
