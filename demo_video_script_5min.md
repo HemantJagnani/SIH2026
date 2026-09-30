@@ -10,35 +10,43 @@
 
 | Time | Duration | Section | Visual Focus |
 | :--- | :--- | :--- | :--- |
-| **0:00 – 0:45** | 45 sec | **1. The Problem & AERIX Overview** | Overview Page, Sovereign Badges, DGCA Coverage |
-| **0:45 – 1:55** | 70 sec | **2. Index Dashboard, Basket & Synthetic Baseline** | Index Page, Route Audit Modal, August Rationale |
-| **1:55 – 2:35** | 40 sec | **3. Advance Booking Curves & T+21** | Booking Curves Page, Lead-time dispersion |
-| **2:35 – 3:20** | 45 sec | **4. How It Works (5-Level Data Flow)** | Flow Page, Level 1 to Level 5 Cards |
-| **3:20 – 3:55** | 35 sec | **5. Empirical Backtesting & Validation** | Backtest Page, 199K+ flights, 3.52% MAPE |
-| **3:55 – 4:40** | 45 sec | **6. Government APIs & Method Transparency** | Overview API Feeds, Live Test, Method Walk-through |
-| **4:40 – 4:50** | 10 sec | **7. Conclusion & Thank You** | Dashboard Header / Home View |
+| **0:00 – 0:10** | 10 sec | **Intro: Team Nexus Presentation** | Title Slide / AERIX Header |
+| **0:10 – 0:50** | 40 sec | **1. The Problem & AERIX Overview** | Overview Page, Sovereign Badges, DGCA Coverage |
+| **0:50 – 2:00** | 70 sec | **2. Index Dashboard, Basket & Synthetic Baseline** | Index Page, Route Audit Modal, August Rationale |
+| **2:00 – 2:40** | 40 sec | **3. Advance Booking Curves & T+21** | Booking Curves Page, Lead-time dispersion |
+| **2:40 – 3:25** | 45 sec | **4. How It Works (5-Level Data Flow)** | Flow Page, Level 1 to Level 5 Cards |
+| **3:25 – 4:00** | 35 sec | **5. Empirical Backtesting & Validation** | Backtest Page, 199K+ flights, 3.52% MAPE |
+| **4:00 – 4:45** | 45 sec | **6. Government APIs & Method Transparency** | Overview API Feeds, Live Test, Method Walk-through |
+| **4:45 – 4:55** | 10 sec | **7. Conclusion & Thank You** | Dashboard Header / Home View |
 
 ---
 
 ## 🎬 Detailed Scene-by-Scene Script
 
-### [0:00 – 0:45] Scene 1: The Problem & AERIX Overview
+### [0:00 – 0:10] Intro: Team Nexus Presentation (10 sec)
 **Visual on Screen:**
-- Start on the **Overview** page (`/`).
+- Start on the presentation title slide or the top header of the AERIX platform.
+
+**Voiceover (Word-for-Word — 10 Seconds):**
+> "Hello everyone, we are **Team Nexus**, presenting **AERIX** — an econometric, high-frequency Airfare Price Index engineered specifically for the Ministry of Statistics and Programme Implementation."
+
+---
+
+### [0:10 – 0:50] Scene 1: The Problem & AERIX Overview (40 sec)
+**Visual on Screen:**
+- Transition to the **Overview** page (`/`).
 - Show the headline *"A daily airfare price index for Indian domestic routes, built the way the CPI is built."*
 - Slowly scroll past the **MoSPI**, **DGCA**, and **Eurostat** official badges.
 - Highlight the **Production Data & Basket Status** counter: `Routes scraped (60/60)`, `Coverage (57.02% of national passengers)`.
 
-**Voiceover (Word-for-Word):**
+**Voiceover (Word-for-Word — 40 Seconds):**
 > "In India, dynamic pricing causes the exact same flight seat to fluctuate by two to four hundred percent depending on when you book. Traditional CPI compilation averages raw quotes, which introduces severe dynamic pricing bias and misses holiday surges.
 > 
-> Welcome to **AERIX** — an econometric, high-frequency Airfare Price Index engineered specifically for the Ministry of Statistics and Programme Implementation.
-> 
-> AERIX conforms strictly to the **MoSPI CPI 2024 base**, the **Eurostat HICP standards**, and tracks the official **DGCA Top-60 domestic route basket**, representing over 91 million passengers and 57% of India's commercial aviation traffic."
+> To solve this, AERIX conforms strictly to the **MoSPI CPI 2024 base**, the **Eurostat HICP standards**, and tracks the official **DGCA Top-60 domestic route basket**, representing over 91 million passengers and 57% of India's commercial aviation traffic."
 
 ---
 
-### [0:45 – 1:55] Scene 2: Index Dashboard, DGCA Basket & The Rationale for Synthetic Data (70 sec)
+### [0:50 – 2:00] Scene 2: Index Dashboard, DGCA Basket & The Rationale for Synthetic Data (70 sec)
 **Visual on Screen:**
 - Arrive on the **"Index"** page.
 - Point cursor to the Headline Index (`100.00` Base 2024 = 100) and All-India Weighted Fare (`₹6,520`).
@@ -61,7 +69,7 @@
 
 ---
 
-### [1:55 – 2:35] Scene 3: Booking Curves & The T+21 Checkpoint (40 sec)
+### [2:00 – 2:40] Scene 3: Booking Curves & The T+21 Checkpoint (40 sec)
 **Visual on Screen:**
 - Click the **"Booking curves"** tab.
 - Hover over the curve points from **T+1** (last-minute booking) down to **T+45** (early planning).
@@ -77,7 +85,7 @@
 
 ---
 
-### [2:35 – 3:20] Scene 4: How It Works — The 5-Level Calculation Flow (45 sec)
+### [2:40 – 3:25] Scene 4: How It Works — The 5-Level Calculation Flow (45 sec)
 **Visual on Screen:**
 - Click the **"How It Works"** tab.
 - Show the interactive controller at the top (Pick Path: `DEL-BOM`, Timeframe: `T+21`).
@@ -100,7 +108,7 @@
 
 ---
 
-### [3:20 – 3:55] Scene 5: Empirical Backtesting & Model Validation (35 sec)
+### [3:25 – 4:00] Scene 5: Empirical Backtesting & Model Validation (35 sec)
 **Visual on Screen:**
 - Click the **"Backtest / Validation"** tab.
 - Show the benchmark comparison chart: **AERIX Econometric Index** vs **Raw Scraped Average** vs **Official DGCA TMU Actuals**.
@@ -116,7 +124,7 @@
 
 ---
 
-### [3:55 – 4:35] Scene 6: Government API Integration & Method (40 sec)
+### [4:00 – 4:45] Scene 6: Government API Integration & Method Transparency (45 sec)
 **Visual on Screen:**
 - Navigate back to **Overview** and scroll down to the **Institutional Data Ingestion Feeds** section.
 - Point out the **MoSPI CPI Feed** (`/api/v1/nso/cpi-feed`) and **RBI Nowcast Feed** (`/api/v1/rbi/nowcast`).
@@ -124,14 +132,14 @@
 - Click the **"Method"** tab in the navigation bar:
   - Scroll smoothly through the page showing the LaTeX econometric formulas, COICOP code, DGCA weight tables, and quality verification gates.
 
-**Voiceover (Word-for-Word — 40 Seconds):**
+**Voiceover (Word-for-Word — 45 Seconds):**
 > "To serve government stakeholders seamlessly, AERIX provides direct, read-only institutional data feeds. On our Overview page, officials can access dedicated endpoints for the **MoSPI NSO CPI Feed** and the **RBI Nowcasting Feed** with one-click live testing.
 > 
 > And finally, on our **Method** page, we are completely transparent: all the mathematical models, formulas, steps, real DGCA passenger weights, and validation rules we used are detailed here with complete econometric precision. We invite you to refer to this page to explore the full depth of our methodology."
 
 ---
 
-### [4:40 – 4:50] Scene 7: Conclusion & Thank You (10 sec)
+### [4:45 – 4:55] Scene 7: Conclusion & Thank You (10 sec)
 **Visual on Screen:**
 - Return to the clean top header of the AERIX dashboard or the Overview home view.
 
