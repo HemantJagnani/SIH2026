@@ -84,8 +84,9 @@ def get_db_connection():
     return None
 
 
-# Redis Key-Value Connection
-DEFAULT_RENDER_REDIS_URL = "rediss://red-dat6u23tqb8s73a11ab0:c5ZQGgxyRWZ3qrGnGshvtO8UTLpMaSqu@singapore-keyvalue.render.com:6379"
+# Redis Key-Value Connection (Internal for Render virtual private network, External for outside access)
+DEFAULT_RENDER_INTERNAL_REDIS_URL = "redis://red-dat6u23tqb8s73a11ab0:6379"
+DEFAULT_RENDER_EXTERNAL_REDIS_URL = "rediss://red-dat6u23tqb8s73a11ab0:c5ZQGgxyRWZ3qrGnGshvtO8UTLpMaSqu@singapore-keyvalue.render.com:6379"
 _redis_client = None
 _redis_checked = False
 
@@ -96,16 +97,22 @@ def get_redis_client():
     if _redis_checked and _redis_client is not None:
         return _redis_client
 
-    redis_url = os.environ.get("REDIS_URL") or DEFAULT_RENDER_REDIS_URL
-    if redis_url:
+    env_url = os.environ.get("REDIS_URL")
+    candidates = []
+    if env_url:
+        candidates.append(env_url)
+    candidates.extend([DEFAULT_RENDER_INTERNAL_REDIS_URL, DEFAULT_RENDER_EXTERNAL_REDIS_URL])
+
+    for url in candidates:
         try:
-            client = redis.from_url(redis_url, decode_responses=True, socket_timeout=3, socket_connect_timeout=3)
+            client = redis.from_url(url, decode_responses=True, socket_timeout=3, socket_connect_timeout=3)
             if client.ping():
                 _redis_client = client
                 _redis_checked = True
                 return _redis_client
-        except Exception as e:
-            print(f"Warning: Failed to connect to Render Key-Value Redis: {e}")
+        except Exception:
+            continue
+
     _redis_checked = True
     return None
 
