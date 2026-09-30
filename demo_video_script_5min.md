@@ -32,7 +32,7 @@
 **Voiceover (Word-for-Word):**
 > "In India, dynamic pricing causes the exact same flight seat to fluctuate by two to four hundred percent depending on when you book. Traditional CPI compilation averages raw quotes, which introduces severe dynamic pricing bias and misses holiday surges.
 > 
-> Welcome to **AERIX** — the first econometric, high-frequency Airfare Price Index engineered specifically for the Ministry of Statistics and Programme Implementation.
+> Welcome to **AERIX** — an econometric, high-frequency Airfare Price Index engineered specifically for the Ministry of Statistics and Programme Implementation.
 > 
 > AERIX conforms strictly to the **MoSPI CPI 2024 base**, the **Eurostat HICP standards**, and tracks the official **DGCA Top-60 domestic route basket**, representing over 91 million passengers and 57% of India's commercial aviation traffic."
 
