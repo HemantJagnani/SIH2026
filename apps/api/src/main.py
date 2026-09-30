@@ -87,6 +87,7 @@ def get_db_connection():
 # Redis Key-Value Connection (Internal for Render virtual private network, External for outside access)
 DEFAULT_RENDER_INTERNAL_REDIS_URL = "redis://red-dat6u23tqb8s73a11ab0:6379"
 DEFAULT_RENDER_EXTERNAL_REDIS_URL = "rediss://red-dat6u23tqb8s73a11ab0:c5ZQGgxyRWZ3qrGnGshvtO8UTLpMaSqu@singapore-keyvalue.render.com:6379"
+DEFAULT_RENDER_REDIS_URL = DEFAULT_RENDER_INTERNAL_REDIS_URL
 _redis_client = None
 _redis_checked = False
 
@@ -105,7 +106,7 @@ def get_redis_client():
 
     for url in candidates:
         try:
-            client = redis.from_url(url, decode_responses=True, socket_timeout=3, socket_connect_timeout=3)
+            client = redis.from_url(url, decode_responses=True, socket_timeout=5, socket_connect_timeout=5)
             if client.ping():
                 _redis_client = client
                 _redis_checked = True
@@ -149,10 +150,10 @@ def invalidate_top60_cache():
     global _top60_obs_cache, _top60_obs_cache_time
     _top60_obs_cache = None
     _top60_obs_cache_time = 0.0
-    r = get_redis_client()
-    if r:
+    redis_cli = get_redis_client()
+    if redis_cli:
         try:
-            r.delete("aerix:cache:top60_observations")
+            redis_cli.delete("aerix:cache:top60_observations")
         except Exception:
             pass
 
@@ -178,12 +179,17 @@ def load_top60_observations() -> List[dict]:
         return _top60_obs_cache
 
     # Check L2 Render Redis Key-Value cache
-    r = get_redis_client()
-    if r:
+    redis_cli = get_redis_client()
+    if redis_cli:
         try:
-            cached_data = r.get("aerix:cache:top60_observations")
+            cached_data = redis_cli.get("aerix:cache:top60_observations")
             if cached_data:
-                parsed_records = json.loads(cached_data)
+                if cached_data.startswith("gz:"):
+                    import zlib, base64
+                    raw_json = zlib.decompress(base64.b64decode(cached_data[3:])).decode('utf-8')
+                else:
+                    raw_json = cached_data
+                parsed_records = json.loads(raw_json)
                 if parsed_records:
                     _top60_obs_cache = parsed_records
                     _top60_obs_source = "HOSTED_REDIS_L2"
@@ -322,9 +328,12 @@ def load_top60_observations() -> List[dict]:
                 _top60_obs_cache = parsed_records
                 _top60_obs_source = "HOSTED_NEON_DB"
                 _top60_obs_cache_time = now
-                if r:
+                if redis_cli:
                     try:
-                        r.set("aerix:cache:top60_observations", json.dumps(parsed_records), ex=300)
+                        import zlib, base64
+                        raw_json = json.dumps(parsed_records)
+                        compressed_payload = "gz:" + base64.b64encode(zlib.compress(raw_json.encode('utf-8'))).decode('ascii')
+                        redis_cli.set("aerix:cache:top60_observations", compressed_payload, ex=300)
                     except Exception as e:
                         print(f"Warning: Redis L2 cache write error: {e}")
                 return _top60_obs_cache
@@ -1130,13 +1139,13 @@ async def health_check():
                     pass
 
     # Redis health check (active caching tier)
-    r = get_redis_client()
+    redis_cli = get_redis_client()
     redis_url = os.environ.get("REDIS_URL") or DEFAULT_RENDER_REDIS_URL
     ping_ms = None
-    if r:
+    if redis_cli:
         try:
             t0 = time.time()
-            if r.ping():
+            if redis_cli.ping():
                 ping_ms = round((time.time() - t0) * 1000, 2)
                 redis_status = "CONNECTED"
             else:
