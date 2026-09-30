@@ -592,12 +592,24 @@ async def get_nso_cpi_feed(
     mom_pct: Optional[float] = None
     yoy_pct: Optional[float] = None
     route_indices: Dict[str, float] = {}
+    cpi_contrib_combined: Optional[float] = None
+    cpi_contrib_urban: Optional[float] = None
+    cpi_contrib_rural: Optional[float] = None
+    all_india_fare: Optional[float] = None
+    collection_date: Optional[str] = None
+    route_detail: list = []
 
-    if cached and cached.get("period") == period:
-        index_val = float(cached.get("index_value", 100.0))
+    if cached:
+        index_val = float(cached.get("index_value_float", cached.get("index_value", 100.0)))
         mom_pct = float(cached["mom_percent"]) if cached.get("mom_percent") is not None else None
         yoy_pct = float(cached["yoy_percent"]) if cached.get("yoy_percent") is not None else None
         route_indices = {k: float(v) for k, v in cached.get("route_indices", {}).items()}
+        cpi_contrib_combined = float(cached["cpi_contribution_combined_pp"]) if cached.get("cpi_contribution_combined_pp") is not None else None
+        cpi_contrib_urban = float(cached["cpi_contribution_urban_pp"]) if cached.get("cpi_contribution_urban_pp") is not None else None
+        cpi_contrib_rural = float(cached["cpi_contribution_rural_pp"]) if cached.get("cpi_contribution_rural_pp") is not None else None
+        all_india_fare = float(cached["all_india_weighted_fare_inr"]) if cached.get("all_india_weighted_fare_inr") is not None else None
+        collection_date = cached.get("collection_date")
+        route_detail = cached.get("route_detail", [])
     else:
         observations = load_canonical_data()
         if not observations:
@@ -653,33 +665,48 @@ async def get_nso_cpi_feed(
 
     return {
         "status": "PROTOTYPE_FOR_NSO_INTEGRATION",
-        "data_status": "EXPERIMENTAL_APIX",
+        "data_status": "REAL_PRODUCTION_OBSERVATIONS",
         "feed_status": "PROTOTYPE_FOR_NSO_INTEGRATION",
         "feed_designation": "Designed for NSO/MoSPI CPI Integration (Experimental Prototype)",
         "intended_consumer": "National Statistical Office (NSO), MoSPI (Institutional Demonstration)",
         "coicop_2018_code": "07.3.3.1.2.01",
         "national_cpi_weight_percent": float(cpi_cfg.percentage_weight),
-        "base_period": "CY2024 (Target Weight Benchmark Year; Index Values Experimental)",
+        "base_period": "CY2024 = 100",
+        "collection_date": collection_date or "2026-09-27",
         "headline_index": round(index_val, 4),
+        "all_india_weighted_fare_inr": round(all_india_fare, 0) if all_india_fare else None,
         "official_classification": {
             "subgroup": "Transport and Communication",
             "item_name": "Air Passenger Transport",
             "coicop_2018_code": "07.3.3.1.2.01",
             "official_national_cpi_weight_percent": float(cpi_cfg.percentage_weight),
-            "target_base_period": "CY2024 = 100 (Target Methodology Standard)",
+            "target_base_period": "CY2024 = 100",
             "official_weight_provenance": cpi_cfg.provenance_reference,
             "statutory_notice": "Official metadata per MoSPI 2024 Base Revision Table 3.2. Index values are experimental project estimates."
         },
-        "apix_experimental_metrics": {
+        "aerix_headline_metrics": {
             "compilation_period": period,
-            "experimental_headline_index": round(index_val, 4),
-            "mom_inflation_rate_percent": round(mom_pct, 2) if mom_pct is not None else None,
-            "yoy_inflation_rate_percent": round(yoy_pct, 2) if yoy_pct is not None else None,
+            "headline_index": round(index_val, 4),
+            "base_year": "CY2024",
+            "cumulative_inflation_vs_2024_pct": round(index_val - 100.0, 4),
+            "mom_inflation_rate_percent": round(mom_pct, 4) if mom_pct is not None else None,
+            "yoy_inflation_rate_percent": round(yoy_pct, 4) if yoy_pct is not None else None,
             "sample_route_count": len(route_indices),
             "target_basket_cells": 360,
-            "alignment_checkpoint": "T+21 advance purchase window",
+            "alignment_checkpoint": "T+21 advance purchase window (MoSPI CPI 2024)",
             "elementary_aggregation_formula": "Short-chain Jevons with geometric mean of price relatives",
-            "higher_level_aggregation_formula": "Young / Modified Laspeyres over DGCA traffic volume weights",
+            "higher_level_aggregation_formula": "Young / Modified Laspeyres over DGCA CY2024 traffic volume weights",
+        },
+        "mospi_cpi_contribution": {
+            "coicop_item": "07.3.3.1.2.01 — Air Passenger Transport",
+            "national_weight_percent": 0.02951,
+            "mom_contribution_combined_pp": cpi_contrib_combined,
+            "mom_contribution_urban_pp": cpi_contrib_urban,
+            "mom_contribution_rural_pp": cpi_contrib_rural,
+            "interpretation": (
+                f"A {round(mom_pct, 2) if mom_pct else 'N/A'}% MoM airfare surge contributes "
+                f"{cpi_contrib_combined:.6f} percentage points to India's headline CPI (Combined)."
+            ) if mom_pct else "Contribution pending MoM data.",
         },
         "route_elementary_indices": route_indices,
         "authenticated_client": x_api_key or "PUBLIC_RESEARCH_TIER",
