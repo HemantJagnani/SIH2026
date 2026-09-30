@@ -10,8 +10,8 @@
 
 | Time | Duration | Section | Visual Focus |
 | :--- | :--- | :--- | :--- |
-| **0:00 – 0:10** | 10 sec | **Intro: Team Nexus Presentation** | Title Slide / AERIX Header |
-| **0:10 – 0:50** | 40 sec | **1. The Problem & AERIX Overview** | Overview Page, Sovereign Badges, DGCA Coverage |
+| **0:00 – 0:12** | 12 sec | **Intro: Team Nexus & Problem Statement** | Title Slide / Official Problem Statement |
+| **0:12 – 0:50** | 38 sec | **1. The Problem & AERIX Overview** | Overview Page, Sovereign Badges, DGCA Coverage |
 | **0:50 – 2:00** | 70 sec | **2. Index Dashboard, Basket & Synthetic Baseline** | Index Page, Route Audit Modal, August Rationale |
 | **2:00 – 2:40** | 40 sec | **3. Advance Booking Curves & T+21** | Booking Curves Page, Lead-time dispersion |
 | **2:40 – 3:25** | 45 sec | **4. How It Works (5-Level Data Flow)** | Flow Page, Level 1 to Level 5 Cards |
@@ -23,12 +23,13 @@
 
 ## 🎬 Detailed Scene-by-Scene Script
 
-### [0:00 – 0:10] Intro: Team Nexus Presentation (10 sec)
+### [0:00 – 0:12] Intro: Team Nexus & Problem Statement (12 sec)
 **Visual on Screen:**
-- Start on the presentation title slide or the top header of the AERIX platform.
+- Start on the presentation title slide or the top header of the AERIX platform showing the official Problem Statement:
+  *"Development of a Real-time Airfare Price Index for India through Automated Web Scraping of Airline and Online Travel Aggregator Portals for Augmentation of the Consumer Price Index (CPI)"*.
 
-**Voiceover (Word-for-Word — 10 Seconds):**
-> "Hello everyone, we are **Team Nexus**, presenting **AERIX** — an econometric, high-frequency Airfare Price Index engineered specifically for the Ministry of Statistics and Programme Implementation."
+**Voiceover (Word-for-Word — 12 Seconds):**
+> "Hello everyone, we are **Team Nexus**, presenting **AERIX** — our solution for the development of a real-time Airfare Price Index through automated web scraping of airline and OTA portals for the augmentation of India's Consumer Price Index."
 
 ---
 
