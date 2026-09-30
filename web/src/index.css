@@ -6,6 +6,7 @@
 @import '@fontsource/b612/400.css';
 @import '@fontsource/b612/700.css';
 @import '@fontsource-variable/newsreader';
+@import 'katex/dist/katex.min.css';
 
 /* ── Design tokens (§3.1) ───────────────────────────────────────────────── */
 :root {

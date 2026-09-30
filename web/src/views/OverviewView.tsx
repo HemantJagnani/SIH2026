@@ -52,46 +52,7 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
         </p>
       </div>
 
-      {/* Aeronautical Navigation Chart Banner Illustration */}
-      <div
-        style={{
-          border: '1px solid var(--contour)',
-          background: '#fff',
-          overflow: 'hidden',
-          marginBottom: 'var(--sp-2)',
-        }}
-      >
-        <img
-          src="/aeronautical_chart_banner.jpg"
-          alt="Aeronautical navigation chart of Indian scheduled domestic airspace"
-          style={{
-            width: '100%',
-            maxHeight: '340px',
-            objectFit: 'cover',
-            display: 'block',
-          }}
-        />
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '8px 14px',
-            background: 'var(--vellum)',
-            borderTop: '1px solid var(--contour)',
-            fontSize: '11px',
-            fontFamily: "'B612', monospace",
-            color: 'var(--ink-2)',
-          }}
-        >
-          <span style={{ fontWeight: 700, color: 'var(--ink)' }}>
-            FIGURE 1 · AERONAUTICAL NAVIGATION CHART (IND DOMESTIC FIR AIRSPACE)
-          </span>
-          <span>
-            DGCA CY2024 BASKET · 60 CORRIDORS · 91,995,307 SCHEDULED PASSENGERS
-          </span>
-        </div>
-      </div>
+
 
       <p className="prose" style={{ color: 'var(--ink)' }}>
         Prices for the same flights move by 200 to 400 percent depending on advance booking timing.

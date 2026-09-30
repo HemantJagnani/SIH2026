@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { MathBlock } from '../components/MathBlock';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface LeadDetail {
@@ -214,11 +215,10 @@ function FormulaBlock({ data }: { data: IndexResult }) {
       {/* Step 1 */}
       <div className="formula-step">
         <div className="formula-step__label">Step 1 — Representative Route Price</div>
-        <div className="formula-box">
-          <code>
-            P<sub>route</sub> = &sum; w<sub>L</sub> &times; Median(fares<sub>L</sub>)
-          </code>
-        </div>
+        <MathBlock
+          formula="P_{\text{route}} = \sum_{L} w_L \times \text{Median}(\text{fares}_L)"
+          caption="For each of the lead-time windows, collect all quoted fares and compute median multiplied by empirical weight."
+        />
         <p className="formula-prose">
           For each of the {n} lead-time windows, collect all quoted fares and take the <strong>median</strong>.
           Multiply each median by the lead-time weight (equal weights = 1/{n} each) and sum.
@@ -263,11 +263,10 @@ function FormulaBlock({ data }: { data: IndexResult }) {
       {/* Step 2 */}
       <div className="formula-step">
         <div className="formula-step__label">Step 2 — Route Index (Experimental Series)</div>
-        <div className="formula-box">
-          <code>
-            I<sub>DEL-BOM,t</sub> = (P<sub>route,t</sub> / P<sub>project,reference</sub>) &times; 100
-          </code>
-        </div>
+        <MathBlock
+          formula="I_{\text{DEL-BOM},t} = \left(\frac{P_{\text{route},t}}{P_{\text{project,reference}}}\right) \times 100"
+          caption="Current representative price divided by project reference price (₹6,632.67 from first complete run)."
+        />
         <p className="formula-prose">
           Divide the current representative price by the project reference price (₹6,632.67 from first complete production run). 
           <em>Note: This is strictly an experimental project reference, distinct from the official MoSPI CPI 2024 calendar-year price reference.</em>

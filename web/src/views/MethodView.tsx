@@ -23,6 +23,7 @@ import {
   type BacktestResponse,
   type SensitivityResponse,
 } from '../api';
+import { MathBlock } from '../components/MathBlock';
 import {
   DGCA_TOP60_ROUTES,
   LEAD_TIME_HORIZONS,
@@ -559,10 +560,10 @@ export default function MethodView({ runs }: Props) {
             For each homogeneous product stratum <em>s = (Route r, Lead Time l, Departure Band b, Cabin c)</em> on day <em>t</em>,
             all valid consumer-payable quotes <em>p_(i,t,k)</em> are aggregated using an unweighted geometric mean:
           </p>
-          <div className="formula-box">
-            P_(s,i,t) = exp [ (1 / K_(s,i,t)) * SUM_(k=1)^(K) ln(p_(s,i,t,k)) ]
-          </div>
-          <div className="formula-caption">Where K_(s,i,t) is the count of valid quotes for flight i in stratum s.</div>
+          <MathBlock
+            formula="P_{s,i,t} = \exp\left( \frac{1}{K_{s,i,t}} \sum_{k=1}^{K_{s,i,t}} \ln p_{s,i,t,k} \right)"
+            caption="Where K_{s,i,t} is the count of valid quotes for flight i in stratum s across all surveyed booking providers."
+          />
         </div>
 
         {/* Step 2 */}
@@ -572,11 +573,10 @@ export default function MethodView({ runs }: Props) {
             To guarantee price comparison invariance, only products appearing in both adjacent periods $t-1$ and $t$ form the matched set $M(s,t)$.
             A strict Eurostat coverage threshold of 50% is enforced:
           </p>
-          <div className="formula-box">
-            M(s,t) = &#123; i in U(s) | P_(s,i,t) &gt; 0 and P_(s,i,t-1) &gt; 0 &#125;
-            Coverage Ratio C_(s,t) = |M(s,t)| / |U(s)| &gt;= 0.50
-          </div>
-          <div className="formula-caption">If C_(s,t) &lt; 0.50, the stratum is flagged for low coverage and imputes via carry-forward.</div>
+          <MathBlock
+            formula="M(s,t) = \left\{\, i \in U(s) \;\middle|\; P_{s,i,t} > 0 \;\land\; P_{s,i,t-1} > 0 \,\right\}, \quad C(s,t) = \frac{|M(s,t)|}{|U(s)|} \ge 0.50"
+            caption="If coverage ratio C(s,t) < 0.50, the stratum is flagged for low coverage and imputes via carry-forward."
+          />
         </div>
 
         {/* Step 3 */}
@@ -585,11 +585,10 @@ export default function MethodView({ runs }: Props) {
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink)' }}>
             The elementary price relative for homogeneous stratum $s$ between periods $t-1$ and $t$ is computed via the Jevons formula:
           </p>
-          <div className="formula-box">
-            J(s,t) = [ PROD_(i in M(s,t)) ( P_(s,i,t) / P_(s,i,t-1) ) ] ^ (1 / |M(s,t)|)
-                   = exp [ (1 / |M(s,t)|) * SUM_(i in M(s,t)) ( ln P_(s,i,t) - ln P_(s,i,t-1) ) ]
-          </div>
-          <div className="formula-caption">Conforms to MoSPI CPI 2024 preference for Jevons over Dutot/Carli to eliminate upward bounce.</div>
+          <MathBlock
+            formula="J(s,t) = \left[ \prod_{i \in M(s,t)} \frac{P_{s,i,t}}{P_{s,i,t-1}} \right]^{\frac{1}{|M(s,t)|}} = \exp\left( \frac{1}{|M(s,t)|} \sum_{i \in M(s,t)} \ln\frac{P_{s,i,t}}{P_{s,i,t-1}} \right)"
+            caption="Conforms to MoSPI CPI 2024 preference for Jevons over Dutot/Carli to eliminate upward bounce."
+          />
         </div>
 
         {/* Step 4 */}
@@ -598,9 +597,10 @@ export default function MethodView({ runs }: Props) {
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink)' }}>
             Each elementary stratum is independently chained forward from base period 0:
           </p>
-          <div className="formula-box">
-            I(s,t) = I(s,t-1) * J(s,t)    where I(s,0) = 100.00
-          </div>
+          <MathBlock
+            formula="I(s,t) = I(s,t-1) \times J(s,t), \quad \text{where } I(s,0) = 100.00"
+            caption="Chain-linking preserves price relative trajectory without base-period distortion."
+          />
         </div>
 
         {/* Step 5 */}
@@ -609,9 +609,10 @@ export default function MethodView({ runs }: Props) {
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink)' }}>
             Elementary strata belonging to route $r$ and lead-time class $l$ are aggregated across departure time bands:
           </p>
-          <div className="formula-box">
-            I(r,l,t) = (1 / |Q_(r,l)|) * SUM_(q in Q_(r,l)) I(r,l,q,t)
-          </div>
+          <MathBlock
+            formula="I(r,l,t) = \frac{1}{|Q_{r,l}|} \sum_{q \in Q_{r,l}} I(r,l,q,t)"
+            caption="Unweighted aggregation across departure time windows within lead-time class l."
+          />
         </div>
 
         {/* Step 6 */}
@@ -620,10 +621,10 @@ export default function MethodView({ runs }: Props) {
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink)' }}>
             Lead horizons are combined into a route-level index using empirical advance-purchase booking weights $W_l$:
           </p>
-          <div className="formula-box">
-            I(r,t) = SUM_(l in &#123;T+1, T+7, T+15, T+21, T+30, T+45&#125;) [ W_l * I(r,l,t) ]
-            where SUM(W_l) = 1.0000
-          </div>
+          <MathBlock
+            formula="I(r,t) = \sum_{l \in \{1, 7, 15, 21, 30, 45\}} W_l \cdot I(r,l,t), \quad \sum W_l = 1.0000"
+            caption="Weights reflect real booking curves; T+21 MoSPI Checkpoint carries the primary 30.1% anchor weight."
+          />
         </div>
 
         {/* Step 7 */}
@@ -632,10 +633,10 @@ export default function MethodView({ runs }: Props) {
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink)' }}>
             The 60 route indices are aggregated into the All-India Airfare Price Index using DGCA passenger traffic share weights $W_r$:
           </p>
-          <div className="formula-box">
-            AERIX_t = SUM_(r=1)^(60) [ W_r * I(r,t) ]    where SUM_(r=1)^(60) W_r = 1.0000
-          </div>
-          <div className="formula-caption">Normalized to Reference Base 2024 = 100.</div>
+          <MathBlock
+            formula="\text{AERIX}_t = \sum_{r=1}^{60} W_r^{\text{DGCA}} \cdot I(r,t), \quad \sum_{r=1}^{60} W_r^{\text{DGCA}} = 1.0000"
+            caption="Normalized to Reference Base 2024 = 100."
+          />
         </div>
 
         {/* Step 8 */}
@@ -645,11 +646,10 @@ export default function MethodView({ runs }: Props) {
             When integrating the experimental AERIX series into the official MoSPI Consumer Price Index (Item <code>07.3.3.1.2.01</code>),
             the macroeconomic percentage point contribution is computed using the official HCES 2023-24 weight:
           </p>
-          <div className="formula-box">
-            DELTA CPI_(pp,t) = ( AERIX_t - AERIX_(t-1) ) * W_(CPI)
-            where W_(CPI) = 0.0002951  (0.02951% of national household expenditure basket)
-          </div>
-          <div className="formula-caption">Source: MoSPI CPI 2024 "Weights of item CPI 2024" (Annexure 5.3d).</div>
+          <MathBlock
+            formula="\Delta \text{CPI}_{pp,t} = (\text{AERIX}_t - \text{AERIX}_{t-1}) \times W_{\text{CPI}}, \quad W_{\text{CPI}} = 0.0002951 \;(0.02951\%)"
+            caption="Source: MoSPI CPI 2024 'Weights of item CPI 2024' (Annexure 5.3d)."
+          />
         </div>
 
         {/* Step 9 */}
@@ -658,10 +658,10 @@ export default function MethodView({ runs }: Props) {
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink)' }}>
             Month-over-Month (MoM) and Year-over-Year (YoY) headline inflation rates:
           </p>
-          <div className="formula-box">
-            pi_(MoM,t) = [ ( AERIX_t / AERIX_(t-30) ) - 1 ] * 100
-            pi_(YoY,t) = [ ( AERIX_t / AERIX_(t-365) ) - 1 ] * 100
-          </div>
+          <MathBlock
+            formula="\pi_{\text{MoM},t} = \left(\frac{\text{AERIX}_t}{\text{AERIX}_{t-30}} - 1\right) \times 100, \quad \pi_{\text{YoY},t} = \left(\frac{\text{AERIX}_t}{\text{AERIX}_{t-365}} - 1\right) \times 100"
+            caption="Short-term (30-day) and annual (365-day) rate of price change."
+          />
         </div>
       </section>
 
