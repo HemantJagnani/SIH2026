@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import math
+import time
 import statistics
 from decimal import Decimal
 from datetime import datetime, timezone
@@ -83,6 +84,32 @@ def get_db_connection():
     return None
 
 
+# Redis Key-Value Connection
+DEFAULT_RENDER_REDIS_URL = "rediss://red-dat6u23tqb8s73a11ab0:c5ZQGgxyRWZ3qrGnGshvtO8UTLpMaSqu@singapore-keyvalue.render.com:6379"
+_redis_client = None
+_redis_checked = False
+
+
+def get_redis_client():
+    """Returns an active Redis client connected to Render Key-Value, or None if unavailable."""
+    global _redis_client, _redis_checked
+    if _redis_checked and _redis_client is not None:
+        return _redis_client
+
+    redis_url = os.environ.get("REDIS_URL") or DEFAULT_RENDER_REDIS_URL
+    if redis_url:
+        try:
+            client = redis.from_url(redis_url, decode_responses=True, socket_timeout=3, socket_connect_timeout=3)
+            if client.ping():
+                _redis_client = client
+                _redis_checked = True
+                return _redis_client
+        except Exception as e:
+            print(f"Warning: Failed to connect to Render Key-Value Redis: {e}")
+    _redis_checked = True
+    return None
+
+
 # Official DGCA Top-60 routes cache
 _OFFICIAL_TOP60_ROUTES: Optional[set] = None
 
@@ -111,10 +138,16 @@ CACHE_TTL_SECONDS = 120.0  # 2 minutes auto-refresh
 
 
 def invalidate_top60_cache():
-    """Invalidates the in-memory top-60 observations cache so next request fetches fresh data."""
+    """Invalidates the in-memory and Redis L2 top-60 observations cache so next request fetches fresh data."""
     global _top60_obs_cache, _top60_obs_cache_time
     _top60_obs_cache = None
     _top60_obs_cache_time = 0.0
+    r = get_redis_client()
+    if r:
+        try:
+            r.delete("aerix:cache:top60_observations")
+        except Exception:
+            pass
 
 
 def load_top60_observations() -> List[dict]:
@@ -129,13 +162,28 @@ def load_top60_observations() -> List[dict]:
     3. Canonical Field Mapping: Normalizes DB columns into the standard canonical schema (20+ fields).
     4. Transparent Status Normalization: Maps quality_status == 'VALID' to 'VALID_BASELINE' for standard retail economy quotes,
        or 'FOREIGN_TRANSIT' / 'HIGHER_FARE_FAMILY' where conditions dictate.
-    5. In-Memory Caching with TTL & Invalidation: Populates _top60_obs_cache with TTL and provides explicit invalidation
-       when new scraping runs conclude.
+    5. Multi-Tier Caching (L1 In-Memory + L2 Render Key-Value Redis):
+       Serves from L1 in-memory cache first, L2 Redis key-value second, and Neon DB third.
     """
     global _top60_obs_cache, _top60_obs_source, _top60_obs_mtime, _top60_obs_cache_time
     now = time.time()
     if _top60_obs_cache is not None and (now - _top60_obs_cache_time) < CACHE_TTL_SECONDS:
         return _top60_obs_cache
+
+    # Check L2 Render Redis Key-Value cache
+    r = get_redis_client()
+    if r:
+        try:
+            cached_data = r.get("aerix:cache:top60_observations")
+            if cached_data:
+                parsed_records = json.loads(cached_data)
+                if parsed_records:
+                    _top60_obs_cache = parsed_records
+                    _top60_obs_source = "HOSTED_REDIS_L2"
+                    _top60_obs_cache_time = now
+                    return _top60_obs_cache
+        except Exception as e:
+            print(f"Warning: Redis L2 cache read error: {e}")
 
     official_routes = _get_official_top60_routes()
 
@@ -267,6 +315,11 @@ def load_top60_observations() -> List[dict]:
                 _top60_obs_cache = parsed_records
                 _top60_obs_source = "HOSTED_NEON_DB"
                 _top60_obs_cache_time = now
+                if r:
+                    try:
+                        r.set("aerix:cache:top60_observations", json.dumps(parsed_records), ex=300)
+                    except Exception as e:
+                        print(f"Warning: Redis L2 cache write error: {e}")
                 return _top60_obs_cache
             else:
                 print("Info: Hosted Neon DB query returned 0 rows for target basket date. Proceeding to fallback.")
@@ -1069,16 +1122,22 @@ async def health_check():
                 except Exception:
                     pass
 
-    # Redis health check (optional caching tier)
-    redis_url = os.environ.get("REDIS_URL")
-    if redis_url:
-        redis_status = "DISCONNECTED"
+    # Redis health check (active caching tier)
+    r = get_redis_client()
+    redis_url = os.environ.get("REDIS_URL") or DEFAULT_RENDER_REDIS_URL
+    ping_ms = None
+    if r:
         try:
-            r = redis.from_url(redis_url, decode_responses=True)
+            t0 = time.time()
             if r.ping():
+                ping_ms = round((time.time() - t0) * 1000, 2)
                 redis_status = "CONNECTED"
+            else:
+                redis_status = "DISCONNECTED"
         except Exception as e:
             redis_status = f"ERROR: {e}"
+    elif redis_url:
+        redis_status = "DISCONNECTED"
     else:
         redis_status = "NOT_CONFIGURED"
 
@@ -1095,8 +1154,9 @@ async def health_check():
             "fare_observations_count": obs_count
         },
         "redis": {
-            "type": "Render Key-Value (Hosted)" if redis_url else "None",
-            "status": redis_status
+            "type": "Render Key-Value (Hosted)" if redis_status == "CONNECTED" or redis_url else "None",
+            "status": redis_status,
+            "ping_ms": ping_ms
         },
         "timestamp": datetime.now(timezone.utc).isoformat()
     }

@@ -21,7 +21,7 @@ services:
       - key: FRONTEND_ORIGIN
         sync: false
       - key: REDIS_URL
-        sync: false
+        value: rediss://red-dat6u23tqb8s73a11ab0:c5ZQGgxyRWZ3qrGnGshvtO8UTLpMaSqu@singapore-keyvalue.render.com:6379
       - key: S2_HEARTBEAT_URL
         sync: false
       - key: HEARTBEAT_INTERVAL_SECONDS
