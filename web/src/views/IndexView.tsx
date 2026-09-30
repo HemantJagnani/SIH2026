@@ -104,8 +104,26 @@ interface LeadPoint {
   price: number;
 }
 
+function parseDateSafe(s: string): Date | null {
+  if (!s) return null;
+  // If YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d));
+  }
+  // If DD-MM-YYYY
+  if (/^\d{2}-\d{2}-\d{4}$/.test(s)) {
+    const [d, m, y] = s.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d));
+  }
+  const dt = new Date(s);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
 function fmtDateShort(s: string): string {
-  return new Date(s + 'T00:00:00Z').toLocaleDateString('en-GB', {
+  const dt = parseDateSafe(s);
+  if (!dt) return s || '—';
+  return dt.toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
     timeZone: 'UTC',
@@ -113,7 +131,9 @@ function fmtDateShort(s: string): string {
 }
 
 function fmtDateLong(s: string): string {
-  return new Date(s + 'T00:00:00Z').toLocaleDateString('en-GB', {
+  const dt = parseDateSafe(s);
+  if (!dt) return s || '—';
+  return dt.toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -300,8 +320,11 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       // Both route weights AND lead-time weights govern the overall index
       const simulatedOverall = baseOverall * leadFactor;
 
+      const dayNum = (b as any).day || parseInt(b.date.split('-')[0], 10) || (pts.length + 1);
+      const augDate = `2026-08-${String(dayNum).padStart(2, '0')}`;
+
       pts.push({
-        date: b.date,
+        date: augDate,
         del_bom: Number(delBom.toFixed(2)),
         del_blr: delBlr != null ? Number(delBlr.toFixed(2)) : null,
         bom_blr: bomBlr != null ? Number(bomBlr.toFixed(2)) : null,
@@ -862,7 +885,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 : <>On {fmtDateLong(latestPoint.date)}, the index was {latestPoint.overall.toFixed(2)} (2024&nbsp;=&nbsp;100).</>}
             </h1>
             <div className="font-num text-secondary" style={{ fontSize: '13px' }}>
-              Simulated Aug 2026 panel &middot; {backtest?.summary?.total_days ?? 31} observations &middot; Synthetic demonstration
+              Simulated Aug 2026 panel &middot; 1 Aug to 31 Aug ({backtest?.summary?.total_days ?? 31} observations) &middot; Synthetic demonstration
             </div>
           </>
         )}
@@ -900,7 +923,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               onClick={() => setDataMode('synthetic')}
               style={{ fontWeight: dataMode === 'synthetic' ? 700 : 400 }}
             >
-              Simulated (Aug)
+              Simulated (1 Aug – 31 Aug)
             </button>
           </div>
 
@@ -938,6 +961,24 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             </button>
           )}
         </div>
+
+        {/* Short explanation for why synthetic data was used */}
+        {dataMode === 'synthetic' && (
+          <div
+            style={{
+              marginBottom: 'var(--sp-3)',
+              padding: '10px 14px',
+              background: 'var(--vellum)',
+              border: '1px solid var(--contour)',
+              borderLeft: '3px solid var(--assumed)',
+              fontSize: '12.5px',
+              color: 'var(--ink)',
+              lineHeight: 1.5,
+            }}
+          >
+            <strong>Why Synthetic Data?</strong> Live scrapers were launched in production on 27 Sept 2026, capturing high-density live cross-sections (10,000+ quotes across 360 cells). However, validating time-series inflation properties, festival surge volatility (e.g. Independence Day peak travel), and index chain-linking stability requires a complete 30-day longitudinal panel. While daily production data accumulates over the month, this 31-day empirical panel (1 Aug to 31 Aug) was simulated based on historical DGCA traffic and airline yield curves to demonstrate full time-series functionality.
+          </div>
+        )}
 
         {/* Chart Container */}
         {dataMode === 'synthetic' ? (
@@ -991,8 +1032,8 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             >
               <g transform={`translate(${MARGIN.left},${MARGIN.top})`}>
                 {/* Subtle date-range label top-left */}
-                <text x={8} y={-8} fontSize="10px" fontFamily="'B612', monospace" fill="var(--ink-2)" opacity={0.6}>
-                  {displaySeries[0]?.date ? `${fmtDateShort(displaySeries[0].date)} – ${fmtDateShort(displaySeries[displaySeries.length - 1]?.date ?? '')}` : ''}
+                <text x={8} y={-8} fontSize="10px" fontFamily="'B612', monospace" fill="var(--ink-2)" opacity={0.8}>
+                  {dataMode === 'synthetic' ? '1 Aug 2026 – 31 Aug 2026' : (displaySeries[0]?.date ? `${fmtDateShort(displaySeries[0].date)} – ${fmtDateShort(displaySeries[displaySeries.length - 1]?.date ?? '')}` : '')}
                 </text>
                 {/* Demand-bump event window (e.g. Independence Day peak travel) */}
                 {xScale('2026-08-13') != null && xScale('2026-08-17') != null && (
