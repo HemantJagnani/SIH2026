@@ -7,7 +7,7 @@ import BacktestView from './views/BacktestView';
 import MethodView from './views/MethodView';
 import CalculationFlowView from './views/CalculationFlowView';
 
-export type Tab = 'overview' | 'index' | 'flow' | 'curves' | 'backtest' | 'method';
+export type Tab = 'overview' | 'index' | 'curves' | 'backtest' | 'flow' | 'method';
 
 /** Read/write the selected date from the URL search params. */
 function getDateFromUrl(): string | null {
@@ -34,13 +34,13 @@ function fmtThrough(dateStr: string): string {
 const TAB_LABELS: Record<Tab, string> = {
   overview: 'Overview',
   index: 'Index',
-  flow: 'How It Works',
   curves: 'Booking curves',
   backtest: 'Backtest / Validation',
+  flow: 'How It Works',
   method: 'Method',
 };
 
-const TABS: Tab[] = ['overview', 'index', 'flow', 'curves', 'backtest', 'method'];
+const TABS: Tab[] = ['overview', 'index', 'curves', 'backtest', 'flow', 'method'];
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('overview');
