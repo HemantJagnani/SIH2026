@@ -1506,26 +1506,28 @@ html, body {
 /* ── Route Strip with Responsive Stacking (§4) ─────────────────────────── */
 .route-strip-row {
   display: grid;
-  grid-template-columns: 160px 130px 85px 65px 1fr auto;
+  grid-template-columns: 180px 120px 85px 75px minmax(170px, 1fr) 105px auto;
   align-items: center;
-  gap: var(--sp-4);
-  padding: var(--sp-3) var(--sp-4);
+  gap: var(--sp-3);
+  padding: 10px 16px;
   border: 1px solid var(--contour);
-  border-radius: 4px;
-  background: transparent;
+  border-radius: 2px;
+  background: #FFFFFF;
   cursor: pointer;
   font-family: 'B612', monospace;
   font-size: var(--t-ui);
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .route-strip-row:hover {
   background: rgba(42, 95, 165, 0.02);
-  border-color: var(--ink-2);
+  border-color: var(--route-blue);
+  box-shadow: 0 2px 6px rgba(26, 43, 60, 0.06);
 }
 
 .route-strip-row.is-solo {
-  background: rgba(42, 95, 165, 0.05);
+  background: rgba(42, 95, 165, 0.04);
+  border-color: var(--route-blue);
 }
 
 @media (max-width: 768px) and (min-width: 481px) {
