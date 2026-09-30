@@ -20,7 +20,7 @@ import { getRouteColor } from '../lib/palette';
 interface IndexViewProps {
   selectedDate?: string | null;
   onSelectDate?: (d: string | null) => void;
-  onNavigate?: (tab: 'overview' | 'index' | 'curves' | 'method') => void;
+  onNavigate?: (tab: 'overview' | 'index' | 'flow' | 'curves' | 'backtest' | 'method') => void;
 }
 
 const ROUTES = ['DEL-BOM', 'DEL-BLR', 'BOM-BLR'] as const;
@@ -1941,6 +1941,25 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
             >
               See all {coverage?.routes_with_data_count ?? 60} route booking curves &rarr;
+            </button>
+            <span style={{ margin: '0 8px', color: 'var(--contour)' }}>|</span>
+            <button
+              onClick={() => onNavigate?.('flow')}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                fontFamily: "'B612', monospace",
+                fontSize: 'var(--t-ui)',
+                fontWeight: 700,
+                color: 'var(--route-blue)',
+                textDecoration: 'none',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+            >
+              How it's calculated (Visual Flowchart) &rarr;
             </button>
           </div>
         </div>

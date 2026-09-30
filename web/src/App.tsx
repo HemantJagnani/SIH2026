@@ -5,8 +5,9 @@ import IndexView from './views/IndexView';
 import BookingCurvesView from './views/BookingCurvesView';
 import BacktestView from './views/BacktestView';
 import MethodView from './views/MethodView';
+import CalculationFlowView from './views/CalculationFlowView';
 
-export type Tab = 'overview' | 'index' | 'curves' | 'backtest' | 'method';
+export type Tab = 'overview' | 'index' | 'flow' | 'curves' | 'backtest' | 'method';
 
 /** Read/write the selected date from the URL search params. */
 function getDateFromUrl(): string | null {
@@ -33,12 +34,13 @@ function fmtThrough(dateStr: string): string {
 const TAB_LABELS: Record<Tab, string> = {
   overview: 'Overview',
   index: 'Index',
+  flow: 'How It Works',
   curves: 'Booking curves',
   backtest: 'Backtest / Validation',
   method: 'Method',
 };
 
-const TABS: Tab[] = ['overview', 'index', 'curves', 'backtest', 'method'];
+const TABS: Tab[] = ['overview', 'index', 'flow', 'curves', 'backtest', 'method'];
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('overview');
@@ -138,6 +140,16 @@ export default function App() {
               onSelectDate={handleSetDate}
               onNavigate={(nextTab) => setTab(nextTab)}
             />
+          )}
+        </div>
+        <div
+          id="panel-flow"
+          role="tabpanel"
+          aria-labelledby="tab-flow"
+          hidden={tab !== 'flow'}
+        >
+          {tab === 'flow' && (
+            <CalculationFlowView onNavigate={(nextTab) => setTab(nextTab)} />
           )}
         </div>
         <div

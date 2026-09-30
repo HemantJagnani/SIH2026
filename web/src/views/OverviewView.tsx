@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api, type CoverageResponse } from '../api';
 
 interface OverviewViewProps {
-  onNavigate: (tab: 'index' | 'curves' | 'method') => void;
+  onNavigate: (tab: 'index' | 'curves' | 'method' | 'flow') => void;
 }
 
 export default function OverviewView({ onNavigate }: OverviewViewProps) {
@@ -217,6 +217,25 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
         </button>
 
         <button
+          onClick={() => onNavigate('flow')}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            fontFamily: "'B612', monospace",
+            fontSize: 'var(--t-ui)',
+            fontWeight: 700,
+            color: 'var(--route-blue)',
+            textDecoration: 'none',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+          onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+        >
+          How it's calculated (Visual Flowchart) &rarr;
+        </button>
+
+        <button
           onClick={() => onNavigate('method')}
           style={{
             background: 'none',
@@ -232,7 +251,7 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
           onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
           onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
         >
-          Read the method &rarr;
+          Read full econometric spec &rarr;
         </button>
       </div>
     </div>
