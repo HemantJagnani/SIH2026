@@ -121,15 +121,14 @@
 **Visual on Screen:**
 - Navigate back to **Overview** and scroll down to the **Institutional Data Ingestion Feeds** section.
 - Point out the **MoSPI CPI Feed** (`/api/v1/nso/cpi-feed`) and **RBI Nowcast Feed** (`/api/v1/rbi/nowcast`).
-- Click **"⚡ Test Live Response"** on the MoSPI feed — show the instant HTTP 200 response drawer with JSON payload and <15ms latency.
-- Click the **"Interactive Swagger UI (/docs)"** button to quickly show the FastAPI docs in a tab, then switch to the **"Method"** tab to show the LaTeX math blocks.
+- Click **"⚡ Test Live Response"** on the MoSPI feed — show the instant HTTP 200 response drawer with JSON payload and sub-15ms response.
+- Click the **"Method"** tab in the navigation bar:
+  - Scroll smoothly through the page showing the LaTeX econometric formulas, COICOP code, DGCA weight tables, and quality verification gates.
 
-**Voiceover (Word-for-Word):**
-> "To serve government stakeholders seamlessly, AERIX provides direct, read-only institutional data feeds.
+**Voiceover (Word-for-Word — 40 Seconds):**
+> "To serve government stakeholders seamlessly, AERIX provides direct, read-only institutional data feeds. On our Overview page, officials can access dedicated endpoints for the **MoSPI NSO CPI Feed** and the **RBI Nowcasting Feed** with one-click live testing.
 > 
-> On our Overview page, officials can access dedicated endpoints: the **MoSPI NSO CPI Feed** in both JSON and CSV formats, and the **RBI Nowcasting Feed** for high-frequency monetary surveillance.
-> 
-> With one click, officials can test live responses—delivering sub-15ms cached responses powered by Neon PostgreSQL and Redis. Full interactive Swagger UI documentation and comprehensive econometric specifications in the **Method** tab ensure zero implementation friction."
+> And finally, on our **Method** page, we are completely transparent: all the mathematical models, formulas, steps, real DGCA passenger weights, and validation rules we used are detailed here with complete econometric precision. We invite you to refer to this page to explore the full depth of our methodology."
 
 ---
 
