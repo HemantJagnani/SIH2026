@@ -937,12 +937,6 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 <span className="toggle-sep">|</span>
                 <button className="toggle-btn" aria-pressed={frequency === 'monthly'} onClick={() => setFrequency('monthly')}>Monthly</button>
               </div>
-              <div className="toggle-group">
-                <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>Range:</span>
-                <button className="toggle-btn" aria-pressed={range === '30d'} onClick={() => setRange('30d')}>30d</button>
-                <span className="toggle-sep">|</span>
-                <button className="toggle-btn" aria-pressed={range === 'all'} onClick={() => setRange('all')}>All</button>
-              </div>
             </div>
           )}
 
