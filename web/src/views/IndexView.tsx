@@ -2021,16 +2021,6 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
 
 
-      {/* ── 6. Collection Record Strip (§7) ── */}
-      <div className="section" style={{ paddingBottom: 'var(--sp-8)' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-2)' }}>
-          Collection record
-        </h2>
-        <p style={{ color: 'var(--ink-2)', fontSize: '13px', marginBottom: 'var(--sp-3)' }}>
-          Audit trail of scheduled daily pipeline runs. Hover over any tick to view run details.
-        </p>
-        <RecordStrip runs={runs} />
-      </div>
     </div>
   );
 }
