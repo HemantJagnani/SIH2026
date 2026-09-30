@@ -166,7 +166,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   const [soloRoute, setSoloRoute] = useState<string | null>(null);
 
   // Section 3 Basket routes controls
-  const [basketFilter, setBasketFilter] = useState<'TOP10' | 'ALL' | 'DEL' | 'BOM' | 'BLR' | 'HYD' | 'CCU'>('TOP10');
+  const [basketFilter, setBasketFilter] = useState<'ALL' | 'TOP10' | 'DEL' | 'BOM' | 'BLR' | 'HYD' | 'CCU'>('ALL');
   const [basketSearch, setBasketSearch] = useState('');
 
   // Section 4 Lead-time snapshot controls
@@ -1624,8 +1624,8 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {[
-              { id: 'TOP10', label: 'Top 10 Metros' },
               { id: 'ALL', label: `All Scraped (${availableRoutes.length})` },
+              { id: 'TOP10', label: 'Top 10 Metros' },
               { id: 'DEL', label: 'Delhi (DEL)' },
               { id: 'BOM', label: 'Mumbai (BOM)' },
               { id: 'BLR', label: 'Bengaluru (BLR)' },
