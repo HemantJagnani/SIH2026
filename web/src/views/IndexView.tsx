@@ -15,6 +15,7 @@ import {
 import RecordStrip from '../components/RecordStrip';
 import { DGCA_TOP60_ROUTES } from '../data/dgcaTop60';
 import { getRouteColor } from '../lib/palette';
+import { RouteDataAuditModal } from '../components/RouteDataAuditModal';
 
 interface IndexViewProps {
   selectedDate?: string | null;
@@ -168,6 +169,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   // Section 3 Basket routes controls
   const [basketFilter, setBasketFilter] = useState<'ALL' | 'TOP10' | 'DEL' | 'BOM' | 'BLR' | 'HYD' | 'CCU'>('ALL');
   const [basketSearch, setBasketSearch] = useState('');
+  const [auditModalRoute, setAuditModalRoute] = useState<string | null>(null);
 
   // Section 4 Lead-time snapshot controls
   const [leadSnapshotFilter, setLeadSnapshotFilter] = useState<'TOP6' | 'TOP12' | 'ALL'>('TOP6');
@@ -1721,8 +1723,16 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             return (
               <div
                 key={route}
-                onClick={() => handleToggleSolo(route)}
-                onKeyDown={(e) => e.key === 'Enter' || e.key === ' ' ? handleToggleSolo(route) : null}
+                onClick={() => {
+                  handleToggleSolo(route);
+                  setAuditModalRoute(route);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleToggleSolo(route);
+                    setAuditModalRoute(route);
+                  }
+                }}
                 role="button"
                 tabIndex={0}
                 aria-pressed={isSolo}
@@ -1731,6 +1741,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 style={{
                   border: isSolo ? `1px solid ${routeColor}` : undefined,
                   background: isSolo ? `rgba(42, 95, 165, 0.04)` : undefined,
+                  cursor: 'pointer',
                 }}
               >
                 <div>
@@ -1773,6 +1784,29 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 <span className="font-num" style={{ color: 'var(--ink-2)', fontSize: '13px' }}>
                   weight {weightPct}
                 </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAuditModalRoute(route);
+                  }}
+                  title="Inspect extracted flight details, scrapers, and mathematical calculation"
+                  style={{
+                    padding: '2px 8px',
+                    fontSize: '11px',
+                    fontFamily: "'B612', monospace",
+                    background: 'var(--vellum)',
+                    border: '1px solid var(--contour)',
+                    borderRadius: '2px',
+                    cursor: 'pointer',
+                    color: 'var(--route-blue)',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    marginLeft: '4px',
+                  }}
+                >
+                  Inspect Data ➔
+                </button>
               </div>
             );
           })}
@@ -2019,8 +2053,11 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         </div>
       </div>
 
-
-
+      {/* Route Data Extraction & Pipeline Calculation Audit Modal */}
+      <RouteDataAuditModal
+        routeId={auditModalRoute}
+        onClose={() => setAuditModalRoute(null)}
+      />
     </div>
   );
 }

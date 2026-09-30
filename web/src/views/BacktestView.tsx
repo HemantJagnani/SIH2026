@@ -19,6 +19,8 @@ import * as d3Scale from 'd3-scale';
 import * as d3Shape from 'd3-shape';
 import { api, type BacktestResponse, type RouteComparison, type BacktestDailyPoint } from '../api';
 import { LEAD_TIME_HORIZONS } from '../data/dgcaTop60';
+import { MathBlock } from '../components/MathBlock';
+import { RouteDataAuditModal } from '../components/RouteDataAuditModal';
 
 const MARGIN = { top: 28, right: 32, bottom: 44, left: 68 };
 const CHART_H = 340;
@@ -35,6 +37,7 @@ export default function BacktestView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNaive, setShowNaive] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<BacktestDailyPoint | null>(null);
+  const [auditModalRoute, setAuditModalRoute] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [chartW, setChartW] = useState(760);
@@ -715,6 +718,7 @@ export default function BacktestView() {
                 <th style={{ padding: '8px 14px', textAlign: 'right' }}>Delta (₹)</th>
                 <th style={{ padding: '8px 14px', textAlign: 'right' }}>Error (MAPE %)</th>
                 <th style={{ padding: '8px 14px', textAlign: 'center' }}>Status</th>
+                <th style={{ padding: '8px 14px', textAlign: 'center' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -768,6 +772,30 @@ export default function BacktestView() {
                         {r.status}
                       </span>
                     </td>
+                    <td style={{ padding: '8px 14px', textAlign: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedRoute(r.route_id);
+                          setAuditModalRoute(r.route_id);
+                        }}
+                        style={{
+                          padding: '3px 8px',
+                          fontSize: '11px',
+                          fontFamily: "'B612', monospace",
+                          background: 'var(--vellum)',
+                          border: '1px solid var(--contour)',
+                          borderRadius: '2px',
+                          cursor: 'pointer',
+                          color: 'var(--route-blue)',
+                          fontWeight: 600,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        Inspect Data ➔
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -802,8 +830,15 @@ export default function BacktestView() {
               </div>
             ))}
           </div>
-          <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--contour)', fontSize: '11px', color: 'var(--ink-2)', fontFamily: "'B612', monospace" }}>
-            <strong>Formula:</strong> P_r = {LEAD_TIME_HORIZONS.map(h => `(P_${h.lead_class.replace('+', '')} × ${h.empirical_weight_decimal})`).join(' + ')}
+          <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--contour)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ink-2)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Empirical Horizon Weighting Formula
+            </div>
+            <MathBlock
+              formula="P_r = \sum_{h \in \mathcal{H}} w_h \cdot P_{r, h} = 0.0509\,P_{T+1} + 0.135\,P_{T+7} + 0.1491\,P_{T+15} + 0.1519\,P_{T+21} + 0.2588\,P_{T+30} + 0.2543\,P_{T+45}"
+              caption="Eliminates urgent-purchase right-tail skew by weighting prices according to actual DGCA passenger booking distributions."
+              style={{ margin: '4px 0', padding: '10px 14px' }}
+            />
           </div>
         </div>
 
@@ -848,15 +883,23 @@ export default function BacktestView() {
           </div>
           <div>
             <strong style={{ color: 'var(--ink)' }}>3. Official Micro-founded Index Formula:</strong>
-            <p>
+            <p style={{ margin: '6px 0 8px 0' }}>
               Elementary price relatives follow matched short-chain Jevons geometric formulations:
-              <br />
-              <code>J_(s,t) = exp(1/N Σ ln(P_t / P_t-1))</code> chained recursively <code>I_t = I_t-1 × J_t</code>,
-              completely eliminating scraper flight churn and phantom inflation.
             </p>
+            <MathBlock
+              formula="J_{s, t} = \exp\left( \frac{1}{N} \sum_{i=1}^N \ln \frac{P_{i, t}}{P_{i, t-1}} \right), \quad I_t = I_{t-1} \times J_t"
+              caption="Matched-model Jevons chaining eliminates phantom inflation and flight churn"
+              style={{ margin: '6px 0', padding: '10px 14px' }}
+            />
           </div>
         </div>
       </div>
+
+      {/* Route Data Extraction & Pipeline Audit Modal */}
+      <RouteDataAuditModal
+        routeId={auditModalRoute}
+        onClose={() => setAuditModalRoute(null)}
+      />
     </div>
   );
 }
