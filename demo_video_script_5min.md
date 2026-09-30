@@ -94,10 +94,9 @@
 > Our automated scrapers use rotating Indian residential IPs and human-like delays to avoid rate limits and bot blocks entirely. Once ingested, the data flows through five transparent levels:
 > 
 > First, we harmonize multiple OTA quotes for each flight by taking their consensus average. 
-> Second, for a particular route and lead time, we compute the **Geometric Mean** across all flights using the Jevons formula. 
-> Third, we compute a single route fare by taking the **weighted average across all six lead times** using our empirical weights. 
-> Fourth, we aggregate across all sixty sectors using **official DGCA passenger volume weights** to calculate the All-India national airfare. 
-> Finally, we divide the current national fare by the 2024 reference base and multiply by one hundred to produce the official headline CPI index."
+> Second, for a particular route and lead time, we compute the **Jevons Geometric Mean** across all flights to eliminate asymmetric price surge bias. 
+> Third, we compute a single route fare by taking the **weighted average across all six lead times** using our empirical booking weights. 
+> Fourth and fifth, we apply **MoSPI's official Young Index formulation**—aggregating across all sixty sectors using official DGCA passenger volume weights and indexing it against the 2024 reference base to produce the final All-India CPI figure."
 
 ---
 
