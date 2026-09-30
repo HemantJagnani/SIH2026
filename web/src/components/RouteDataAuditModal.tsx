@@ -1,6 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { getRouteAuditData } from '../data/routeExtractionAudit';
 import { MathBlock } from './MathBlock';
+import {
+  AirlineLogo,
+  ScraperSourceBadge,
+  EaseMyTripLogo,
+  GoogleFlightsLogo,
+  OTAConsensusLogo,
+} from './ProviderAndAirlineLogos';
 
 interface RouteDataAuditModalProps {
   routeId: string | null;
@@ -219,35 +226,47 @@ export const RouteDataAuditModal: React.FC<RouteDataAuditModalProps> = ({ routeI
                   Active Scraping Engines & Data Sources · Corridor {auditData.route_id}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
-                  {auditData.sources_summary.map((src) => (
-                    <div
-                      key={src.source}
-                      style={{
-                        background: '#FFFFFF',
-                        border: '1px solid var(--contour)',
-                        borderRadius: '2px',
-                        padding: '12px 14px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <strong style={{ fontSize: '13px', color: 'var(--ink)', fontFamily: "'B612', monospace" }}>{src.source}</strong>
-                        <span
-                          style={{
-                            fontSize: '9px',
-                            fontFamily: "'B612', monospace",
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.04em',
-                            border: '1px solid var(--contour)',
-                            background: 'var(--vellum)',
-                            color: 'var(--route-teal)',
-                            padding: '1px 5px',
-                            borderRadius: '2px',
-                            fontWeight: 700,
-                          }}
-                        >
-                          {src.status}
-                        </span>
-                      </div>
+                  {auditData.sources_summary.map((src) => {
+                    const isEMT = src.source.toLowerCase().includes('easemytrip');
+                    const isGoogle = src.source.toLowerCase().includes('google');
+                    return (
+                      <div
+                        key={src.source}
+                        style={{
+                          background: '#FFFFFF',
+                          border: '1px solid var(--contour)',
+                          borderRadius: '2px',
+                          padding: '12px 14px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {isEMT ? (
+                              <EaseMyTripLogo size={24} />
+                            ) : isGoogle ? (
+                              <GoogleFlightsLogo size={24} />
+                            ) : (
+                              <OTAConsensusLogo size={24} />
+                            )}
+                            <strong style={{ fontSize: '13px', color: 'var(--ink)', fontFamily: "'B612', monospace" }}>{src.source}</strong>
+                          </div>
+                          <span
+                            style={{
+                              fontSize: '9px',
+                              fontFamily: "'B612', monospace",
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em',
+                              border: '1px solid var(--contour)',
+                              background: 'var(--vellum)',
+                              color: 'var(--route-teal)',
+                              padding: '1px 5px',
+                              borderRadius: '2px',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {src.status}
+                          </span>
+                        </div>
                       <div style={{ fontSize: '11px', color: 'var(--ink-2)', marginTop: '4px' }}>
                         {src.engine}
                       </div>
@@ -267,7 +286,8 @@ export const RouteDataAuditModal: React.FC<RouteDataAuditModalProps> = ({ routeI
                         <span style={{ color: 'var(--ink-2)' }}>{src.last_sync}</span>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -375,11 +395,16 @@ export const RouteDataAuditModal: React.FC<RouteDataAuditModalProps> = ({ routeI
                     {filteredFlights.map((f) => (
                       <tr key={f.id} style={{ borderBottom: '1px solid var(--contour)' }}>
                         <td style={{ padding: '8px 12px' }}>
-                          <div style={{ fontWeight: 700, color: 'var(--ink)', fontFamily: "'B612', monospace" }}>
-                            {f.flight_number}
-                          </div>
-                          <div style={{ fontSize: '10px', color: 'var(--ink-2)' }}>
-                            {f.carrier_name} · {f.aircraft}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <AirlineLogo code={f.carrier_code} name={f.carrier_name} size={24} />
+                            <div>
+                              <div style={{ fontWeight: 700, color: 'var(--ink)', fontFamily: "'B612', monospace" }}>
+                                {f.flight_number}
+                              </div>
+                              <div style={{ fontSize: '10px', color: 'var(--ink-2)' }}>
+                                {f.carrier_name} · {f.aircraft}
+                              </div>
+                            </div>
                           </div>
                         </td>
                         <td style={{ padding: '8px 12px', fontFamily: "'B612', monospace", color: 'var(--ink)', fontSize: '11px' }}>
@@ -403,21 +428,7 @@ export const RouteDataAuditModal: React.FC<RouteDataAuditModalProps> = ({ routeI
                           </span>
                         </td>
                         <td style={{ padding: '8px 12px' }}>
-                          <span
-                            style={{
-                              fontSize: '10px',
-                              fontFamily: "'B612', monospace",
-                              fontWeight: 600,
-                              textTransform: 'uppercase',
-                              padding: '1px 5px',
-                              borderRadius: '2px',
-                              border: '1px solid var(--contour)',
-                              background: 'var(--vellum)',
-                              color: 'var(--ink)',
-                            }}
-                          >
-                            {f.source}
-                          </span>
+                          <ScraperSourceBadge source={f.source} size={16} />
                         </td>
                         <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'B612', monospace", fontVariantNumeric: 'tabular-nums' }}>
                           ₹{f.base_fare.toLocaleString('en-IN')}

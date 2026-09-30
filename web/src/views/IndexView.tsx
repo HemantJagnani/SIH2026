@@ -1723,14 +1723,10 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             return (
               <div
                 key={route}
-                onClick={() => {
-                  handleToggleSolo(route);
-                  setAuditModalRoute(route);
-                }}
+                onClick={() => handleToggleSolo(route)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     handleToggleSolo(route);
-                    setAuditModalRoute(route);
                   }
                 }}
                 role="button"
