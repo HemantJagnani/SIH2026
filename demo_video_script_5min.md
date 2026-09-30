@@ -11,11 +11,11 @@
 | Time | Duration | Section | Visual Focus |
 | :--- | :--- | :--- | :--- |
 | **0:00 – 0:45** | 45 sec | **1. The Problem & AERIX Overview** | Overview Page, Sovereign Badges, DGCA Coverage |
-| **0:45 – 1:40** | 55 sec | **2. Index Dashboard & Route Audit** | Index Page, Route Soloing, Inspect Data Modal |
-| **1:40 – 2:20** | 40 sec | **3. Advance Booking Curves & T+21** | Booking Curves Page, Lead-time dispersion |
-| **2:20 – 3:05** | 45 sec | **4. Empirical Backtesting & Validation** | Backtest Page, 199K+ flights, 3.52% MAPE |
-| **3:05 – 3:50** | 45 sec | **5. How It Works (9-Step Pipeline)** | Flow Page, Interactive Steps, Quality Gates |
-| **3:50 – 4:35** | 45 sec | **6. Government APIs & Methodology** | Overview API Feeds, Live Test, Method Specs |
+| **0:45 – 1:55** | 70 sec | **2. Index Dashboard, Basket & Synthetic Baseline** | Index Page, Route Audit Modal, August Rationale |
+| **1:55 – 2:35** | 40 sec | **3. Advance Booking Curves & T+21** | Booking Curves Page, Lead-time dispersion |
+| **2:35 – 3:15** | 40 sec | **4. Empirical Backtesting & Validation** | Backtest Page, 199K+ flights, 3.52% MAPE |
+| **3:15 – 3:55** | 40 sec | **5. How It Works (9-Step Pipeline)** | Flow Page, Interactive Steps, Quality Gates |
+| **3:55 – 4:35** | 40 sec | **6. Government APIs & Methodology** | Overview API Feeds, Live Test, Method Specs |
 | **4:35 – 5:00** | 25 sec | **7. Summary & Sovereign Impact** | S1/S2 Keepalive, Conclusion |
 
 ---
@@ -38,27 +38,30 @@
 
 ---
 
-### [0:45 – 1:40] Scene 2: Index Dashboard, DGCA Top-60 Basket & Multi-Period Aggregation (55 sec)
+### [0:45 – 1:55] Scene 2: Index Dashboard, DGCA Basket & The Rationale for Synthetic Data (70 sec)
 **Visual on Screen:**
 - Arrive on the **"Index"** page.
-- Point cursor to the Headline Index (`100.00` Base 2024 = 100) and All-India Weighted Fare.
+- Point cursor to the Headline Index (`100.00` Base 2024 = 100) and All-India Weighted Fare (`₹6,520`).
 - Scroll down to the **Basket Routes** cards showing the **Top-60 routes** with official DGCA passenger weights and percentage changes.
 - Click **"Inspect Data"** on a route card (e.g., `DEL-BOM`):
   - Briefly display the modal with raw flight quotes, EaseMyTrip & Google Flights sources, IndiGo & Air India logos, flight numbers, and `VALID_BASELINE` quality flag.
 - Click **"Close"** to dismiss the modal and bring the focus back to the main index graph:
   - Toggle between **Daily** and **Monthly** trend views on the chart.
-  - Gesture towards the continuous timeline.
+  - Hover over the 1 Aug to 31 Aug historical timeline.
 
-**Voiceover (Word-for-Word — 55 Seconds):**
-> "On the **Index Dashboard**, our index is anchored to **Base 2024 = 100** because MoSPI is currently revising the national CPI base year to 2024. Using official **DGCA CY2024 passenger statistics as our reference benchmark**, we established our **Top-60 domestic route basket**, capturing 57% of India's passenger volume.
+**Voiceover (Word-for-Word — 70 Seconds):**
+> "On the **Index Dashboard**, our index is anchored to **Base 2024 = 100** because MoSPI is currently revising the national CPI base year to 2024. Using official **DGCA CY2024 passenger statistics as our reference benchmark**, we established our **Top-60 domestic route basket**, capturing 57% of India's commercial passenger volume.
 > 
 > Across these corridors, we scraped real live flight data from Google Flights and EaseMyTrip. Clicking **Inspect Data**, we see the transparent raw quotes—carrier identities, flight numbers, base fares, and our fourteen-point quality validation checks.
 > 
-> Returning to the graph, because airline portals never provide retroactive past-date fare archives, we utilized calibrated synthetic data for August to test our index pipeline. This demonstrates seamless weekly and monthly aggregation. And with our automated five AM pipeline now scraping live data every day, AERIX will continuously accumulate genuine real-time weekly and monthly series going forward."
+> Returning to the graph, you might ask: **why did we use synthetic data for August?** 
+> Airline OTAs only display current and forward booking dates—the moment a flight takes off, past ticket prices are permanently erased from public APIs. To thoroughly stress-test our 360-cell matrix, weekly trend curves, and monthly chaining formulas across a full 31-day calendar month without waiting months for live accumulation, we generated realistic synthetic data calibrated to official DGCA tariff distributions.
+> 
+> This proves our monthly compilation works with zero errors. And with our automated five AM pipeline now continuously scraping live fares every morning, AERIX will seamlessly accumulate genuine real-time weekly and monthly series going forward."
 
 ---
 
-### [1:35 – 2:20] Scene 3: Booking Curves & The T+21 Checkpoint
+### [1:55 – 2:35] Scene 3: Booking Curves & The T+21 Checkpoint (40 sec)
 **Visual on Screen:**
 - Click the **"Booking curves"** tab.
 - Hover over the curve points from **T+1** (last-minute booking) down to **T+45** (early planning).
@@ -74,7 +77,7 @@
 
 ---
 
-### [2:20 – 3:05] Scene 4: Empirical Backtesting & Model Validation
+### [2:35 – 3:15] Scene 4: Empirical Backtesting & Model Validation (40 sec)
 **Visual on Screen:**
 - Click the **"Backtest / Validation"** tab.
 - Show the benchmark comparison chart: **AERIX Econometric Index** vs **Raw Scraped Average** vs **Official DGCA TMU Actuals**.
@@ -90,7 +93,7 @@
 
 ---
 
-### [3:05 – 3:50] Scene 5: How It Works — The 9-Step Pipeline
+### [3:15 – 3:55] Scene 5: How It Works — The 9-Step Pipeline (40 sec)
 **Visual on Screen:**
 - Click the **"How It Works"** tab.
 - Walk through the interactive visual flowchart:
@@ -110,7 +113,7 @@
 
 ---
 
-### [3:50 – 4:35] Scene 6: Government API Integration & Method
+### [3:55 – 4:35] Scene 6: Government API Integration & Method (40 sec)
 **Visual on Screen:**
 - Navigate back to **Overview** and scroll down to the **Institutional Data Ingestion Feeds** section.
 - Point out the **MoSPI CPI Feed** (`/api/v1/nso/cpi-feed`) and **RBI Nowcast Feed** (`/api/v1/rbi/nowcast`).
