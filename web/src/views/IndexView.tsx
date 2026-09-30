@@ -775,15 +775,28 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   }, [fullDailySeries, leadCurves]);
 
   // Helper for route current level
+  // Returns a ₹ fare for every route in the basket table (consistent display)
   const getRouteLevel = useCallback((route: string): string => {
-    if (route === 'DEL-BOM') return latestPoint.del_bom.toFixed(2);
-    if (route === 'DEL-BLR' && latestPoint.del_blr != null) return latestPoint.del_blr.toFixed(2);
-    if (route === 'BOM-BLR' && latestPoint.bom_blr != null) return latestPoint.bom_blr.toFixed(2);
-    const pts = leadCurves[route]?.points ?? [];
-    const p7 = pts.find((p) => p.lead_days === 7)?.price ?? pts[0]?.price;
+    // For all routes: look up T+7 lead fare from matrix cells first, then any curve point
+    const normRoute = route;
+    const revRoute = route.split('-').reverse().join('-');
+
+    // Try matrixCells for T+7 fare (most representative single-point fare)
+    const cell = matrixCells.find(
+      (c) => (c.route === normRoute || c.route === revRoute) && c.lead_time === 'T+7'
+    );
+    const cellFare = cell?.geometric_mean_inr || cell?.mean_fare_inr || cell?.median_fare_inr;
+    if (cellFare) return `₹${Math.round(cellFare).toLocaleString('en-IN')}`;
+
+    // Fall back to lead curve
+    const pts = leadCurves[normRoute]?.points ?? leadCurves[revRoute]?.points ?? [];
+    const p7 = pts.find((p) => p.lead_days === 7)?.price
+            ?? pts.find((p) => p.lead_days === 21)?.price
+            ?? pts[0]?.price;
     if (p7) return `₹${Math.round(p7).toLocaleString('en-IN')}`;
-    return 'Data unavailable';
-  }, [latestPoint, leadCurves]);
+
+    return '—';
+  }, [matrixCells, leadCurves]);
 
   return (
     <div className="page">
