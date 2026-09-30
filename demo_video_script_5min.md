@@ -15,8 +15,8 @@
 | **1:55 – 2:35** | 40 sec | **3. Advance Booking Curves & T+21** | Booking Curves Page, Lead-time dispersion |
 | **2:35 – 3:20** | 45 sec | **4. How It Works (5-Level Data Flow)** | Flow Page, Level 1 to Level 5 Cards |
 | **3:20 – 3:55** | 35 sec | **5. Empirical Backtesting & Validation** | Backtest Page, 199K+ flights, 3.52% MAPE |
-| **3:55 – 4:35** | 40 sec | **6. Government APIs & Methodology** | Overview API Feeds, Live Test, Method Specs |
-| **4:35 – 5:00** | 25 sec | **7. Summary & Sovereign Impact** | S1/S2 Keepalive, Conclusion |
+| **3:55 – 4:40** | 45 sec | **6. Government APIs & Method Transparency** | Overview API Feeds, Live Test, Method Walk-through |
+| **4:40 – 4:50** | 10 sec | **7. Conclusion & Thank You** | Dashboard Header / Home View |
 
 ---
 
@@ -132,14 +132,9 @@
 
 ---
 
-### [4:35 – 5:00] Scene 7: Architecture, Keepalive & Conclusion
+### [4:40 – 4:50] Scene 7: Conclusion & Thank You (10 sec)
 **Visual on Screen:**
-- Briefly show terminal or browser tab with the `/api/heartbeat` diagnostic output showing `Service S1 (API)` and `Service S2 (Scraper)` both healthy with hundreds of consecutive successful keepalives.
-- Return to the clean AERIX header on the web dashboard.
+- Return to the clean top header of the AERIX dashboard or the Overview home view.
 
-**Voiceover (Word-for-Word):**
-> "Behind the scenes, our cloud infrastructure maintains a resilient two-service mutual heartbeat loop, ensuring continuous 24/7 worker uptime.
-> 
-> AERIX bridges the gap between modern dynamic airline pricing and national statistical rigor — providing India with an accurate, tamper-proof, and automated sovereign airfare price index.
-> 
-> Thank you."
+**Voiceover (Word-for-Word — 10 Seconds):**
+> "Thank you for watching the AERIX demonstration."
