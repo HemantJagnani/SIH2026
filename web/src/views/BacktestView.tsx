@@ -21,6 +21,7 @@ import { api, type BacktestResponse, type RouteComparison, type BacktestDailyPoi
 import { LEAD_TIME_HORIZONS } from '../data/dgcaTop60';
 import { MathBlock } from '../components/MathBlock';
 import { RouteDataAuditModal } from '../components/RouteDataAuditModal';
+import { DGCALogo, MoSPILogo, EurostatLogo } from '../components/SovereignLogos';
 
 const MARGIN = { top: 28, right: 32, bottom: 44, left: 68 };
 const CHART_H = 340;
@@ -866,7 +867,10 @@ export default function BacktestView() {
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--sp-4)', fontSize: '12px', color: 'var(--ink-2)', lineHeight: 1.5 }}>
           <div>
-            <strong style={{ color: 'var(--ink)' }}>1. Complete 30-Route Universe:</strong>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <DGCALogo size={18} />
+              <strong style={{ color: 'var(--ink)' }}>1. Complete 30-Route Universe (DGCA Benchmark):</strong>
+            </div>
             <p>
               In accordance with Option B, the full 30-route metro domestic network across India's 6 tier-1 hubs
               (Delhi, Mumbai, Bengaluru, Kolkata, Hyderabad, Chennai) was evaluated across 199,672 flight observations.
@@ -874,7 +878,10 @@ export default function BacktestView() {
             </p>
           </div>
           <div>
-            <strong style={{ color: 'var(--ink)' }}>2. Tax & User Development Fee (UDF) Footnote:</strong>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <MoSPILogo size={18} />
+              <strong style={{ color: 'var(--ink)' }}>2. Tax & User Fee Footnote (MoSPI Compliance):</strong>
+            </div>
             <p>
               DGCA Tariff Monitoring Unit domestic tariff tables report net passenger yields (base fare + fuel surcharge).
               Statutory charges (Passenger Service Fee of ₹91, User Development Fees of ₹250–₹650, and 5% GST) are either
@@ -882,7 +889,10 @@ export default function BacktestView() {
             </p>
           </div>
           <div>
-            <strong style={{ color: 'var(--ink)' }}>3. Official Micro-founded Index Formula:</strong>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <EurostatLogo size={18} />
+              <strong style={{ color: 'var(--ink)' }}>3. Official Micro-founded Index Formula (Eurostat HICP):</strong>
+            </div>
             <p style={{ margin: '6px 0 8px 0' }}>
               Elementary price relatives follow matched short-chain Jevons geometric formulations:
             </p>

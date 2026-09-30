@@ -17,6 +17,7 @@ import { DGCA_TOP60_ROUTES } from '../data/dgcaTop60';
 import { getRouteColor } from '../lib/palette';
 import { RouteDataAuditModal } from '../components/RouteDataAuditModal';
 import { EaseMyTripLogo, GoogleFlightsLogo } from '../components/ProviderAndAirlineLogos';
+import { InstitutionalBadge } from '../components/SovereignLogos';
 
 interface IndexViewProps {
   selectedDate?: string | null;
@@ -1619,9 +1620,25 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             Showing {displayedBasketRoutes.length} of {availableRoutes.length} active scraped routes
           </span>
         </div>
-        <p style={{ color: 'var(--ink-2)', fontSize: '13px', marginBottom: 'var(--sp-3)' }}>
-          Click any row to solo that route on the main chart. Weights match the official DGCA CY2024 passenger share specification.
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: 'var(--sp-3)' }}>
+          <p style={{ color: 'var(--ink-2)', fontSize: '13px', margin: 0 }}>
+            Click any row to solo that route on the main chart. Weights match the official DGCA CY2024 passenger share specification.
+          </p>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <InstitutionalBadge
+              type="dgca"
+              shortText="DGCA"
+              subText="Directorate General of Civil Aviation · CY2024"
+              size={14}
+            />
+            <InstitutionalBadge
+              type="mospi"
+              shortText="MoSPI"
+              subText="Ministry of Statistics & PI · CPI Checkpoint"
+              size={14}
+            />
+          </div>
+        </div>
 
         {/* Filter controls & Search */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>

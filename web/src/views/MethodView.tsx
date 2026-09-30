@@ -24,6 +24,7 @@ import {
   type SensitivityResponse,
 } from '../api';
 import { MathBlock } from '../components/MathBlock';
+import { MoSPILogo, DGCALogo, EurostatLogo } from '../components/SovereignLogos';
 import {
   DGCA_TOP60_ROUTES,
   LEAD_TIME_HORIZONS,
@@ -177,13 +178,17 @@ export default function MethodView({ runs }: Props) {
         </p>
 
         <div className="method-pills-wrap">
-          <span className="method-pill method-pill--accent">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            MoSPI CPI 2024 Methodology Aligned
+          <span className="method-pill method-pill--accent" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <MoSPILogo size={16} />
+            MoSPI (Ministry of Statistics & PI) CPI 2024
           </span>
-          <span className="method-pill method-pill--teal">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Eurostat HICP 2024 Methodological Reference
+          <span className="method-pill method-pill--teal" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <EurostatLogo size={16} />
+            Eurostat (Statistical Office of EU) HICP Reference
+          </span>
+          <span className="method-pill method-pill--blue" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <DGCALogo size={16} />
+            DGCA (Directorate General of Civil Aviation) CY2024 Top-60
           </span>
           <span className="method-pill">
             COICOP: <code>07.3.3.1.2.01</code>

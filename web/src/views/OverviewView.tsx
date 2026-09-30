@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api, type CoverageResponse } from '../api';
+import { InstitutionalBadge } from '../components/SovereignLogos';
 
 interface OverviewViewProps {
   onNavigate: (tab: 'index' | 'curves' | 'method' | 'flow') => void;
@@ -62,6 +63,28 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
         forming a rigorous 360-cell matrix. Price relatives are chained using micro-founded Jevons elementary indices and
         MoSPI Young higher-level aggregation, strictly conforming to MoSPI CPI 2024 (Base 2024=100) and Eurostat HICP standards.
       </p>
+
+      {/* Sovereign & Methodological Compliance Badges */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <InstitutionalBadge
+          type="mospi"
+          shortText="MoSPI"
+          subText="Ministry of Statistics & Programme Implementation · CPI 2024 Base"
+          size={18}
+        />
+        <InstitutionalBadge
+          type="dgca"
+          shortText="DGCA"
+          subText="Directorate General of Civil Aviation · CY2024 Top-60 Route Basket"
+          size={18}
+        />
+        <InstitutionalBadge
+          type="eurostat"
+          shortText="Eurostat"
+          subText="European Commission · HICP Matched-Model Formulation"
+          size={18}
+        />
+      </div>
 
       <div>
         <h2
