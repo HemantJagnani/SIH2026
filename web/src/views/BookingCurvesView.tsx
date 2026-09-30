@@ -450,6 +450,7 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
           routeCellsMap.get(c.route)!.push(c);
         }
 
+        const collectionDate = matRes.value.collection_period || (matRes.value.generated_at ? matRes.value.generated_at.slice(0, 10) : '2026-09-27');
         for (const [r, rCells] of routeCellsMap.entries()) {
           if (!routesList.includes(r)) routesList.push(r);
           const points = rCells.map(c => {
@@ -462,7 +463,7 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
           });
           if (points.length > 0) {
             data[r] = [{
-              obs_date: '2026-09-22',
+              obs_date: collectionDate,
               is_synthetic: false,
               points,
             }];

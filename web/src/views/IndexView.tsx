@@ -1452,7 +1452,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
           <span style={{ color: 'var(--ink-2)' }}>
             {dataMode === 'synthetic'
               ? (soloRoute ? `Showing Overall + ${soloRoute} · Click route strip again to clear` : 'Click any route below to overlay it on the chart')
-              : 'Source: Hosted Neon DB (2026-09-27)'}
+              : `Source: Hosted Neon DB (${runs?.[0]?.run_date || (coverage?.generated_at ? coverage.generated_at.slice(0, 10) : '2026-09-27')})`}
           </span>
         </div>
 
@@ -1461,7 +1461,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
           <summary>
             {dataMode === 'synthetic'
               ? 'Show synthetic daily series as table'
-              : 'Show 27 Sep real production observation details as table'}
+              : `Show ${runs?.[0]?.run_date || 'production'} real production observation details as table`}
           </summary>
           <div style={{ overflowX: 'auto', marginTop: 'var(--sp-2)' }}>
             {dataMode === 'synthetic' ? (
@@ -1513,13 +1513,17 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="font-num" style={{ fontWeight: 700 }}>2026-09-27</td>
+                    <td className="font-num" style={{ fontWeight: 700 }}>
+                      {runs?.[0]?.run_date || (coverage?.generated_at ? coverage.generated_at.slice(0, 10) : '2026-09-27')}
+                    </td>
                     <td>
                       <span className="badge-real" style={{ fontSize: '10px' }}>REAL_PRODUCTION_OBSERVATIONS</span>
                     </td>
-                    <td className="font-num col-num">60 / 60 (100%)</td>
-                    <td className="font-num col-num">360 / 360 (100%)</td>
-                    <td className="font-num col-num" style={{ fontWeight: 700 }}>12,212</td>
+                    <td className="font-num col-num">{coverage?.routes_with_data_count ?? 60} / 60 ({Math.round(((coverage?.routes_with_data_count ?? 60) / 60) * 100)}%)</td>
+                    <td className="font-num col-num">{coverage?.populated_cells ?? 360} / 360 ({Math.round(((coverage?.populated_cells ?? 360) / 360) * 100)}%)</td>
+                    <td className="font-num col-num" style={{ fontWeight: 700 }}>
+                      {coverage?.total_raw_observations?.toLocaleString('en-IN') ?? '12,212'}
+                    </td>
                     <td className="font-num col-num" style={{ fontWeight: 700 }}>
                       ₹{realBacktest?.daily_series?.[0]?.median_fare_inr?.toLocaleString('en-IN') ?? '8,308'}
                     </td>

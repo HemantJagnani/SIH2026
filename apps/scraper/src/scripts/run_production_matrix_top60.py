@@ -525,7 +525,9 @@ async def main():
                     flight_num = o.get("flight_number") or ""
                     dep_time = str(o.get("departure_time_local", ""))
 
-                    obs_id = o.get("id") or str(uuid4())
+                    obs_id = o.get("observation_id") or o.get("id") or str(uuid4())
+                    o["observation_id"] = obs_id
+                    o["id"] = obs_id
 
                     # 1. Foreign transit exclusion
                     if is_foreign_transit_carrier(airline):
@@ -697,6 +699,18 @@ async def main():
     for k, v in metrics.items():
         print(f"  {k:<30}: {v}")
     print("=" * 80)
+
+    # Automated Neon PostgreSQL Ingestion
+    try:
+        try:
+            from storage.auto_ingest_neon import ingest_top60_to_neon
+        except ImportError:
+            from apps.scraper.src.storage.auto_ingest_neon import ingest_top60_to_neon
+        logger.info(f"Triggering automated Neon PostgreSQL ingestion for {len(all_raw_observations)} observations...")
+        rows_ingested = ingest_top60_to_neon(all_raw_observations, classified_observations)
+        logger.info(f"Neon auto-ingestion completed: {rows_ingested} rows stored.")
+    except Exception as e:
+        logger.warning(f"Neon auto-ingestion note: {e}")
 
     # Automated GitHub Evidence Archiving & Release Sync
     try:

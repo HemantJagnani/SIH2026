@@ -102,10 +102,19 @@ def _get_official_top60_routes() -> set:
     return _OFFICIAL_TOP60_ROUTES
 
 
-# Cache for top60 observations to avoid reloading on every request
+# Cache for top60 observations with TTL to avoid reloading on every request while staying updated
 _top60_obs_cache: Optional[List[dict]] = None
 _top60_obs_source: str = "UNINITIALIZED"
 _top60_obs_mtime: float = 0.0
+_top60_obs_cache_time: float = 0.0
+CACHE_TTL_SECONDS = 120.0  # 2 minutes auto-refresh
+
+
+def invalidate_top60_cache():
+    """Invalidates the in-memory top-60 observations cache so next request fetches fresh data."""
+    global _top60_obs_cache, _top60_obs_cache_time
+    _top60_obs_cache = None
+    _top60_obs_cache_time = 0.0
 
 
 def load_top60_observations() -> List[dict]:
@@ -113,26 +122,38 @@ def load_top60_observations() -> List[dict]:
     Load canonical fare observations from hosted Neon DB first, falling back to disk cache only if DB is unavailable.
     
     Architectural Guarantees:
-    1. Complete 2026-09-27 Production Ingestion: Serves exclusively from the complete 27th September scrape.
-       Partial single-route test runs from other dates are completely excluded.
+    1. Dynamic Latest Full-Basket Ingestion: Automatically serves from the latest scrape date that possesses
+       complete/broad basket coverage (>= 50 routes), ensuring that single-route test runs never break or corrupt
+       the full 60-route matrix.
     2. 360-Cell & 60-Route Integrity: Canonicalizes sector directions to match official DGCA CY2024 Top-60 basket.
     3. Canonical Field Mapping: Normalizes DB columns into the standard canonical schema (20+ fields).
     4. Transparent Status Normalization: Maps quality_status == 'VALID' to 'VALID_BASELINE' for standard retail economy quotes,
        or 'FOREIGN_TRANSIT' / 'HIGHER_FARE_FAMILY' where conditions dictate.
-    5. Safe In-Memory Caching: Populates _top60_obs_cache on first successful load; subsequent requests reuse cache.
+    5. In-Memory Caching with TTL & Invalidation: Populates _top60_obs_cache with TTL and provides explicit invalidation
+       when new scraping runs conclude.
     """
-    global _top60_obs_cache, _top60_obs_source, _top60_obs_mtime
-    if _top60_obs_cache is not None:
+    global _top60_obs_cache, _top60_obs_source, _top60_obs_mtime, _top60_obs_cache_time
+    now = time.time()
+    if _top60_obs_cache is not None and (now - _top60_obs_cache_time) < CACHE_TTL_SECONDS:
         return _top60_obs_cache
 
     official_routes = _get_official_top60_routes()
 
-    # 1. Attempt authoritative load from hosted Neon PostgreSQL database (2026-09-27 complete scrape)
+    # 1. Attempt authoritative load from hosted Neon PostgreSQL database (latest date with >= 50 routes)
     conn = get_db_connection()
     if conn:
         try:
             cur = conn.cursor()
             cur.execute("""
+                WITH eligible_dates AS (
+                    SELECT DATE(collected_at) AS col_date, COUNT(DISTINCT origin || '-' || destination) AS route_count
+                    FROM fare_observations
+                    GROUP BY DATE(collected_at)
+                    HAVING COUNT(DISTINCT origin || '-' || destination) >= 50
+                ),
+                target_date AS (
+                    SELECT col_date FROM eligible_dates ORDER BY col_date DESC LIMIT 1
+                )
                 SELECT observation_id, origin, destination, airline, airline_code, flight_number,
                        travel_date, lead_days, total_fare, base_fare, taxes, currency, source,
                        cabin, stops, fare_family, quality_status, product_stratum_id,
@@ -140,7 +161,13 @@ def load_top60_observations() -> List[dict]:
                        departure_time_local, arrival_time_local, requires_self_transfer,
                        price_status, passenger_count, availability
                 FROM fare_observations
-                WHERE DATE(collected_at) = '2026-09-27'
+                WHERE DATE(collected_at) = (
+                    SELECT COALESCE(
+                        (SELECT col_date FROM target_date),
+                        (SELECT DATE(collected_at) FROM fare_observations ORDER BY collected_at DESC LIMIT 1),
+                        '2026-09-27'::date
+                    )
+                )
                 ORDER BY travel_date ASC;
             """)
             rows = cur.fetchall()
@@ -239,9 +266,10 @@ def load_top60_observations() -> List[dict]:
 
                 _top60_obs_cache = parsed_records
                 _top60_obs_source = "HOSTED_NEON_DB"
+                _top60_obs_cache_time = now
                 return _top60_obs_cache
             else:
-                print("Info: Hosted Neon DB query returned 0 rows for 2026-09-27. Proceeding to fallback.")
+                print("Info: Hosted Neon DB query returned 0 rows for target basket date. Proceeding to fallback.")
         except Exception as e:
             print(f"Warning: Hosted Neon DB query failure: {e}. Preserving cache state and proceeding to fallback.")
             if conn:
@@ -331,6 +359,7 @@ def load_top60_observations() -> List[dict]:
                 _top60_obs_cache = parsed_cls
                 _top60_obs_source = "DISK_CACHE_CLASSIFICATION"
                 _top60_obs_mtime = mtime
+                _top60_obs_cache_time = now
                 return _top60_obs_cache
         except Exception as e:
             print(f'Error loading top60 observations from classification: {e}')
@@ -345,6 +374,7 @@ def load_top60_observations() -> List[dict]:
         _top60_obs_cache = data if isinstance(data, list) else []
         _top60_obs_source = "DISK_CACHE_OBSERVATIONS"
         _top60_obs_mtime = mtime
+        _top60_obs_cache_time = now
         return _top60_obs_cache
     except Exception as e:
         print(f'Error loading top60 observations from disk: {e}')
@@ -791,10 +821,14 @@ async def get_quality_metrics():
     official = _get_official_top60_routes()
     routes = sorted(list(set(o.get("route") for o in observations if o.get("route") in official)))
 
+    col_date = observations[0].get("collection_date") if observations else "2026-09-27"
+    col_period = col_date[:7] if col_date else "2026-09"
+
     return {
         "status": "HEALTHY",
         "data_status": "REAL_PRODUCTION_OBSERVATIONS",
-        "collection_period": "2026-09",
+        "collection_period": col_period,
+        "collection_date": col_date,
         "total_observations": total_obs,
         "valid_observations": valid_obs,
         "duplicate_observations": dup_obs,
@@ -1180,11 +1214,28 @@ async def get_scraper_status():
             status = "COMPLETED" if poll_res == 0 else f"EXITED_WITH_CODE_{poll_res}"
             pid = _scraper_subprocess.pid
             exit_code = poll_res
+            if poll_res == 0:
+                invalidate_top60_cache()
 
     return {
         "status": status,
         "pid": pid,
         "exit_code": exit_code,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@app.post("/api/cache/refresh", tags=["🛡️ Quality Assurance & Governance"])
+async def refresh_observation_cache():
+    """Explicitly invalidates and reloads the observations cache from hosted Neon PostgreSQL."""
+    invalidate_top60_cache()
+    fresh_obs = load_top60_observations()
+    col_date = fresh_obs[0].get("collection_date") if fresh_obs else None
+    return {
+        "status": "CACHE_REFRESHED",
+        "source": _top60_obs_source,
+        "observations_loaded": len(fresh_obs),
+        "latest_collection_date": col_date,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
@@ -1317,10 +1368,13 @@ async def get_matrix(
                 'stddev': round(statistics.stdev(fares), 2) if len(fares) > 1 else 0.0,
             })
 
+    col_date = obs_all[0].get("collection_date") if obs_all else "2026-09-27"
+    col_period = col_date[:7] if col_date else "2026-09"
+
     return {
         'data_status': 'REAL_PRODUCTION_OBSERVATIONS',
-        'observation_period': '2026-09',
-        'collection_period': '2026-09-27',
+        'observation_period': col_period,
+        'collection_period': col_date,
         'governance': 'OBSERVED_PRODUCTION_CELLS',
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'source': 'google_flights_top60_production',

@@ -37,6 +37,8 @@ export interface QualityMetrics {
   routes_covered: string[];
   currency: string;
   methodology_version: string;
+  collection_period?: string;
+  collection_date?: string;
   evaluated_at: string;
 }
 
@@ -76,6 +78,8 @@ export interface MatrixCell {
 export interface MatrixResponse {
   generated_at: string;
   source: string;
+  collection_period?: string;
+  observation_period?: string;
   total_cells: number;
   total_observations: number;
   cells: MatrixCell[];

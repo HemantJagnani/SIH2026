@@ -47,10 +47,25 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState<string | null>(getDateFromUrl());
 
   useEffect(() => {
-    api.runs().then(r => {
-      setRuns(r);
-      if (r.length > 0) setLastRunDate(r[0].run_date);
-    }).catch(() => {});
+    let mounted = true;
+    const fetchRuns = () => {
+      api.runs().then(r => {
+        if (!mounted) return;
+        setRuns(r);
+        if (r.length > 0) setLastRunDate(r[0].run_date);
+      }).catch(() => {});
+    };
+    fetchRuns();
+
+    const interval = setInterval(fetchRuns, 30000);
+    const handleFocus = () => fetchRuns();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const handleSetDate = useCallback((d: string | null) => {
@@ -118,6 +133,7 @@ export default function App() {
         >
           {tab === 'index' && (
             <IndexView
+              key={lastRunDate || 'initial'}
               selectedDate={selectedDate}
               onSelectDate={handleSetDate}
               onNavigate={(nextTab) => setTab(nextTab)}
@@ -132,6 +148,7 @@ export default function App() {
         >
           {tab === 'curves' && (
             <BookingCurvesView
+              key={lastRunDate || 'initial'}
               selectedDate={selectedDate}
               onSelectDate={handleSetDate}
             />
