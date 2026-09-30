@@ -803,12 +803,12 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             <h1 className="headline" style={{ marginBottom: 'var(--sp-2)', color: 'var(--ink)' }}>
               {realBacktest?.daily_series?.[0]
                 ? <>On {fmtDateLong(realBacktest.daily_series[0].date)}, the index was{' '}
-                    <span className="font-num">{realBacktest.metrics?.aerix_index != null
-                      ? Number(realBacktest.metrics.aerix_index).toFixed(2)
-                      : indexData?.index_value != null
-                        ? Number(indexData.index_value).toFixed(2)
-                        : '101.86'}</span>{' '}(2024&nbsp;=&nbsp;100).
-                  </>
+                  <span className="font-num">{realBacktest.metrics?.aerix_index != null
+                    ? Number(realBacktest.metrics.aerix_index).toFixed(2)
+                    : indexData?.index_value != null
+                      ? Number(indexData.index_value).toFixed(2)
+                      : '101.86'}</span>{' '}(2024&nbsp;=&nbsp;100).
+                </>
                 : <>AERIX &mdash; India Airfare Price Index (2024&nbsp;=&nbsp;100)</>}
             </h1>
             <div className="font-num text-secondary" style={{ fontSize: '13px' }}>
@@ -1627,8 +1627,8 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               isDelBom
                 ? 'EaseMyTrip live DOM capture · 30d backtest'
                 : (leadCurves[route]?.points?.length ?? 0) > 0
-                ? 'Google Flights Top-60 matrix lead curve'
-                : 'DGCA CY2024 Top-60 scheduled corridor';
+                  ? 'Google Flights Top-60 matrix lead curve'
+                  : 'DGCA CY2024 Top-60 scheduled corridor';
 
             const sparkPoints = getRouteSparkPoints(route);
             const sparkW = 120;
