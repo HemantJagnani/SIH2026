@@ -324,7 +324,13 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       // Both route weights AND lead-time weights govern the overall index
       const simulatedOverall = baseOverall * leadFactor;
 
-      const dayNum = (b as any).day || parseInt(b.date.split('-')[0], 10) || (pts.length + 1);
+      let dayNum = (b as any).day;
+      if (!dayNum && b.date) {
+        dayNum = b.date.startsWith('2026-08-')
+          ? parseInt(b.date.split('-')[2], 10)
+          : parseInt(b.date.split('-')[0], 10);
+      }
+      dayNum = dayNum || (pts.length + 1);
       const augDate = `2026-08-${String(dayNum).padStart(2, '0')}`;
 
       pts.push({
