@@ -517,19 +517,22 @@ allowed_origins = [
     "http://127.0.0.1:5173",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:4173",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://sih-2026-sigma-eight.vercel.app",
+    "https://sih-2026.vercel.app",
+    "https://aerix.vercel.app",
 ]
 if frontend_origins_env:
     for o in frontend_origins_env.split(","):
         cleaned = o.strip()
         if cleaned and cleaned not in allowed_origins:
             allowed_origins.append(cleaned)
-elif os.environ.get("ENVIRONMENT", "development").lower() != "production":
-    # In local development if unconfigured, also allow localhost API origin
-    allowed_origins.extend(["http://localhost:8000", "http://127.0.0.1:8000"])
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=r"^https://[a-zA-Z0-9\-_.]+\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
