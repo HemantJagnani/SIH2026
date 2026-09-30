@@ -68,12 +68,12 @@
 - Highlight the marked **T+21 MoSPI Checkpoint**.
 - Toggle between different route selections to show how curve shapes differ between business routes and leisure sectors.
 
-**Voiceover (Word-for-Word):**
+**Voiceover (Word-for-Word — 40 Seconds):**
 > "The heart of our econometric innovation lies in our **Booking Curves**. 
 > 
 > Airlines do not sell one price; they sell across a dynamic horizon. AERIX samples six standardized lead-time buckets: T+1, T+7, T+15, T+21, T+30, and T+45, creating a full 360-cell matrix every morning.
 > 
-> Crucially, we isolate the **T+21 advance purchase horizon**. This matches the official MoSPI CPI pricing checkpoint window, ensuring that inflation reflects genuine economic price movements rather than last-minute seat scarcity."
+> Instead of simple averaging, we assigned empirical weights to every lead-time horizon based on real passenger booking patterns. And we isolate the **T+21 advance purchase horizon** to match the official MoSPI CPI pricing checkpoint, ensuring inflation reflects genuine economic price movements rather than last-minute seat scarcity."
 
 ---
 
