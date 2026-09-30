@@ -13,8 +13,8 @@
 | **0:00 – 0:45** | 45 sec | **1. The Problem & AERIX Overview** | Overview Page, Sovereign Badges, DGCA Coverage |
 | **0:45 – 1:55** | 70 sec | **2. Index Dashboard, Basket & Synthetic Baseline** | Index Page, Route Audit Modal, August Rationale |
 | **1:55 – 2:35** | 40 sec | **3. Advance Booking Curves & T+21** | Booking Curves Page, Lead-time dispersion |
-| **2:35 – 3:15** | 40 sec | **4. Empirical Backtesting & Validation** | Backtest Page, 199K+ flights, 3.52% MAPE |
-| **3:15 – 3:55** | 40 sec | **5. How It Works (9-Step Pipeline)** | Flow Page, Interactive Steps, Quality Gates |
+| **2:35 – 3:20** | 45 sec | **4. How It Works (5-Level Data Flow)** | Flow Page, Level 1 to Level 5 Cards |
+| **3:20 – 3:55** | 35 sec | **5. Empirical Backtesting & Validation** | Backtest Page, 199K+ flights, 3.52% MAPE |
 | **3:55 – 4:35** | 40 sec | **6. Government APIs & Methodology** | Overview API Feeds, Live Test, Method Specs |
 | **4:35 – 5:00** | 25 sec | **7. Summary & Sovereign Impact** | S1/S2 Keepalive, Conclusion |
 
@@ -77,39 +77,43 @@
 
 ---
 
-### [2:35 – 3:15] Scene 4: Empirical Backtesting & Model Validation (40 sec)
+### [2:35 – 3:20] Scene 4: How It Works — The 5-Level Calculation Flow (45 sec)
+**Visual on Screen:**
+- Click the **"How It Works"** tab.
+- Show the interactive controller at the top (Pick Path: `DEL-BOM`, Timeframe: `T+21`).
+- Scroll smoothly down through the 5 stacked levels on the visual flowchart:
+  - **Level 1**: Multiple Providers &rarr; Single Flight Price (average across OTAs).
+  - **Level 2**: All Flights in a Horizon &rarr; Geometric Mean (Jevons).
+  - **Level 3**: 6 Timeframes &rarr; Weighted Route Fare.
+  - **Level 4**: 60 Routes &rarr; All-India National Airfare (DGCA weights).
+  - **Level 5**: Final Formula: $\text{Current National Fare} / \text{Base Fare} \times 100$.
+
+**Voiceover (Word-for-Word — 45 Seconds):**
+> "Under **How It Works**, we visualize the exact mathematical data flow.
+> 
+> Our automated scrapers use rotating Indian residential IPs and human-like delays to avoid rate limits and bot blocks entirely. Once ingested, the data flows through five transparent levels:
+> 
+> First, we harmonize multiple OTA quotes for each flight by taking their consensus average. 
+> Second, for a particular route and lead time, we compute the **Geometric Mean** across all flights using the Jevons formula. 
+> Third, we compute a single route fare by taking the **weighted average across all six lead times** using our empirical weights. 
+> Fourth, we aggregate across all sixty sectors using **official DGCA passenger volume weights** to calculate the All-India national airfare. 
+> Finally, we divide the current national fare by the 2024 reference base and multiply by one hundred to produce the official headline CPI index."
+
+---
+
+### [3:20 – 3:55] Scene 5: Empirical Backtesting & Model Validation (35 sec)
 **Visual on Screen:**
 - Click the **"Backtest / Validation"** tab.
 - Show the benchmark comparison chart: **AERIX Econometric Index** vs **Raw Scraped Average** vs **Official DGCA TMU Actuals**.
 - Highlight the error statistics box: **MAPE 3.52%** and **MAE 1.33 pt** vs Raw Average Error of **5.09 pt**.
 - Scroll to the 4-regime Weight Sensitivity table.
 
-**Voiceover (Word-for-Word):**
-> "A sovereign index must be empirically proven. Under **Backtest & Validation**, we benchmarked AERIX against 199,672 real commercial flight observations across March 2022.
+**Voiceover (Word-for-Word — 35 Seconds):**
+> "Under **Backtest & Validation**, we benchmarked AERIX against 199,672 real commercial flight observations across March 2022.
 > 
-> The results are definitive: while simple averaging generates massive volatility with a 5.09-point error, AERIX matches actual DGCA benchmark yields with a **Mean Absolute Error of just 1.33 points and 3.52% MAPE**. 
+> While simple averaging creates wild fluctuations with a 5.09-point error, AERIX closely tracks actual DGCA benchmark yields with a **Mean Absolute Error of just 1.33 points and 3.52% MAPE**. 
 > 
-> Our sensitivity analysis confirms that index trajectory remains stable within 0.26 index points across four distinct weighting regimes."
-
----
-
-### [3:15 – 3:55] Scene 5: How It Works — The 9-Step Pipeline (40 sec)
-**Visual on Screen:**
-- Click the **"How It Works"** tab.
-- Walk through the interactive visual flowchart:
-  - Step 1: Automated 5 AM Dual-Channel Ingestion & Rotating Residential IPs.
-  - Step 2: Quality Gates & Outlier Filtering.
-  - Step 3: Matched-Model Axiom.
-  - Step 4: Jevons Geometric Mean relatives.
-  - Step 5: Young Higher-Level Aggregation with DGCA weights.
-- Click on a step box to reveal its formula and implementation notes.
-
-**Voiceover (Word-for-Word):**
-> "In the **How It Works** section, we visualize the complete nine-step pipeline.
-> 
-> Every day at **5:00 AM IST**, automated workers trigger Crawlee and Playwright scrapers through **rotating Indian residential IPs**, collecting prices across all 360 matrix cells without bot blocks or rate limits.
-> 
-> Observations pass through strict deduplication and quality gates. Next, following international Eurostat HICP standards, elementary price relatives are compiled using the **Jevons geometric mean**, and aggregated into the All-India Index using the **MoSPI Young formulation** under COICOP category 07.3.3.1.2.01."
+> Furthermore, our sensitivity analysis confirms that the index trajectory remains rock-solid within 0.26 index points across four distinct weighting regimes."
 
 ---
 
