@@ -247,8 +247,8 @@ export default function MethodView({ runs }: Props) {
           stratification, holding constant airline carrier, departure timing, stopover characteristics, and advance booking lead times.
         </p>
 
-        <div className="step-card" style={{ borderLeftColor: '#C2410C', background: 'rgba(230, 81, 0, 0.04)' }}>
-          <div className="step-title" style={{ color: '#9A3412' }}>THE FUNDAMENTAL AXIOM OF CPI AIRFARE MEASUREMENT</div>
+        <div className="step-card" style={{ borderLeft: '3px solid var(--ink)', background: 'var(--vellum)', border: '1px solid var(--contour)', borderRadius: '2px', padding: '14px 18px' }}>
+          <div className="step-title" style={{ color: 'var(--ink)', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>THE FUNDAMENTAL AXIOM OF CPI AIRFARE MEASUREMENT</div>
           <p style={{ margin: 0, fontSize: '13.5px', color: 'var(--ink)' }}>
             <strong>The index is NEVER calculated by averaging raw scraped ticket prices.</strong>
             Taking simple averages of scraped quotes conflates genuine price inflation with compositional shifts
@@ -326,7 +326,7 @@ export default function MethodView({ runs }: Props) {
             </thead>
             <tbody>
               {LEAD_TIME_HORIZONS.map((h: LeadTimeHorizon) => (
-                <tr key={h.lead_class} style={h.is_mospi_checkpoint ? { background: 'rgba(230, 81, 0, 0.05)', fontWeight: 600 } : {}}>
+                <tr key={h.lead_class} style={h.is_mospi_checkpoint ? { background: 'rgba(168, 145, 106, 0.06)', fontWeight: 600 } : {}}>
                   <td className="font-num" style={{ fontWeight: 700 }}>
                     {h.lead_class}
                   </td>
@@ -335,7 +335,7 @@ export default function MethodView({ runs }: Props) {
                   <td className="font-num">{h.empirical_weight_percent.toFixed(2)}% ({h.empirical_weight_decimal.toFixed(4)})</td>
                   <td>
                     {h.is_mospi_checkpoint ? (
-                      <span className="gate-badge" style={{ background: 'rgba(230, 81, 0, 0.12)', color: '#C2410C' }}>
+                      <span className="gate-badge" style={{ background: 'rgba(168, 145, 106, 0.12)', color: 'var(--assumed)' }}>
                         MoSPI Official Checkpoint
                       </span>
                     ) : (
@@ -687,7 +687,7 @@ export default function MethodView({ runs }: Props) {
           </div>
 
           <div className="tri-layer-card">
-            <span className="tri-layer-badge" style={{ color: '#E65100' }}>LAYER 2: LEAD-TIME LEVEL</span>
+            <span className="tri-layer-badge" style={{ color: 'var(--assumed)' }}>LAYER 2: LEAD-TIME LEVEL</span>
             <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--ink)' }}>Booking Advance Weights (W_l)</div>
             <p style={{ fontSize: '12.5px', color: 'var(--ink-2)', margin: 0, lineHeight: 1.4 }}>
               Derived from empirical booking microdata (T+1 to T+45). Governs advance-purchase consumer behavior.
@@ -696,16 +696,16 @@ export default function MethodView({ runs }: Props) {
           </div>
 
           <div className="tri-layer-card prohibited">
-            <span className="tri-layer-badge" style={{ color: '#B91C1C' }}>LAYER 3: CPI INTEGRATION</span>
-            <div style={{ fontWeight: 700, fontSize: '14px', color: '#B91C1C' }}>MoSPI CPI Expenditure Weight (0.02951%)</div>
+            <span className="tri-layer-badge" style={{ color: 'var(--ink)' }}>LAYER 3: CPI INTEGRATION</span>
+            <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--ink)' }}>MoSPI CPI Expenditure Weight (0.02951%)</div>
             <p style={{ fontSize: '12.5px', color: 'var(--ink-2)', margin: 0, lineHeight: 1.4 }}>
               COICOP 07.3.3.1.2.01 household expenditure weight. Used ONLY for macro CPI contribution calculations.
             </p>
           </div>
         </div>
 
-        <div className="step-card" style={{ borderLeftColor: '#B91C1C', background: 'rgba(185, 28, 28, 0.04)' }}>
-          <div className="step-title" style={{ color: '#B91C1C' }}>CRITICAL ARCHITECTURAL GUARD: STRICT ANTI-CONTAMINATION ASSERTIONS</div>
+        <div className="step-card" style={{ borderLeftColor: 'var(--ink)', background: 'var(--vellum)' }}>
+          <div className="step-title" style={{ color: 'var(--ink)' }}>CRITICAL ARCHITECTURAL GUARD: STRICT ANTI-CONTAMINATION ASSERTIONS</div>
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink)' }}>
             The MoSPI CPI airfare expenditure weight (<code>0.02951%</code> / <code>0.0002951</code>) must <strong>NEVER</strong> be
             used as a route weight or lead-time weight. The backend engine runs strict runtime code assertions
@@ -732,7 +732,7 @@ export default function MethodView({ runs }: Props) {
             <div style={{ fontSize: '12px', color: 'var(--ink-2)' }}>Top-60 DGCA domestic city pairs</div>
           </div>
           <div style={{ border: '1px solid var(--contour)', padding: '12px', borderRadius: '4px', background: '#FFFFFF' }}>
-            <div style={{ fontWeight: 700, color: '#E65100', fontSize: '13px' }}>× 6 Lead Horizons</div>
+            <div style={{ fontWeight: 700, color: 'var(--assumed)', fontSize: '13px' }}>× 6 Lead Horizons</div>
             <div style={{ fontSize: '12px', color: 'var(--ink-2)' }}>T+1, T+7, T+15, T+21, T+30, T+45</div>
           </div>
           <div style={{ border: '1px solid var(--contour)', padding: '12px', borderRadius: '4px', background: 'rgba(42, 95, 165, 0.05)' }}>
@@ -1035,8 +1035,8 @@ export default function MethodView({ runs }: Props) {
                       <tr key={idx}>
                         <td className="font-num">{fmtDateTime(obs.collected_at)}</td>
                         <td className="font-num">{obs.travel_date}</td>
-                        <td className="font-num" style={{ fontWeight: 700, color: lead === 21 ? '#E65100' : 'var(--ink)' }}>
-                          T+{lead} {lead === 21 && '★'}
+                        <td className="font-num" style={{ fontWeight: lead === 21 ? 700 : 400, color: lead === 21 ? 'var(--assumed)' : 'var(--ink)' }}>
+                          T+{lead} {lead === 21 && '(MoSPI)'}
                         </td>
                         <td style={{ fontWeight: 600 }}>{obs.route}</td>
                         <td>{obs.airline}</td>

@@ -19,11 +19,29 @@ export interface AERIXIndexResponse {
   route_indices: Record<string, number>;
   lead_time_indices: Record<string, number>;
   methodology_version: string;
-  weight_version: string;
+  all_india_weighted_fare_inr?: number;
   published_at: string;
 }
 
 export type APIxIndexResponse = AERIXIndexResponse;
+
+export interface NSOCPIFeedResponse {
+  headline_index: number;
+  all_india_weighted_fare_inr: number;
+  national_cpi_weight_percent: number;
+  collection_date: string;
+  aerix_headline_metrics?: {
+    headline_index: number;
+    mom_inflation_rate_percent: number;
+    yoy_inflation_rate_percent: number;
+  };
+  mospi_cpi_contribution?: {
+    mom_contribution_combined_pp: number;
+    mom_contribution_urban_pp: number;
+    mom_contribution_rural_pp: number;
+  };
+  route_elementary_indices?: Record<string, number>;
+}
 
 export interface QualityMetrics {
   status: string;
@@ -450,6 +468,12 @@ export const api = {
   observations: async (): Promise<Observation[]> => {
     const res = await fetch(`${BASE}/observations`);
     if (!res.ok) throw new Error(`API error ${res.status}: /observations`);
+    return res.json();
+  },
+
+  getNsoCpiFeed: async (): Promise<NSOCPIFeedResponse> => {
+    const res = await fetch(`${BASE}/v1/nso/cpi-feed`);
+    if (!res.ok) throw new Error(`API error ${res.status}: /v1/nso/cpi-feed`);
     return res.json();
   },
 

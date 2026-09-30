@@ -108,12 +108,6 @@ export default function App() {
             ))}
           </ul>
         </nav>
-
-        {lastRunDate && (
-          <span className="site-header__status font-num">
-            {fmtThrough(lastRunDate)}
-          </span>
-        )}
       </header>
 
       <main>

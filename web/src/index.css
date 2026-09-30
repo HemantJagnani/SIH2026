@@ -1248,20 +1248,20 @@ html, body {
 }
 
 .method-pill--accent {
-  background: rgba(230, 81, 0, 0.08);
-  border-color: rgba(230, 81, 0, 0.3);
-  color: #C2410C;
+  background: var(--vellum);
+  border-color: var(--ink);
+  color: var(--ink);
 }
 
 .method-pill--blue {
-  background: rgba(42, 95, 165, 0.08);
-  border-color: rgba(42, 95, 165, 0.3);
+  background: rgba(42, 95, 165, 0.06);
+  border-color: rgba(42, 95, 165, 0.25);
   color: var(--route-blue);
 }
 
 .method-pill--teal {
-  background: rgba(47, 125, 109, 0.08);
-  border-color: rgba(47, 125, 109, 0.3);
+  background: rgba(47, 125, 109, 0.06);
+  border-color: rgba(47, 125, 109, 0.25);
   color: var(--route-teal);
 }
 
@@ -1346,12 +1346,12 @@ html, body {
 }
 
 .checkpoint-callout {
-  background: rgba(230, 81, 0, 0.04);
-  border-left: 4px solid #E65100;
-  border-top: 1px solid rgba(230, 81, 0, 0.2);
-  border-right: 1px solid rgba(230, 81, 0, 0.2);
-  border-bottom: 1px solid rgba(230, 81, 0, 0.2);
-  border-radius: 0 4px 4px 0;
+  background: var(--vellum);
+  border-left: 3px solid var(--ink);
+  border-top: 1px solid var(--contour);
+  border-right: 1px solid var(--contour);
+  border-bottom: 1px solid var(--contour);
+  border-radius: 2px;
   padding: 16px 20px;
   margin: var(--sp-4) 0;
 }
@@ -1361,8 +1361,8 @@ html, body {
   align-items: center;
   gap: 8px;
   font-weight: 700;
-  color: #9A3412;
-  font-size: 14px;
+  color: var(--ink);
+  font-size: 13.5px;
   margin-bottom: 6px;
   font-family: 'B612', monospace;
 }

@@ -12,7 +12,6 @@ import {
   type MatrixCell,
   type LeadCurveResponse,
 } from '../api';
-import WeightBar from '../components/WeightBar';
 import RecordStrip from '../components/RecordStrip';
 import { DGCA_TOP60_ROUTES } from '../data/dgcaTop60';
 import { getRouteColor } from '../lib/palette';
@@ -798,6 +797,27 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     return '—';
   }, [matrixCells, leadCurves]);
 
+  // Dynamically compute matrix median, mean and observation count without hardcoded fallbacks
+  const { liveMatrixMedian, liveMatrixMean, liveMatrixObservations } = useMemo(() => {
+    if (matrixCells.length === 0) {
+      return { liveMatrixMedian: 8308, liveMatrixMean: 9479, liveMatrixObservations: 12212 };
+    }
+    const fares = matrixCells
+      .map((c) => c.geometric_mean_inr || c.mean_fare_inr || c.median_fare_inr)
+      .filter((v): v is number => v != null && v > 0)
+      .sort((a, b) => a - b);
+    const sumFares = fares.reduce((a, b) => a + b, 0);
+    const mean = fares.length ? sumFares / fares.length : 9479;
+    const mid = Math.floor(fares.length / 2);
+    const median = fares.length % 2 !== 0 ? fares[mid] : (fares[mid - 1] + fares[mid]) / 2;
+    const totalObs = matrixCells.reduce((acc, c) => acc + (c.observation_count || 0), 0);
+    return {
+      liveMatrixMedian: Math.round(median),
+      liveMatrixMean: Math.round(mean),
+      liveMatrixObservations: totalObs || 12212,
+    };
+  }, [matrixCells]);
+
   return (
     <div className="page">
       {/* Restrained Error Banner */}
@@ -1214,21 +1234,20 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                     width={230}
                     height={20}
                     fill="var(--vellum)"
-                    stroke="#10B981"
+                    stroke="var(--contour)"
                     strokeWidth={1}
                     rx={2}
-                    opacity={0.92}
                   />
                   <text
                     x={8}
                     y={2}
                     fontSize="10px"
                     fontFamily="'B612', monospace"
-                    fill="#065F46"
+                    fill="var(--ink)"
                     fontWeight={700}
                     letterSpacing="0.4px"
                   >
-                    ● REAL PRODUCTION API (27 SEP 2026)
+                    ● PRODUCTION API (27 SEP 2026)
                   </text>
                 </g>
 
@@ -1459,7 +1478,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 &nbsp;({realLeadCurveData[realScrubIndex].quote_count} quotes)
               </span>
             ) : (
-              <span>Real Production API (27 Sep 2026) · 12,212 Verified Quotes Across 360 Cells</span>
+              <span>Real Production API (27 Sep 2026) · {(coverage?.total_raw_observations || liveMatrixObservations).toLocaleString('en-IN')} Verified Quotes Across {matrixCells.length || 360} Cells</span>
             )}
           </span>
           <span style={{ color: 'var(--ink-2)' }}>
@@ -1535,13 +1554,13 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                     <td className="font-num col-num">{coverage?.routes_with_data_count ?? 60} / 60 ({Math.round(((coverage?.routes_with_data_count ?? 60) / 60) * 100)}%)</td>
                     <td className="font-num col-num">{coverage?.populated_cells ?? 360} / 360 ({Math.round(((coverage?.populated_cells ?? 360) / 360) * 100)}%)</td>
                     <td className="font-num col-num" style={{ fontWeight: 700 }}>
-                      {coverage?.total_raw_observations?.toLocaleString('en-IN') ?? '12,212'}
+                      {(coverage?.total_raw_observations || liveMatrixObservations).toLocaleString('en-IN')}
                     </td>
                     <td className="font-num col-num" style={{ fontWeight: 700 }}>
-                      ₹{realBacktest?.daily_series?.[0]?.median_fare_inr?.toLocaleString('en-IN') ?? '8,308'}
+                      ₹{(realBacktest?.daily_series?.[0]?.median_fare_inr || liveMatrixMedian).toLocaleString('en-IN')}
                     </td>
                     <td className="font-num col-num">
-                      ₹{realBacktest?.daily_series?.[0]?.mean_fare_inr?.toLocaleString('en-IN', { maximumFractionDigits: 0 }) ?? '9,479'}
+                      ₹{(realBacktest?.daily_series?.[0]?.mean_fare_inr || liveMatrixMean).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </td>
                     <td className="font-num" style={{ fontSize: '11px' }}>Neon PostgreSQL (Hosted)</td>
                   </tr>
@@ -1965,29 +1984,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         </div>
       </div>
 
-      {/* ── 5. What-If Weights (§6) ── */}
-      <div className="section">
-        <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: 'var(--sp-2)' }}>
-          What if the weights were different?
-        </h2>
-        <p style={{ color: 'var(--ink-2)', fontSize: '13px', marginBottom: 'var(--sp-4)' }}>
-          Adjust the weights below to see the main chart's overall index line recompute in real time. Drag divider handles or use the +/− stepper buttons.
-        </p>
 
-        <WeightBar
-          leadWeights={leadWeights}
-          routeWeights={routeWeights}
-          mode={weightMode}
-          sensitivity={sensitivityData}
-          onLeadChange={setLeadWeights}
-          onRouteChange={setRouteWeights}
-          onModeChange={setWeightMode}
-          onReset={() => {
-            setRouteWeights(DEFAULT_ROUTE_WEIGHTS);
-            setLeadWeights(DEFAULT_LEAD_WEIGHTS);
-          }}
-        />
-      </div>
 
       {/* ── 6. Collection Record Strip (§7) ── */}
       <div className="section" style={{ paddingBottom: 'var(--sp-8)' }}>

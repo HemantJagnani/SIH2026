@@ -52,34 +52,45 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
         </p>
       </div>
 
-      {/* Decorative index sketch: short chained line from 100, hand-drawn scale, no numbers */}
-      <div style={{ margin: 'var(--sp-1) 0' }}>
-        <svg
-          width="180"
-          height="40"
-          viewBox="0 0 180 40"
-          role="img"
-          aria-label="Illustrative sketch, not real data."
-          style={{ overflow: 'visible' }}
+      {/* Aeronautical Navigation Chart Banner Illustration */}
+      <div
+        style={{
+          border: '1px solid var(--contour)',
+          background: '#fff',
+          overflow: 'hidden',
+          marginBottom: 'var(--sp-2)',
+        }}
+      >
+        <img
+          src="/aeronautical_chart_banner.jpg"
+          alt="Aeronautical navigation chart of Indian scheduled domestic airspace"
+          style={{
+            width: '100%',
+            maxHeight: '340px',
+            objectFit: 'cover',
+            display: 'block',
+          }}
+        />
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '8px 14px',
+            background: 'var(--vellum)',
+            borderTop: '1px solid var(--contour)',
+            fontSize: '11px',
+            fontFamily: "'B612', monospace",
+            color: 'var(--ink-2)',
+          }}
         >
-          <title>Illustrative sketch, not real data.</title>
-          {/* Faint baseline at 100 */}
-          <line x1="0" y1="24" x2="180" y2="24" stroke="var(--contour)" strokeWidth="1" strokeDasharray="2,2" />
-          {/* Chained index trajectory */}
-          <path
-            d="M 4,24 L 28,24 L 54,20 L 80,22 L 108,15 L 136,17 L 164,12"
-            fill="none"
-            stroke="var(--ink)"
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-          />
-          <circle cx="4" cy="24" r="2" fill="var(--ink)" />
-          <circle cx="54" cy="20" r="1.5" fill="var(--ink)" />
-          <circle cx="80" cy="22" r="1.5" fill="var(--ink)" />
-          <circle cx="108" cy="15" r="1.5" fill="var(--ink)" />
-          <circle cx="136" cy="17" r="1.5" fill="var(--ink)" />
-          <circle cx="164" cy="12" r="2" fill="var(--ink)" />
-        </svg>
+          <span style={{ fontWeight: 700, color: 'var(--ink)' }}>
+            FIGURE 1 · AERONAUTICAL NAVIGATION CHART (IND DOMESTIC FIR AIRSPACE)
+          </span>
+          <span>
+            DGCA CY2024 BASKET · 60 CORRIDORS · 91,995,307 SCHEDULED PASSENGERS
+          </span>
+        </div>
       </div>
 
       <p className="prose" style={{ color: 'var(--ink)' }}>
