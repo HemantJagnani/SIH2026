@@ -70,7 +70,7 @@ class GoogleFlightsNavigation:
                     
                     try:
                         # Wait for the main results container
-                        await self.page.wait_for_selector(GoogleFlightsSelectors.RESULTS_CONTAINER, timeout=20000)
+                        await self.page.wait_for_selector(GoogleFlightsSelectors.RESULTS_CONTAINER, timeout=28000)
                         
                         # Wait for stabilization (scroll down briefly to load lazy elements)
                         await self.page.mouse.wheel(0, 1000)

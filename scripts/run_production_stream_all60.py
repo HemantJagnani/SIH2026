@@ -37,7 +37,7 @@ logger = logging.getLogger("stream_all60")
 
 CONFIG_PATH = PROJECT_ROOT / "config" / "dgca_cy2024_top60.json"
 API_REFRESH_URL = "https://aerix-backend-cr41.onrender.com/api/cache/refresh"
-RAW_DB_URL = os.environ.get("DATABASE_URL_SYNC", "").replace("+psycopg2", "")
+RAW_DB_URL = os.environ.get("DATABASE_URL_SYNC", "").replace("+psycopg2", "") or "postgresql://neondb_owner:npg_TaKCLGyr28gl@ep-lively-sunset-b3e0gwgz.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 
 
 def get_existing_cells_today():
@@ -82,30 +82,41 @@ async def scrape_and_ingest_cell(origin, destination, rank, lead_days, gate, sem
     async with sem:
         route_str = f"{origin}-{destination}"
         t0 = time.time()
-        try:
-            job_res, obs = await execute_route_lead_job(
-                origin=origin,
-                destination=destination,
-                rank=rank,
-                lead_days=lead_days,
-                policy_gate=gate,
-            )
-            elapsed = time.time() - t0
-            obs_cnt = len(obs)
-            if obs_cnt > 0:
-                ingested = ingest_top60_to_neon(obs)
-                counter["total_ingested"] += ingested
-                counter["completed_cells"] += 1
-                logger.info(
-                    f"[{counter['completed_cells']}/{counter['total_target']}] "
-                    f"SUCCESS: {route_str} T+{lead_days} ({obs_cnt} quotes, {ingested} in DB, {elapsed:.1f}s)"
+        for attempt in range(2):
+            try:
+                job_res, obs = await execute_route_lead_job(
+                    origin=origin,
+                    destination=destination,
+                    rank=rank,
+                    lead_days=lead_days,
+                    policy_gate=gate,
                 )
-            else:
-                logger.warning(
-                    f"EMPTY: {route_str} T+{lead_days} returned 0 quotes (state={job_res.get('state')})"
-                )
-        except Exception as exc:
-            logger.error(f"ERROR: {route_str} T+{lead_days}: {exc}")
+                elapsed = time.time() - t0
+                obs_cnt = len(obs)
+                if obs_cnt > 0:
+                    ingested = ingest_top60_to_neon(obs)
+                    counter["total_ingested"] += ingested
+                    counter["completed_cells"] += 1
+                    logger.info(
+                        f"[{counter['completed_cells']}/{counter['total_target']}] "
+                        f"SUCCESS: {route_str} T+{lead_days} ({obs_cnt} quotes, {ingested} in DB, {elapsed:.1f}s)"
+                    )
+                    break
+                else:
+                    if attempt == 0:
+                        logger.warning(
+                            f"RETRYING: {route_str} T+{lead_days} returned 0 quotes (state={job_res.get('state')}), retrying..."
+                        )
+                        await asyncio.sleep(2.0)
+                    else:
+                        logger.warning(
+                            f"EMPTY: {route_str} T+{lead_days} returned 0 quotes (state={job_res.get('state')}) on attempt 2"
+                        )
+            except Exception as exc:
+                if attempt == 0:
+                    await asyncio.sleep(2.0)
+                else:
+                    logger.error(f"ERROR: {route_str} T+{lead_days}: {exc}")
 
 
 async def main():
