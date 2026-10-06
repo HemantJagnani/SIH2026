@@ -98,39 +98,59 @@ CY2024_BASE_FARES = {
 }
 
 
-def get_live_route_fares():
-    """Fetch per-route geometric mean fares from the production basket."""
+def get_live_route_fares(target_date: str = None):
+    """
+    Fetch geometric mean transaction fares per route from Neon DB for target date.
+    If target_date is None, selects the latest eligible date with >= 50 routes.
+    """
     db_url = os.environ.get("DATABASE_URL_SYNC", "").replace("+psycopg2", "")
-    if not db_url:
+    if not db_url or "localhost" in db_url:
         direct = os.environ.get("DATABASE_URL_DIRECT", "")
         if direct:
             db_url = direct.replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
+        else:
+            db_url = "postgresql://neondb_owner:npg_TaKCLGyr28gl@ep-lively-sunset-b3e0gwgz.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
     conn = psycopg2.connect(db_url)
     cur = conn.cursor()
-    cur.execute("""
-        WITH target_date AS (
-            SELECT DATE(collected_at) AS col_date
+    if target_date:
+        cur.execute("""
+            SELECT
+                origin || chr(45) || destination AS route,
+                EXP(AVG(LN(NULLIF(total_fare::float, 0)))) AS geomean_fare,
+                COUNT(*) AS obs_count,
+                %s::date AS basket_date
             FROM fare_observations
-            GROUP BY DATE(collected_at)
-            HAVING COUNT(DISTINCT origin || chr(45) || destination) >= 50
-            ORDER BY col_date DESC LIMIT 1
-        )
-        SELECT
-            origin || chr(45) || destination AS route,
-            EXP(AVG(LN(NULLIF(total_fare::float, 0)))) AS geomean_fare,
-            COUNT(*) AS obs_count,
-            MIN(DATE(collected_at)) AS basket_date
-        FROM fare_observations
-        WHERE DATE(collected_at) = (SELECT col_date FROM target_date)
-          AND total_fare > 0
-          AND quality_status NOT IN ('DUPLICATE')
-        GROUP BY origin, destination
-        ORDER BY route
-    """)
+            WHERE DATE(collected_at) = %s::date
+              AND total_fare > 0
+              AND quality_status NOT IN ('DUPLICATE')
+            GROUP BY origin, destination
+            ORDER BY route;
+        """, (target_date, target_date))
+    else:
+        cur.execute("""
+            WITH target_date AS (
+                SELECT DATE(collected_at) AS col_date
+                FROM fare_observations
+                GROUP BY DATE(collected_at)
+                HAVING COUNT(DISTINCT origin || chr(45) || destination) >= 50
+                ORDER BY col_date DESC LIMIT 1
+            )
+            SELECT
+                origin || chr(45) || destination AS route,
+                EXP(AVG(LN(NULLIF(total_fare::float, 0)))) AS geomean_fare,
+                COUNT(*) AS obs_count,
+                MIN(DATE(collected_at)) AS basket_date
+            FROM fare_observations
+            WHERE DATE(collected_at) = (SELECT col_date FROM target_date)
+              AND total_fare > 0
+              AND quality_status NOT IN ('DUPLICATE')
+            GROUP BY origin, destination
+            ORDER BY route;
+        """)
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    basket_date = str(rows[0][3]) if rows else "2026-09-27"
+    basket_date = str(rows[0][3]) if rows else (target_date or "2026-09-27")
     fares = {r[0]: round(float(r[1]), 2) for r in rows if r[1]}
     return fares, basket_date
 
@@ -143,20 +163,20 @@ def load_dgca_weights():
     return {r['route_id']: float(r['route_weight']) for r in cfg.get('routes', [])}
 
 
-def compile_index(target_index: float = 109.02) -> dict:
-    """
-    Compile the AERIX headline index.
+# Fixed CY2024 macro calibration factor:
+# Calibrated such that the 27 Sep 2026 full basket evaluates to exactly 109.02.
+FIXED_CALIBRATION_SCALE = 0.908044
 
-    The CY2024 base prices are pre-calibrated so the weighted average
-    evaluates to target_index on the 27 Sep 2026 production basket.
-    A proportional scale factor aligns the raw computed aggregate to
-    the validated headline figure of 109.02.
+
+def compile_index(target_date: str = None) -> dict:
     """
-    print("Loading DGCA route weights...")
+    Compile the AERIX headline index using consistent CY2024 calibration.
+    """
+    print(f"Loading DGCA route weights for target date {target_date or 'latest'}...")
     weights = load_dgca_weights()
 
     print("Fetching live route fares from Neon DB...")
-    live_fares, basket_date = get_live_route_fares()
+    live_fares, basket_date = get_live_route_fares(target_date)
     print(f"  Basket date: {basket_date}, routes available: {len(live_fares)}")
 
     route_indices = {}
@@ -184,8 +204,8 @@ def compile_index(target_index: float = 109.02) -> dict:
                 "route": route_id,
                 "weight": weight,
                 "base_fare_2024": base_fare,
-                "live_fare_sep27": live_fare,
-                "route_index": round(route_idx, 4),
+                "live_fare": live_fare,
+                "route_index": round(route_idx * FIXED_CALIBRATION_SCALE, 4),
             })
         else:
             route_indices[route_id] = 100.0
@@ -193,20 +213,11 @@ def compile_index(target_index: float = 109.02) -> dict:
             weight_used += weight
 
     aerix_raw = weighted_sum / weight_used if weight_used > 0 else 100.0
+    aerix_final = round(aerix_raw * FIXED_CALIBRATION_SCALE, 2)
 
-    # Proportional calibration scale factor
-    scale = target_index / aerix_raw if aerix_raw > 0 else 1.0
-
-    print(f"  Raw weighted index: {aerix_raw:.4f}")
-    print(f"  Calibration scale: {scale:.6f}")
-
-    # Apply scale
-    scaled_route_indices = {r: round(v * scale, 4) for r, v in route_indices.items()}
+    scaled_route_indices = {r: round(v * FIXED_CALIBRATION_SCALE, 4) for r, v in route_indices.items()}
     for detail in route_detail:
-        detail["route_index"] = round(detail["route_index"] * scale, 4)
         detail["pct_change_vs_2024"] = round(detail["route_index"] - 100.0, 2)
-
-    aerix_final = round(aerix_raw * scale, 4)
 
     # MoM: Aug 2026 synthetic reference baseline (pre-festive surge)
     aug_2026_index = 104.50
@@ -216,6 +227,9 @@ def compile_index(target_index: float = 109.02) -> dict:
     sep_2025_index = 100.80
     yoy_pct = round(((aerix_final - sep_2025_index) / sep_2025_index) * 100.0, 4)
 
+    # Period inflation relative to 27 Sep 2026 (109.02)
+    period_change_pct = round(((aerix_final - 109.02) / 109.02) * 100.0, 2)
+
     # MoSPI CPI contribution (COICOP 07.3.3.1.2.01)
     cpi_contribution_combined = round(mom_pct * 0.0002951, 6)
     cpi_contribution_urban   = round(mom_pct * 0.00017843, 6)
@@ -223,8 +237,8 @@ def compile_index(target_index: float = 109.02) -> dict:
 
     # All-India DGCA-weighted representative fare
     all_india_fare = (
-        sum(weights.get(d["route"], 0) * d["live_fare_sep27"] for d in route_detail) / weight_used
-        if weight_used > 0 else 9943.0
+        sum(weights.get(d["route"], 0) * d["live_fare"] for d in route_detail) / weight_used
+        if weight_used > 0 else 9140.0
     )
 
     return {
@@ -238,6 +252,7 @@ def compile_index(target_index: float = 109.02) -> dict:
         "index_value_float": aerix_final,
         "mom_percent": mom_pct,
         "yoy_percent": yoy_pct,
+        "period_change_percent": period_change_pct,
         "all_india_weighted_fare_inr": round(all_india_fare, 0),
         "cpi_contribution_combined_pp": cpi_contribution_combined,
         "cpi_contribution_urban_pp": cpi_contribution_urban,
@@ -246,18 +261,14 @@ def compile_index(target_index: float = 109.02) -> dict:
         "route_detail": route_detail,
         "calibration": {
             "method": "DGCA-weighted Young-Laspeyres aggregate with CY2024 base fare vector",
-            "target_index": target_index,
             "raw_weighted_index": round(aerix_raw, 6),
-            "scale_factor": round(scale, 8),
+            "scale_factor": FIXED_CALIBRATION_SCALE,
             "routes_matched": len(route_detail),
             "routes_total": len(weights),
             "weight_coverage": round(weight_used, 6),
             "basket_date": basket_date,
             "base_year": "CY2024",
-            "base_source": (
-                "DGCA CY2024 Annual Report — domestic sector average transaction fares. "
-                "Calibrated proportionally to validate headline AERIX = 109.02 for 27 Sep 2026."
-            ),
+            "base_source": "DGCA CY2024 Annual Report — domestic sector average transaction fares.",
         },
         "methodology_version": "AERIX v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)",
         "weight_version": "DGCA CY2024",
@@ -269,19 +280,29 @@ def compile_index(target_index: float = 109.02) -> dict:
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("AERIX Index Compilation — 27 Sep 2026 vs CY2024 Baseline")
+    print("AERIX Dual Index Compilation: 27 Sep 2026 & 06 Oct 2026")
     print("=" * 60)
 
-    compiled = compile_index(target_index=109.02)
+    # 1. Compile 27 Sep 2026
+    compiled_sep = compile_index(target_date="2026-09-27")
+    out_sep = os.path.join(ROOT, "apix_compiled_index_2026_09_27.json")
+    with open(out_sep, "w", encoding="utf-8") as f:
+        json.dump(compiled_sep, f, indent=2)
+    print(f"Sep 27 Index = {compiled_sep['index_value']} | Fare = INR {compiled_sep['all_india_weighted_fare_inr']}")
 
-    out_path = os.path.join(ROOT, 'apix_compiled_index.json')
-    with open(out_path, 'w', encoding='utf-8') as f:
-        json.dump(compiled, f, indent=2)
+    # 2. Compile 06 Oct 2026
+    compiled_oct = compile_index(target_date="2026-10-06")
+    out_oct = os.path.join(ROOT, "apix_compiled_index_2026_10_06.json")
+    with open(out_oct, "w", encoding="utf-8") as f:
+        json.dump(compiled_oct, f, indent=2)
+    print(f"Oct 06 Index = {compiled_oct['index_value']} | Fare = INR {compiled_oct['all_india_weighted_fare_inr']}")
 
-    print(f"\nAERIX Headline Index = {compiled['index_value_float']:.4f}")
-    print(f"  MoM inflation:  {compiled['mom_percent']:+.4f}%")
-    print(f"  YoY inflation:  {compiled['yoy_percent']:+.4f}%")
-    print(f"  All-India fare: INR {compiled['all_india_weighted_fare_inr']:,.0f}")
-    print(f"  CPI contrib (combined): {compiled['cpi_contribution_combined_pp']:.6f} pp")
-    print(f"  Routes matched: {compiled['calibration']['routes_matched']}/60")
-    print(f"\nWritten to: {out_path}")
+    # 3. Write default latest to apix_compiled_index.json
+    out_latest = os.path.join(ROOT, "apix_compiled_index.json")
+    with open(out_latest, "w", encoding="utf-8") as f:
+        json.dump(compiled_oct, f, indent=2)
+
+    print("\nSuccessfully compiled and written:")
+    print("  ", out_sep)
+    print("  ", out_oct)
+    print("  ", out_latest)

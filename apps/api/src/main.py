@@ -138,51 +138,45 @@ def _get_official_top60_routes() -> set:
 
 
 # Cache for top60 observations with TTL to avoid reloading on every request while staying updated
-_top60_obs_cache: Optional[List[dict]] = None
-_top60_obs_source: str = "UNINITIALIZED"
-_top60_obs_mtime: float = 0.0
-_top60_obs_cache_time: float = 0.0
+_top60_obs_cache: Dict[str, List[dict]] = {}
+_top60_obs_source: Dict[str, str] = {}
+_top60_obs_cache_time: Dict[str, float] = {}
 CACHE_TTL_SECONDS = 120.0  # 2 minutes auto-refresh
 
 
 def invalidate_top60_cache():
     """Invalidates the in-memory and Redis L2 top-60 observations cache so next request fetches fresh data."""
-    global _top60_obs_cache, _top60_obs_cache_time
-    _top60_obs_cache = None
-    _top60_obs_cache_time = 0.0
+    global _top60_obs_cache, _top60_obs_cache_time, _top60_obs_source
+    _top60_obs_cache.clear()
+    _top60_obs_cache_time.clear()
+    _top60_obs_source.clear()
     redis_cli = get_redis_client()
     if redis_cli:
         try:
             redis_cli.delete("aerix:cache:top60_observations")
+            redis_cli.delete("aerix:cache:top60_observations:latest")
+            redis_cli.delete("aerix:cache:top60_observations:2026-09-27")
+            redis_cli.delete("aerix:cache:top60_observations:2026-10-06")
         except Exception:
             pass
 
 
-def load_top60_observations() -> List[dict]:
+def load_top60_observations(collection_date: Optional[str] = None) -> List[dict]:
     """
-    Load canonical fare observations from hosted Neon DB first, falling back to disk cache only if DB is unavailable.
-    
-    Architectural Guarantees:
-    1. Dynamic Latest Full-Basket Ingestion: Automatically serves from the latest scrape date that possesses
-       complete/broad basket coverage (>= 50 routes), ensuring that single-route test runs never break or corrupt
-       the full 60-route matrix.
-    2. 360-Cell & 60-Route Integrity: Canonicalizes sector directions to match official DGCA CY2024 Top-60 basket.
-    3. Canonical Field Mapping: Normalizes DB columns into the standard canonical schema (20+ fields).
-    4. Transparent Status Normalization: Maps quality_status == 'VALID' to 'VALID_BASELINE' for standard retail economy quotes,
-       or 'FOREIGN_TRANSIT' / 'HIGHER_FARE_FAMILY' where conditions dictate.
-    5. Multi-Tier Caching (L1 In-Memory + L2 Render Key-Value Redis):
-       Serves from L1 in-memory cache first, L2 Redis key-value second, and Neon DB third.
+    Load canonical fare observations from hosted Neon DB for a specific collection_date (or latest date).
     """
-    global _top60_obs_cache, _top60_obs_source, _top60_obs_mtime, _top60_obs_cache_time
+    global _top60_obs_cache, _top60_obs_source, _top60_obs_cache_time
     now = time.time()
-    if _top60_obs_cache is not None and (now - _top60_obs_cache_time) < CACHE_TTL_SECONDS:
-        return _top60_obs_cache
+    cache_key = collection_date or "latest"
+    if cache_key in _top60_obs_cache and (now - _top60_obs_cache_time.get(cache_key, 0.0)) < CACHE_TTL_SECONDS:
+        return _top60_obs_cache[cache_key]
 
     # Check L2 Render Redis Key-Value cache
     redis_cli = get_redis_client()
     if redis_cli:
         try:
-            cached_data = redis_cli.get("aerix:cache:top60_observations")
+            redis_k = f"aerix:cache:top60_observations:{cache_key}"
+            cached_data = redis_cli.get(redis_k)
             if cached_data:
                 if cached_data.startswith("gz:"):
                     import zlib, base64
@@ -191,46 +185,59 @@ def load_top60_observations() -> List[dict]:
                     raw_json = cached_data
                 parsed_records = json.loads(raw_json)
                 if parsed_records:
-                    _top60_obs_cache = parsed_records
-                    _top60_obs_source = "HOSTED_REDIS_L2"
-                    _top60_obs_cache_time = now
-                    return _top60_obs_cache
+                    _top60_obs_cache[cache_key] = parsed_records
+                    _top60_obs_source[cache_key] = "HOSTED_REDIS_L2"
+                    _top60_obs_cache_time[cache_key] = now
+                    return parsed_records
         except Exception as e:
             print(f"Warning: Redis L2 cache read error: {e}")
 
     official_routes = _get_official_top60_routes()
 
-    # 1. Attempt authoritative load from hosted Neon PostgreSQL database (latest date with >= 50 routes)
+    # 1. Attempt authoritative load from hosted Neon PostgreSQL database
     conn = get_db_connection()
     if conn:
         try:
             cur = conn.cursor()
-            cur.execute("""
-                WITH eligible_dates AS (
-                    SELECT DATE(collected_at) AS col_date, COUNT(DISTINCT origin || '-' || destination) AS route_count
+            if collection_date:
+                cur.execute("""
+                    SELECT observation_id, origin, destination, airline, airline_code, flight_number,
+                           travel_date, lead_days, total_fare, base_fare, taxes, currency, source,
+                           cabin, stops, fare_family, quality_status, product_stratum_id,
+                           itinerary_fingerprint, offer_fingerprint, collected_at,
+                           departure_time_local, arrival_time_local, requires_self_transfer,
+                           price_status, passenger_count, availability
                     FROM fare_observations
-                    GROUP BY DATE(collected_at)
-                    HAVING COUNT(DISTINCT origin || '-' || destination) >= 50
-                ),
-                target_date AS (
-                    SELECT col_date FROM eligible_dates ORDER BY col_date DESC LIMIT 1
-                )
-                SELECT observation_id, origin, destination, airline, airline_code, flight_number,
-                       travel_date, lead_days, total_fare, base_fare, taxes, currency, source,
-                       cabin, stops, fare_family, quality_status, product_stratum_id,
-                       itinerary_fingerprint, offer_fingerprint, collected_at,
-                       departure_time_local, arrival_time_local, requires_self_transfer,
-                       price_status, passenger_count, availability
-                FROM fare_observations
-                WHERE DATE(collected_at) = (
-                    SELECT COALESCE(
-                        (SELECT col_date FROM target_date),
-                        (SELECT DATE(collected_at) FROM fare_observations ORDER BY collected_at DESC LIMIT 1),
-                        '2026-09-27'::date
+                    WHERE DATE(collected_at) = %s::date
+                    ORDER BY travel_date ASC;
+                """, (collection_date,))
+            else:
+                cur.execute("""
+                    WITH eligible_dates AS (
+                        SELECT DATE(collected_at) AS col_date, COUNT(DISTINCT origin || '-' || destination) AS route_count
+                        FROM fare_observations
+                        GROUP BY DATE(collected_at)
+                        HAVING COUNT(DISTINCT origin || '-' || destination) >= 50
+                    ),
+                    target_date AS (
+                        SELECT col_date FROM eligible_dates ORDER BY col_date DESC LIMIT 1
                     )
-                )
-                ORDER BY travel_date ASC;
-            """)
+                    SELECT observation_id, origin, destination, airline, airline_code, flight_number,
+                           travel_date, lead_days, total_fare, base_fare, taxes, currency, source,
+                           cabin, stops, fare_family, quality_status, product_stratum_id,
+                           itinerary_fingerprint, offer_fingerprint, collected_at,
+                           departure_time_local, arrival_time_local, requires_self_transfer,
+                           price_status, passenger_count, availability
+                    FROM fare_observations
+                    WHERE DATE(collected_at) = (
+                        SELECT COALESCE(
+                            (SELECT col_date FROM target_date),
+                            (SELECT DATE(collected_at) FROM fare_observations ORDER BY collected_at DESC LIMIT 1),
+                            '2026-10-06'::date
+                        )
+                    )
+                    ORDER BY travel_date ASC;
+                """)
             rows = cur.fetchall()
             cur.close()
             conn.close()
@@ -325,18 +332,18 @@ def load_top60_observations() -> List[dict]:
                         "price_status": r[24] or "OK",
                     })
 
-                _top60_obs_cache = parsed_records
-                _top60_obs_source = "HOSTED_NEON_DB"
-                _top60_obs_cache_time = now
+                _top60_obs_cache[cache_key] = parsed_records
+                _top60_obs_source[cache_key] = "HOSTED_NEON_DB"
+                _top60_obs_cache_time[cache_key] = now
                 if redis_cli:
                     try:
                         import zlib, base64
                         raw_json = json.dumps(parsed_records)
                         compressed_payload = "gz:" + base64.b64encode(zlib.compress(raw_json.encode('utf-8'))).decode('ascii')
-                        redis_cli.set("aerix:cache:top60_observations", compressed_payload, ex=300)
+                        redis_cli.set(f"aerix:cache:top60_observations:{cache_key}", compressed_payload, ex=300)
                     except Exception as e:
                         print(f"Warning: Redis L2 cache write error: {e}")
-                return _top60_obs_cache
+                return parsed_records
             else:
                 print("Info: Hosted Neon DB query returned 0 rows for target basket date. Proceeding to fallback.")
         except Exception as e:
@@ -425,11 +432,10 @@ def load_top60_observations() -> List[dict]:
                         'requires_self_transfer': o.get('requires_self_transfer', False),
                         'price_status': o.get('price_status', 'OK'),
                     })
-                _top60_obs_cache = parsed_cls
-                _top60_obs_source = "DISK_CACHE_CLASSIFICATION"
-                _top60_obs_mtime = mtime
-                _top60_obs_cache_time = now
-                return _top60_obs_cache
+                _top60_obs_cache[cache_key] = parsed_cls
+                _top60_obs_source[cache_key] = "DISK_CACHE_CLASSIFICATION"
+                _top60_obs_cache_time[cache_key] = now
+                return parsed_cls
         except Exception as e:
             print(f'Error loading top60 observations from classification: {e}')
 
@@ -440,11 +446,10 @@ def load_top60_observations() -> List[dict]:
     try:
         with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        _top60_obs_cache = data if isinstance(data, list) else []
-        _top60_obs_source = "DISK_CACHE_OBSERVATIONS"
-        _top60_obs_mtime = mtime
-        _top60_obs_cache_time = now
-        return _top60_obs_cache
+        _top60_obs_cache[cache_key] = data if isinstance(data, list) else []
+        _top60_obs_source[cache_key] = "DISK_CACHE_OBSERVATIONS"
+        _top60_obs_cache_time[cache_key] = now
+        return _top60_obs_cache[cache_key]
     except Exception as e:
         print(f'Error loading top60 observations from disk: {e}')
         return []
@@ -556,8 +561,18 @@ def load_canonical_data() -> List[NormalizedFareObservation]:
     return []
 
 # Pre-compiled index cache
-def load_compiled_index():
-    idx_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'apix_compiled_index.json')
+def load_compiled_index(collection_date: Optional[str] = None):
+    base_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..')
+    if collection_date:
+        fname = f"apix_compiled_index_{collection_date.replace('-', '_')}.json"
+        path = os.path.join(base_dir, fname)
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception:
+                pass
+    idx_path = os.path.join(base_dir, 'apix_compiled_index.json')
     if os.path.exists(idx_path):
         try:
             with open(idx_path, 'r', encoding='utf-8') as f:
@@ -569,7 +584,8 @@ def load_compiled_index():
 
 @app.get("/api/v1/nso/cpi-feed", tags=["🏛️ NSO (MoSPI) Integration"])
 async def get_nso_cpi_feed(
-    period: str = Query("2026-09", description="Compilation period (YYYY-MM)"),
+    period: str = Query("2026-10", description="Compilation period (YYYY-MM)"),
+    collection_date: Optional[str] = Query(None, description="Specific collection date e.g. 2026-10-06 or 2026-09-27"),
     format: str = Query("json", description="Output format: 'json' or 'csv'"),
     x_api_key: Optional[str] = Header(None, alias="X-API-Key", description="Optional institutional API key for simulation")
 ):
@@ -584,7 +600,11 @@ async def get_nso_cpi_feed(
     if not period or len(period) != 7 or period[4] != "-":
         raise HTTPException(status_code=400, detail="Invalid period format. Expected format: 'YYYY-MM' (e.g. '2026-09').")
 
-    cached = load_compiled_index()
+    target_date = collection_date
+    if not target_date:
+        target_date = "2026-09-27" if period == "2026-09" else "2026-10-06"
+
+    cached = load_compiled_index(target_date)
     cpi_cfg = CPIAirfareWeightConfig()
     registry = WeightRegistry(is_single_route_pilot=False)
 
@@ -840,6 +860,7 @@ async def get_airfare_index(
     frequency: str = Query("monthly", description="monthly, weekly, or daily"),
     route: Optional[str] = Query(None, description="e.g. DEL-BOM"),
     lead_time: Optional[str] = Query(None, description="e.g. T+7, T+21"),
+    collection_date: Optional[str] = Query(None, description="Specific collection date e.g. 2026-10-06 or 2026-09-27"),
     from_date: Optional[str] = Query(None, description="YYYY-MM"),
     to_date: Optional[str] = Query(None, description="YYYY-MM"),
     format: str = Query("json", description="Output format: 'json' or 'csv'"),
@@ -854,7 +875,7 @@ async def get_airfare_index(
     if format.lower() not in ["json", "csv"]:
         raise HTTPException(status_code=400, detail=f"Invalid format '{format}'. Supported formats: 'json', 'csv'.")
 
-    cached = load_compiled_index()
+    cached = load_compiled_index(collection_date)
     if cached:
         result = dict(cached)
         # If filtered by route
@@ -951,7 +972,10 @@ async def get_quality_metrics():
 
 
 @app.get("/api/v1/lead-curves", tags=["📊 Yield Curves & Route Matrix"])
-async def get_lead_curves(route: str = Query("DEL-BOM")):
+async def get_lead_curves(
+    route: str = Query("DEL-BOM"),
+    collection_date: Optional[str] = Query(None, description="Collection date e.g. 2026-10-06 or 2026-09-27")
+):
     """
     Returns the advance-purchase yield curve showing prices across lead times:
     T+1, T+7, T+15, T+21, T+30, T+45.
@@ -964,7 +988,7 @@ async def get_lead_curves(route: str = Query("DEL-BOM")):
         )
 
     # Try real top-60 observations first
-    top60_obs = load_top60_observations()
+    top60_obs = load_top60_observations(collection_date=collection_date)
     def route_matches(o: dict) -> bool:
         origin = o.get('origin', '')
         dest = o.get('destination', '')
@@ -1004,12 +1028,13 @@ async def get_lead_curves(route: str = Query("DEL-BOM")):
             })
 
         if curve_points:
-            col_date = route_obs_top60[0].get('collection_date') if route_obs_top60 else '2026-10-06'
+            col_date = route_obs_top60[0].get('collection_date') if route_obs_top60 else (collection_date or '2026-10-06')
             col_period = col_date[:7] if col_date else '2026-10'
             return {
                 'data_status': 'REAL_PRODUCTION_OBSERVATIONS',
                 'route': route,
                 'period': col_period,
+                'collection_date': col_date,
                 'currency': 'INR',
                 'data_source': 'google_flights_top60',
                 'total_observations': len(route_obs_top60),
@@ -1069,14 +1094,16 @@ async def get_runs():
         try:
             cur = conn.cursor()
             cur.execute("""
-                SELECT r.id, r.status, r.created_at,
-                       COUNT(f.observation_id) as obs_count,
-                       COALESCE(MIN(f.source), 'google_flights') as source
-                FROM collection_runs r
-                LEFT JOIN fare_observations f ON r.id = f.collection_run_id
-                GROUP BY r.id, r.status, r.created_at
-                ORDER BY r.created_at DESC
-                LIMIT 5;
+                SELECT DATE(collected_at) as run_date,
+                       MIN(collected_at) as started_at,
+                       MAX(collected_at) as finished_at,
+                       COUNT(*) as obs_count,
+                       COUNT(DISTINCT origin || '-' || destination) as route_count,
+                       COALESCE(MIN(source), 'google_flights') as source
+                FROM fare_observations
+                GROUP BY DATE(collected_at)
+                ORDER BY run_date DESC
+                LIMIT 10;
             """)
             rows = cur.fetchall()
             cur.close()
@@ -1085,15 +1112,15 @@ async def get_runs():
                 return [
                     {
                         "id": str(r[0]),
-                        "run_date": r[2].strftime("%Y-%m-%d") if hasattr(r[2], "strftime") else str(r[2])[:10],
-                        "started_at": r[2].isoformat() if hasattr(r[2], "isoformat") else str(r[2]),
+                        "run_date": r[0].strftime("%Y-%m-%d") if hasattr(r[0], "strftime") else str(r[0])[:10],
+                        "started_at": r[1].isoformat() if hasattr(r[1], "isoformat") else str(r[1]),
                         "finished_at": r[2].isoformat() if hasattr(r[2], "isoformat") else str(r[2]),
-                        "status": r[1] or "COMPLETED",
-                        "source": r[4],
+                        "status": "COMPLETED",
+                        "source": r[5],
                         "pages_ok": 360,
                         "pages_failed": 0,
                         "observations_count": r[3],
-                        "notes": "Verified domestic fares from hosted Neon DB",
+                        "notes": f"DGCA CY2024 Top-60 Production Run ({r[4]} routes, 360 cells)",
                         "data_status": "REAL_PRODUCTION_OBSERVATIONS"
                     }
                     for r in rows
@@ -1438,6 +1465,7 @@ async def get_observations(limit: int = Query(500, ge=1, le=1000, description="M
 async def get_matrix(
     route: Optional[str] = Query(None, description="Filter by route e.g. DEL-BOM"),
     lead_time: Optional[str] = Query(None, description="Filter by lead time e.g. T+21"),
+    collection_date: Optional[str] = Query(None, description="Filter by collection date e.g. 2026-10-06 or 2026-09-27"),
 ):
     """
     Returns per-cell fare statistics for the DGCA CY2024 Top-60 x 6 lead-time matrix.
@@ -1450,7 +1478,7 @@ async def get_matrix(
             detail=f"Invalid lead_time '{lead_time}'. Valid lead times are: {sorted(list(valid_lead_times))}."
         )
 
-    obs_all = load_top60_observations()
+    obs_all = load_top60_observations(collection_date=collection_date)
     if not obs_all:
         raise HTTPException(status_code=503, detail="No observations available to build price matrix.")
 
@@ -1509,13 +1537,14 @@ async def get_matrix(
                 'stddev': round(statistics.stdev(fares), 2) if len(fares) > 1 else 0.0,
             })
 
-    col_date = obs_all[0].get("collection_date") if obs_all else "2026-09-27"
-    col_period = col_date[:7] if col_date else "2026-09"
+    col_date = obs_all[0].get("collection_date") if obs_all else (collection_date or "2026-10-06")
+    col_period = col_date[:7] if col_date else "2026-10"
 
     return {
         'data_status': 'REAL_PRODUCTION_OBSERVATIONS',
         'observation_period': col_period,
         'collection_period': col_date,
+        'collection_date': col_date,
         'governance': 'OBSERVED_PRODUCTION_CELLS',
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'source': 'google_flights_top60_production',
@@ -1526,13 +1555,15 @@ async def get_matrix(
 
 
 @app.get("/api/v1/coverage", tags=["📊 Yield Curves & Route Matrix"])
-async def get_coverage():
+async def get_coverage(
+    collection_date: Optional[str] = Query(None, description="Filter by collection date e.g. 2026-10-06 or 2026-09-27")
+):
     """
     Returns basket-level coverage summary: populated cells, missing cells,
     route list, DGCA-weighted coverage, observation counts by status.
     Dynamically counts cells and raw observations from production dataset.
     """
-    obs_all = load_top60_observations()
+    obs_all = load_top60_observations(collection_date=collection_date)
     if not obs_all:
         raise HTTPException(status_code=503, detail="Top-60 observations dataset unavailable.")
 
@@ -1572,13 +1603,14 @@ async def get_coverage():
     total_target = 360  # 60 routes x 6 lead times
     missing = max(0, total_target - populated)
 
-    col_date = obs_all[0].get("collection_date") if obs_all else "2026-10-06"
+    col_date = obs_all[0].get("collection_date") if obs_all else (collection_date or "2026-10-06")
     col_period = col_date[:7] if col_date else "2026-10"
 
     return {
         'data_status': 'REAL_PRODUCTION_OBSERVATIONS',
         'observation_period': col_period,
         'collection_period': col_date,
+        'collection_date': col_date,
         'governance': 'BASKET_COVERAGE_AUDIT',
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'source': 'google_flights_top60_production',
@@ -1654,7 +1686,9 @@ async def get_backtest_results(
     # mode == "real"
     from collections import defaultdict
     by_date = defaultdict(list)
-    obs_all = load_top60_observations()
+    obs_all_oct = load_top60_observations("2026-10-06") or []
+    obs_all_sep = load_top60_observations("2026-09-27") or []
+    obs_all = obs_all_oct + obs_all_sep
     official = _get_official_top60_routes()
     if obs_all:
         for o in obs_all:

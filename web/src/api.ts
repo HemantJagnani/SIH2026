@@ -401,10 +401,11 @@ export interface Relative {
 
 export const api = {
   // Official Production AERIX Endpoints
-  getAirfareIndex: async (params?: { route?: string; lead_time?: string }): Promise<APIxIndexResponse> => {
+  getAirfareIndex: async (params?: { route?: string; lead_time?: string; collection_date?: string }): Promise<APIxIndexResponse> => {
     const q = new URLSearchParams();
     if (params?.route) q.set('route', params.route);
     if (params?.lead_time) q.set('lead_time', params.lead_time);
+    if (params?.collection_date) q.set('collection_date', params.collection_date);
     const res = await fetch(`${BASE}/v1/airfare-index?${q.toString()}`);
     if (!res.ok) throw new Error(`API error ${res.status}: /v1/airfare-index`);
     return res.json();
@@ -416,8 +417,10 @@ export const api = {
     return res.json();
   },
 
-  getLeadCurves: async (route = 'DEL-BOM'): Promise<LeadCurveResponse> => {
-    const res = await fetch(`${BASE}/v1/lead-curves?route=${encodeURIComponent(route)}`);
+  getLeadCurves: async (route = 'DEL-BOM', collection_date?: string): Promise<LeadCurveResponse> => {
+    const q = new URLSearchParams({ route });
+    if (collection_date) q.set('collection_date', collection_date);
+    const res = await fetch(`${BASE}/v1/lead-curves?${q.toString()}`);
     if (!res.ok) throw new Error(`API error ${res.status}: /v1/lead-curves`);
     return res.json();
   },
@@ -447,17 +450,21 @@ export const api = {
     return res.json();
   },
 
-  getMatrix: async (params?: { route?: string; lead_time?: string }): Promise<MatrixResponse> => {
+  getMatrix: async (params?: { route?: string; lead_time?: string; collection_date?: string }): Promise<MatrixResponse> => {
     const q = new URLSearchParams();
     if (params?.route) q.set('route', params.route);
     if (params?.lead_time) q.set('lead_time', params.lead_time);
+    if (params?.collection_date) q.set('collection_date', params.collection_date);
     const res = await fetch(`${BASE}/v1/matrix?${q.toString()}`);
     if (!res.ok) throw new Error(`API error ${res.status}: /v1/matrix`);
     return res.json();
   },
 
-  getCoverage: async (): Promise<CoverageResponse> => {
-    const res = await fetch(`${BASE}/v1/coverage`);
+  getCoverage: async (params?: { collection_date?: string }): Promise<CoverageResponse> => {
+    const q = new URLSearchParams();
+    if (params?.collection_date) q.set('collection_date', params.collection_date);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    const res = await fetch(`${BASE}/v1/coverage${qs}`);
     if (!res.ok) throw new Error(`API error ${res.status}: /v1/coverage`);
     return res.json();
   },
@@ -474,8 +481,12 @@ export const api = {
     return res.json();
   },
 
-  getNsoCpiFeed: async (): Promise<NSOCPIFeedResponse> => {
-    const res = await fetch(`${BASE}/v1/nso/cpi-feed`);
+  getNsoCpiFeed: async (params?: { period?: string; collection_date?: string }): Promise<NSOCPIFeedResponse> => {
+    const q = new URLSearchParams();
+    if (params?.period) q.set('period', params.period);
+    if (params?.collection_date) q.set('collection_date', params.collection_date);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    const res = await fetch(`${BASE}/v1/nso/cpi-feed${qs}`);
     if (!res.ok) throw new Error(`API error ${res.status}: /v1/nso/cpi-feed`);
     return res.json();
   },
