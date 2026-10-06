@@ -159,11 +159,42 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
   // Series / Data source: 'synthetic' (default 30-day panel Aug-Sep) | 'real' (production API sweeps)
   const [dataMode, setDataMode] = useState<'synthetic' | 'real'>('real');
-  // Selected real collection date: '2026-10-06' (Latest) | '2026-09-27'
-  const [selectedRealDate, setSelectedRealDate] = useState<'2026-10-06' | '2026-09-27'>('2026-10-06');
+  // Selected real collection date: defaults to '2026-10-06'
+  const [selectedRealDate, setSelectedRealDate] = useState<string>('2026-10-06');
   // In Real mode, view can be 'lead_curve' (T+1 to T+45) or 'daily' (single observation stats)
   const [realChartView, setRealChartView] = useState<'lead_curve' | 'daily'>('lead_curve');
   const [realScrubIndex, setRealScrubIndex] = useState<number | null>(null);
+
+  // Dynamically extract available real collection dates from production runs
+  const availableRealDates = useMemo(() => {
+    const dates = new Set<string>();
+    if (runs && runs.length > 0) {
+      for (const r of runs) {
+        if (r.run_date && /^\d{4}-\d{2}-\d{2}$/.test(r.run_date)) {
+          dates.add(r.run_date);
+        }
+      }
+    }
+    // Anchor verified complete production sweeps
+    dates.add('2026-10-06');
+    dates.add('2026-09-27');
+    return Array.from(dates).sort((a, b) => b.localeCompare(a));
+  }, [runs]);
+
+  const latestRealDate = availableRealDates[0] || '2026-10-06';
+  const pastRealDates = useMemo(
+    () => availableRealDates.filter((d) => d !== latestRealDate),
+    [availableRealDates, latestRealDate]
+  );
+
+  const formattedWatermarkDate = useMemo(() => {
+    const dt = parseDateSafe(selectedRealDate);
+    if (!dt) return selectedRealDate.toUpperCase();
+    const d = dt.getUTCDate();
+    const m = dt.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' }).toUpperCase();
+    const y = dt.getUTCFullYear();
+    return `${d} ${m} ${y}`;
+  }, [selectedRealDate]);
 
   // Chart Interactive Controls
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily');
@@ -882,6 +913,11 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               {(coverage?.total_raw_observations || (selectedRealDate === '2026-10-06' ? 9676 : 12212)).toLocaleString('en-IN')} verified quotes&nbsp;&nbsp;
               {coverage?.routes_with_data_count || 60} routes&nbsp;&nbsp;
               {selectedRealDate}
+              {selectedRealDate === latestRealDate && (
+                <span style={{ marginLeft: '8px', padding: '1px 5px', fontSize: '10px', background: 'var(--ink)', color: 'var(--vellum)', borderRadius: '2px', fontWeight: 600 }}>
+                  LATEST
+                </span>
+              )}
             </div>
           </>
         ) : (
@@ -913,25 +949,56 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
           }}
         >
           {/* Mode Selector */}
-          <div className="toggle-group" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div className="toggle-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)', fontWeight: 600 }}>Source:</span>
             <button
               className="toggle-btn"
-              aria-pressed={dataMode === 'real' && selectedRealDate === '2026-10-06'}
-              onClick={() => { setDataMode('real'); setSelectedRealDate('2026-10-06'); }}
-              style={{ fontWeight: dataMode === 'real' && selectedRealDate === '2026-10-06' ? 700 : 400 }}
+              aria-pressed={dataMode === 'real' && selectedRealDate === latestRealDate}
+              onClick={() => {
+                setDataMode('real');
+                setSelectedRealDate(latestRealDate);
+              }}
+              style={{ fontWeight: dataMode === 'real' && selectedRealDate === latestRealDate ? 700 : 400 }}
             >
-              Real (6 Oct) [Latest]
+              Latest ({fmtDateShort(latestRealDate)})
             </button>
             <span className="toggle-sep">|</span>
-            <button
-              className="toggle-btn"
-              aria-pressed={dataMode === 'real' && selectedRealDate === '2026-09-27'}
-              onClick={() => { setDataMode('real'); setSelectedRealDate('2026-09-27'); }}
-              style={{ fontWeight: dataMode === 'real' && selectedRealDate === '2026-09-27' ? 700 : 400 }}
-            >
-              Real (27 Sep)
-            </button>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>Past date:</span>
+              <select
+                value={dataMode === 'real' && selectedRealDate !== latestRealDate ? selectedRealDate : ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val) {
+                    setDataMode('real');
+                    setSelectedRealDate(val);
+                  }
+                }}
+                style={{
+                  background: dataMode === 'real' && selectedRealDate !== latestRealDate ? 'var(--ink)' : 'var(--vellum)',
+                  color: dataMode === 'real' && selectedRealDate !== latestRealDate ? 'var(--vellum)' : 'var(--ink)',
+                  border: '1px solid var(--contour)',
+                  borderRadius: '2px',
+                  padding: '2px 8px',
+                  fontFamily: "'B612', monospace",
+                  fontSize: 'var(--t-axis)',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  fontWeight: dataMode === 'real' && selectedRealDate !== latestRealDate ? 700 : 400,
+                  transition: 'all 0.15s ease',
+                }}
+                aria-label="Select past real collection date"
+              >
+                <option value="" disabled={dataMode === 'real' && selectedRealDate !== latestRealDate}>
+                  Select date ▾
+                </option>
+                {pastRealDates.map((d) => (
+                  <option key={d} value={d} style={{ background: '#FFFFFF', color: 'var(--ink)' }}>
+                    {fmtDateLong(d)} ({fmtDateShort(d)})
+                  </option>
+                ))}
+              </select>
+            </div>
             <span className="toggle-sep">|</span>
             <button
               className="toggle-btn"
@@ -1026,7 +1093,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                     cursor: 'pointer',
                   }}
                 >
-                  View {soloRoute} in Real API ({selectedRealDate === '2026-10-06' ? '6 Oct' : '27 Sep'}) &rarr;
+                  View {soloRoute} in Real API ({fmtDateShort(selectedRealDate)}) &rarr;
                 </button>
               </div>
             )}
@@ -1266,12 +1333,12 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
           </div>
         ) : realChartView === 'lead_curve' ? (
           /* Live SVG Chart for Real Lead Curve Mode */
-          <div ref={chartRef} className="chart-wrap" style={{ position: 'relative' }} tabIndex={0} aria-label={`Real ${selectedRealDate === '2026-10-06' ? '6 Oct' : '27 Sep'} advance lead curve chart`}>
+          <div ref={chartRef} className="chart-wrap" style={{ position: 'relative' }} tabIndex={0} aria-label={`Real ${fmtDateShort(selectedRealDate)} advance lead curve chart`}>
             <svg
               width={chartWidth}
               height={CHART_H}
               role="img"
-              aria-label={`Real production ${selectedRealDate === '2026-10-06' ? '6 Oct' : '27 Sep'} advance lead curve across T+1 to T+45`}
+              aria-label={`Real production ${fmtDateShort(selectedRealDate)} advance lead curve across T+1 to T+45`}
               onPointerMove={handleRealPointerMove}
               onPointerLeave={() => setRealScrubIndex(null)}
               style={{ cursor: 'crosshair', userSelect: 'none' }}
@@ -1298,7 +1365,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                     fontWeight={700}
                     letterSpacing="0.4px"
                   >
-                    ● PRODUCTION API ({selectedRealDate === '2026-10-06' ? '6 OCT 2026' : '27 SEP 2026'})
+                    ● PRODUCTION API ({formattedWatermarkDate})
                   </text>
                 </g>
 
@@ -1529,7 +1596,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 &nbsp;({realLeadCurveData[realScrubIndex].quote_count} quotes)
               </span>
             ) : (
-              <span>Real Production API ({selectedRealDate === '2026-10-06' ? '6 Oct 2026' : '27 Sep 2026'}) · {(coverage?.total_raw_observations || (selectedRealDate === '2026-10-06' ? 9676 : 12212)).toLocaleString('en-IN')} Verified Quotes Across {matrixCells.length || 360} Cells</span>
+              <span>Real Production API ({fmtDateLong(selectedRealDate)}) · {(coverage?.total_raw_observations || (selectedRealDate === '2026-10-06' ? 9676 : 12212)).toLocaleString('en-IN')} Verified Quotes Across {matrixCells.length || 360} Cells</span>
             )}
           </span>
           <span style={{ color: 'var(--ink-2)' }}>
@@ -1544,7 +1611,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
           <summary>
             {dataMode === 'synthetic'
               ? 'Show synthetic daily series as table'
-              : `Show ${runs?.[0]?.run_date || 'production'} real production observation details as table`}
+              : `Show ${fmtDateShort(selectedRealDate)} real production observation details as table`}
           </summary>
           <div style={{ overflowX: 'auto', marginTop: 'var(--sp-2)' }}>
             {dataMode === 'synthetic' ? (
