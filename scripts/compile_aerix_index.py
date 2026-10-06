@@ -230,7 +230,7 @@ def compile_index(target_index: float = 109.02) -> dict:
     return {
         "index_name": "AERIX — India Airfare Price Index",
         "frequency": "monthly",
-        "period": "2026-09",
+        "period": basket_date[:7],
         "collection_date": basket_date,
         "reference_period": "CY2024",
         "base_value": "100.00",

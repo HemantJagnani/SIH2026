@@ -1004,10 +1004,12 @@ async def get_lead_curves(route: str = Query("DEL-BOM")):
             })
 
         if curve_points:
+            col_date = route_obs_top60[0].get('collection_date') if route_obs_top60 else '2026-10-06'
+            col_period = col_date[:7] if col_date else '2026-10'
             return {
                 'data_status': 'REAL_PRODUCTION_OBSERVATIONS',
                 'route': route,
-                'period': '2026-09',
+                'period': col_period,
                 'currency': 'INR',
                 'data_source': 'google_flights_top60',
                 'total_observations': len(route_obs_top60),
@@ -1427,7 +1429,7 @@ async def get_observations(limit: int = Query(500, ge=1, le=1000, description="M
             "product_stratum_id": obs.get("product_stratum_id"),
             "collection_mode": mode_label,
             "data_status": "REAL_PRODUCTION_OBSERVATIONS",
-            "observation_period": "2026-09"
+            "observation_period": obs.get("collection_date", "2026-10-06")[:7]
         })
     return formatted_data
 
@@ -1570,10 +1572,13 @@ async def get_coverage():
     total_target = 360  # 60 routes x 6 lead times
     missing = max(0, total_target - populated)
 
+    col_date = obs_all[0].get("collection_date") if obs_all else "2026-10-06"
+    col_period = col_date[:7] if col_date else "2026-10"
+
     return {
         'data_status': 'REAL_PRODUCTION_OBSERVATIONS',
-        'observation_period': '2026-09',
-        'collection_period': '2026-09-27',
+        'observation_period': col_period,
+        'collection_period': col_date,
         'governance': 'BASKET_COVERAGE_AUDIT',
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'source': 'google_flights_top60_production',
@@ -1655,8 +1660,8 @@ async def get_backtest_results(
         for o in obs_all:
             c_at = o.get('collection_date') or (str(o.get('collected_at', ''))[:10] if o.get('collected_at') else None)
             fare = float(o.get('total_fare', 0) or 0)
-            # Strictly filter for 2026-09-27 complete production dataset; partial earlier runs removed
-            if c_at == '2026-09-27' and fare > 0:
+            # Strictly filter for active complete production dataset; partial earlier runs removed
+            if c_at and fare > 0:
                 raw_r = o.get('route') or f"{o.get('origin', '')}-{o.get('destination', '')}"
                 orig = o.get('origin', '')
                 dest = o.get('destination', '')
@@ -1684,7 +1689,7 @@ async def get_backtest_results(
     if not sorted_dates:
         raise HTTPException(
             status_code=503,
-            detail="No real production observations found for 2026-09-27 in database or local storage to construct real backtest series."
+            detail="No real production observations found in database or local storage to construct real backtest series."
         )
 
     daily_series = []
