@@ -411,6 +411,18 @@ async def main():
                 if job_res["state"] == "DONE" and job_res["observations_count"] > 0:
                     completed_cells.add(cell_key)
 
+                # Incremental Neon DB Ingestion: Persist observations immediately as they arrive
+                if obs:
+                    try:
+                        try:
+                            from storage.auto_ingest_neon import ingest_top60_to_neon
+                        except ImportError:
+                            from apps.scraper.src.storage.auto_ingest_neon import ingest_top60_to_neon
+                        ingest_top60_to_neon(obs)
+                        logger.info(f"Incremental Neon ingestion: committed {len(obs)} observations for {route_str} T+{lt}")
+                    except Exception as ing_exc:
+                        logger.warning(f"Incremental Neon ingestion note for {route_str} T+{lt}: {ing_exc}")
+
                 if job_res.get("blocked"):
                     logger.warning(f"Safe-stop: Block detected on {route_str} T+{lt}. Continuing to next independent job.")
 

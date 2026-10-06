@@ -17,6 +17,12 @@ from typing import Any, Dict, List, Optional
 import psycopg2
 from psycopg2.extras import execute_batch, execute_values
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
+
 logger = logging.getLogger("aerix.auto_ingest")
 
 
