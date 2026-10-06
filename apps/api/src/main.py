@@ -1338,6 +1338,32 @@ async def get_scraper_status():
     }
 
 
+@app.post("/api/scraper/stop", tags=["🛡️ Quality Assurance & Governance"])
+async def stop_scraper():
+    """Terminates currently running background scraper process."""
+    global _scraper_subprocess
+    if _scraper_subprocess is None or _scraper_subprocess.poll() is not None:
+        return {
+            "status": "NOT_RUNNING",
+            "message": "No active scraper process found to stop."
+        }
+    pid = _scraper_subprocess.pid
+    try:
+        _scraper_subprocess.terminate()
+        _scraper_subprocess.wait(timeout=5)
+    except Exception:
+        try:
+            _scraper_subprocess.kill()
+        except Exception:
+            pass
+    _scraper_subprocess = None
+    return {
+        "status": "STOPPED",
+        "message": f"Scraper process {pid} has been terminated.",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
 @app.post("/api/cache/refresh", tags=["🛡️ Quality Assurance & Governance"])
 async def refresh_observation_cache():
     """Explicitly invalidates and reloads the observations cache from hosted Neon PostgreSQL."""
