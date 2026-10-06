@@ -16,7 +16,7 @@ Key Invariants:
 
 from __future__ import annotations
 from decimal import Decimal
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Mapping, Optional
 
 from .route_basket import (
     BASKET_ID,
@@ -156,8 +156,8 @@ class WeightRegistry:
 
     def __init__(
         self,
-        route_weights: Optional[Dict[str, Decimal | float | str]] = None,
-        lead_time_weights: Optional[Dict[str, Decimal | float | str]] = None,
+        route_weights: Optional[Mapping[str, Any]] = None,
+        lead_time_weights: Optional[Mapping[str, Any]] = None,
         version: str = DEFAULT_VERSION,
         is_single_route_pilot: bool = True,
         basket_id: Optional[str] = None,

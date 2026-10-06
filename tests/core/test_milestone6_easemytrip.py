@@ -2,6 +2,7 @@ import pytest
 from uuid import uuid4
 from datetime import date, datetime, timedelta, timezone
 from models.request import FareSearchRequest
+from models.enums import CabinClass, CollectionMode, TripType
 from models.observation import FareObservation
 from sources.easemytrip.adapter import EaseMyTripAdapter
 from sources.easemytrip.navigation import NavigationState
@@ -11,15 +12,13 @@ def dummy_request():
     today = datetime.now(timezone.utc).date()
     return FareSearchRequest(
         source="easemytrip",
-        collection_mode="BROWSER",
+        collection_mode=CollectionMode.BROWSER,
         origin="DEL",
         destination="BOM",
         travel_date=today + timedelta(days=7),
         lead_days=7,
-        passenger_count={"adults": 1, "children": 0, "infants": 0},
-        cabin="ECONOMY",
-        trip_type="ONE_WAY",
-        market="IN"
+        cabin=CabinClass.ECONOMY,
+        trip_type=TripType.ONE_WAY,
     )
 
 @pytest.mark.asyncio
@@ -40,11 +39,6 @@ async def test_easemytrip_captcha_detected(dummy_request):
     import sources.easemytrip.adapter as adapter_module
     original_nav = adapter_module.EaseMyTripNavigation
     adapter_module.EaseMyTripNavigation = MockNavigation
-    
-    # Also mock capture_evidence so we don't write files during tests
-    async def mock_capture(*args, **kwargs):
-        pass
-    adapter_module.capture_evidence = mock_capture
     
     try:
         observations, state = await adapter.search(None, dummy_request, uuid4())

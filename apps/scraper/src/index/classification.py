@@ -92,7 +92,7 @@ class CPIAirfareWeightConfig:
         if self.reference_year != 2024:
             raise ValueError(f"Invalid CPI reference year: {self.reference_year}. Must be 2024.")
 
-    def calculate_cpi_contribution_pp(self, apix_percent_change: Decimal | float | int | str) -> Decimal:
+    def calculate_cpi_contribution_pp(self, apix_percent_change: Decimal | float | int | str | None) -> Decimal:
         """
         Given APIx percentage change:
             airfare_contribution_pp = APIx_percent_change * 0.02951 / 100
@@ -235,7 +235,7 @@ class CPIIntegrationLayer:
 
     def calculate_cpi_contribution_pp(
         self,
-        apix_percent_change: Decimal | float | int | str,
+        apix_percent_change: Decimal | float | int | str | None,
     ) -> Decimal:
         """
         Calculates the estimated airfare contribution to CPI in percentage points:

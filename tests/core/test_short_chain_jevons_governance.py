@@ -12,6 +12,7 @@ Validates:
 
 import json
 import math
+import uuid
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -71,7 +72,7 @@ def make_test_obs(
         source_itinerary_id=itin_id,
         source_offer_id=off_id,
         quality_status=status,
-        collection_run_id="825fa969-5811-49c8-9854-40637fd438a2",
+        collection_run_id=uuid.UUID("825fa969-5811-49c8-9854-40637fd438a2"),
     )
 
 

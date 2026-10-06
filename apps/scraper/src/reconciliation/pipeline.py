@@ -205,7 +205,8 @@ class CrossSourceReconciliationPipeline:
 
         # Group raw items by protected stratum (route, lead_time)
         strata_map: Dict[Tuple[str, str], List[Any]] = defaultdict(list)
-        for item in raw_items:
+        for it in raw_items:
+            item: Any = it
             r = item.route if hasattr(item, "route") else item.get("route", "")
             lt = (
                 item.lead_time
@@ -240,7 +241,8 @@ class CrossSourceReconciliationPipeline:
         """
         from collections import defaultdict
         cells = defaultdict(list)
-        for item in raw_items:
+        for it in raw_items:
+            item: Any = it
             r = item.route if hasattr(item, "route") else item.get("route", "")
             lt = (
                 item.lead_time
@@ -256,7 +258,8 @@ class CrossSourceReconciliationPipeline:
 
         for (r, lt), items in cells.items():
             seen = set()
-            for o in items:
+            for obj in items:
+                o: Any = obj
                 airline = o.airline if hasattr(o, "airline") else o.get("airline", "")
                 fare_fam = o.fare_family if hasattr(o, "fare_family") else (o.get("fare_family") or "NOT_PROVIDED")
                 fare = float(o.total_fare if hasattr(o, "total_fare") else o.get("total_fare", 0.0))

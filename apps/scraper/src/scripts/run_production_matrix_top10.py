@@ -43,7 +43,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "apps" / "scraper" / "src"))
 
 from core.orchestrator import CollectionOrchestrator
 from core.policy_gate import RobotsPolicyGate
-from models.enums import AvailabilityStatus, CabinClass, TripType, WorkflowState
+from models.enums import AvailabilityStatus, CabinClass, CollectionMode, TripType, WorkflowState
 from models.provenance import ExtractionMode, FieldStatus, MissingReason
 from models.request import FareSearchRequest
 from sources.googleflights.adapter import GoogleFlightsAdapter
@@ -113,13 +113,10 @@ async def execute_route_lead_job(
         destination=destination,
         travel_date=travel_date,
         lead_days=lead_days,
-        trip_type="ONE_WAY",
-        cabin="ECONOMY",
-        adults=1,
-        children=0,
-        infants=0,
+        trip_type=TripType.ONE_WAY,
+        cabin=CabinClass.ECONOMY,
         currency="INR",
-        collection_mode="BROWSER",
+        collection_mode=CollectionMode.BROWSER,
     )
 
     adapter = GoogleFlightsAdapter(extraction_mode=ExtractionMode.CORE_ONLY)
@@ -168,7 +165,8 @@ async def execute_route_lead_job(
         itin_fp = (o.origin, o.destination, str(o.travel_date), o.airline, o.flight_number, dep_str, arr_str, o.stops)
         itin_map[itin_fp].append(o)
 
-        offer_fp = (itin_fp, o.fare_family, float(o.total_fare))
+        fare_val = float(o.total_fare) if o.total_fare is not None else 0.0
+        offer_fp = (itin_fp, o.fare_family, fare_val)
         if offer_fp in offer_fps:
             dup_offers += 1
         else:
@@ -181,7 +179,7 @@ async def execute_route_lead_job(
     airline_dist = dict(Counter(o.airline for o in obs_list))
     stops_dist = dict(Counter(o.stops for o in obs_list))
     fare_fam_dist = dict(Counter(o.fare_family or "STANDARD" for o in obs_list))
-    price_dist = dict(Counter(get_price_band(float(o.total_fare)) for o in obs_list))
+    price_dist = dict(Counter(get_price_band(float(o.total_fare) if o.total_fare is not None else 0.0) for o in obs_list))
     time_band_dist = dict(Counter(get_time_band(o.departure_time_local) for o in obs_list))
 
     # Canonical observations sample for report
@@ -200,7 +198,7 @@ async def execute_route_lead_job(
             "departure_band": get_time_band(o.departure_time_local),
             "fare_family": o.fare_family or "STANDARD",
             "cabin": str(o.cabin.value if hasattr(o.cabin, 'value') else o.cabin),
-            "total_fare": float(o.total_fare),
+            "total_fare": float(o.total_fare) if o.total_fare is not None else 0.0,
             "currency": o.currency,
             "availability": o.availability.value if hasattr(o.availability, 'value') else o.availability,
         })

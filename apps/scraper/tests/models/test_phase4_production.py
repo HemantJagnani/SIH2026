@@ -189,7 +189,7 @@ def test_gate2_scale_invariance_inflation():
     p1 = engine.process_period("2026-08", obs)
     p2 = engine.process_period("2026-09", inflated_obs, prev_period="2026-08")
     assert abs(float(p2.index_value) - 110.00) < 0.15
-    assert abs(float(p2.mom_percent) - 10.00) < 0.15
+    assert p2.mom_percent is not None and abs(float(p2.mom_percent) - 10.00) < 0.15
 
 
 def test_gate3_recursive_chain_consistency():

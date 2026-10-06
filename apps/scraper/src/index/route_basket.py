@@ -211,7 +211,7 @@ def validate_route_basket(basket: DGCARouteBasketConfig) -> None:
             raise ValueError(f"Passenger volume for {r.route_id} must be > 0, got {r.annual_passenger_volume}")
 
         # Check unordered duplicate
-        pair = tuple(sorted([r.origin.upper(), r.destination.upper()]))
+        pair = (min(r.origin.upper(), r.destination.upper()), max(r.origin.upper(), r.destination.upper()))
         if pair in seen_unordered:
             raise ValueError(f"Duplicate unordered route detected: {pair}")
         seen_unordered.add(pair)

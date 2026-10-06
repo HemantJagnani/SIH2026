@@ -38,7 +38,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from core.orchestrator import CollectionOrchestrator
 from core.policy_gate import RobotsPolicyGate
-from models.enums import AvailabilityStatus, CabinClass, TripType, WorkflowState
+from models.enums import AvailabilityStatus, CabinClass, CollectionMode, TripType, WorkflowState
 from models.provenance import ExtractionMode
 from models.request import FareSearchRequest
 from sources.googleflights.adapter import GoogleFlightsAdapter
@@ -87,13 +87,10 @@ async def execute_route_lead_job(
         destination=destination,
         travel_date=travel_date,
         lead_days=lead_days,
-        trip_type="ONE_WAY",
-        cabin="ECONOMY",
-        adults=1,
-        children=0,
-        infants=0,
+        trip_type=TripType.ONE_WAY,
+        cabin=CabinClass.ECONOMY,
         currency="INR",
-        collection_mode="BROWSER",
+        collection_mode=CollectionMode.BROWSER,
     )
 
     adapter = GoogleFlightsAdapter(extraction_mode=ExtractionMode.CORE_ONLY)
@@ -139,7 +136,8 @@ async def execute_route_lead_job(
         itin_fp = (o.origin, o.destination, str(o.travel_date), o.airline, o.flight_number, dep_str, arr_str, o.stops)
         itin_map[itin_fp].append(o)
 
-        offer_fp = (itin_fp, o.fare_family, float(o.total_fare))
+        fare_val = float(o.total_fare) if o.total_fare is not None else 0.0
+        offer_fp = (itin_fp, o.fare_family, fare_val)
         if offer_fp in offer_fps:
             dup_offers += 1
         else:
@@ -365,9 +363,10 @@ async def main():
     completed_cells: Set[Tuple[str, str]] = set()
     for j in all_jobs:
         if j.get("state") == "DONE" and (j.get("observations_count", 0) > 0 or j.get("observations", 0) > 0):
-            r = j.get("route")
-            lt = j.get("lead_time") or f"T+{j.get('lead_days')}"
-            completed_cells.add((r, lt))
+            r = str(j.get("route") or "")
+            lt = str(j.get("lead_time") or f"T+{j.get('lead_days')}")
+            if r:
+                completed_cells.add((r, lt))
 
     logger.info(f"Initially completed cells from preserved baseline: {len(completed_cells)}")
 

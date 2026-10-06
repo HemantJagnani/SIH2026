@@ -36,7 +36,7 @@ def get_git_token() -> str:
 
 
 def encrypt_secret(public_key_b64: str, secret_value: str) -> str:
-    pub_key = public.PublicKey(public_key_b64.encode("utf-8"), encoding.Base64Encoder())
+    pub_key = public.PublicKey(public_key_b64.encode("utf-8"), encoding.Base64Encoder)  # type: ignore
     sealed_box = public.SealedBox(pub_key)
     encrypted = sealed_box.encrypt(secret_value.encode("utf-8"))
     return b64encode(encrypted).decode("utf-8")

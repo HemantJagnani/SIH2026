@@ -11,6 +11,7 @@ Validates the strict architectural separation and mathematical integrity specifi
 """
 
 from decimal import Decimal
+import uuid
 import pytest
 
 from index import (
@@ -58,7 +59,7 @@ def make_sample_obs(fare: Decimal, month: str = "2026-08") -> NormalizedFareObse
         source_itinerary_id="ITIN_6E_101",
         source_offer_id="OFFER_6E_101",
         quality_status="VALID",
-        collection_run_id="825fa969-5811-49c8-9854-40637fd438a2",
+        collection_run_id=uuid.UUID("825fa969-5811-49c8-9854-40637fd438a2"),
     )
 
 

@@ -73,6 +73,7 @@ class SearchResultContext:
     def __init__(self):
         self.terminal_state: Optional[NavigationState] = None
         self.rendered_dom: Optional[str] = None
+        self.network_response: Optional[Dict[str, Any]] = None
         self.diagnostics: Optional[EaseMyTripDiagnostics] = None
         self.evidence: dict = {}
         self.state_history: List[str] = []

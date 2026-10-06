@@ -4,6 +4,7 @@ Covers all 16 test specifications from §16 of the APIx Cross-Source Specificati
 """
 
 from decimal import Decimal
+from typing import Any
 import pytest
 
 from reconciliation.models import (
@@ -547,17 +548,18 @@ def test_16_future_source_registration(pipeline):
         def source_name(self) -> str:
             return "Future OTA"
 
-        def normalize(self, raw_record):
+        def normalize(self, raw_record: Any):
+            raw = raw_record if isinstance(raw_record, dict) else getattr(raw_record, "raw_payload", {})
             return self._build_canonical_offer(
-                raw_id=raw_record.get("id", "future_001"),
-                origin=raw_record.get("src", "DEL"),
-                destination=raw_record.get("dst", "BOM"),
-                travel_date=raw_record.get("date", "2026-10-04"),
-                airline=raw_record.get("carrier", "IndiGo"),
-                flight_number=raw_record.get("fn", "6E-204"),
-                departure_time=raw_record.get("dep", "10:00"),
+                raw_id=raw.get("id", "future_001"),
+                origin=raw.get("src", "DEL"),
+                destination=raw.get("dst", "BOM"),
+                travel_date=raw.get("date", "2026-10-04"),
+                airline=raw.get("carrier", "IndiGo"),
+                flight_number=raw.get("fn", "6E-204"),
+                departure_time=raw.get("dep", "10:00"),
                 arrival_time="12:15",
-                total_fare=raw_record.get("fare", 6500.0),
+                total_fare=raw.get("fare", 6500.0),
                 stops=0,
             )
 
@@ -946,17 +948,18 @@ def test_j_four_otas_with_four_prices(pipeline):
         def source_name(self) -> str:
             return "MakeMyTrip"
 
-        def normalize(self, raw_record):
+        def normalize(self, raw_record: Any):
+            raw = raw_record if isinstance(raw_record, dict) else getattr(raw_record, "raw_payload", {})
             return self._build_canonical_offer(
-                raw_id=raw_record.get("observation_id", "mmt_01"),
-                origin=raw_record.get("origin", "DEL"),
-                destination=raw_record.get("destination", "BOM"),
-                travel_date=raw_record.get("travel_date", "2026-10-04"),
-                airline=raw_record.get("airline", "IndiGo"),
-                flight_number=raw_record.get("flight_number", "6E-204"),
-                departure_time=raw_record.get("departure_time_local", "10:00"),
+                raw_id=raw.get("observation_id", "mmt_01"),
+                origin=raw.get("origin", "DEL"),
+                destination=raw.get("destination", "BOM"),
+                travel_date=raw.get("travel_date", "2026-10-04"),
+                airline=raw.get("airline", "IndiGo"),
+                flight_number=raw.get("flight_number", "6E-204"),
+                departure_time=raw.get("departure_time_local", "10:00"),
                 arrival_time="12:15",
-                total_fare=raw_record.get("total_fare", 6600.0),
+                total_fare=raw.get("total_fare", 6600.0),
                 stops=0,
             )
 

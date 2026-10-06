@@ -105,13 +105,12 @@ class APIxEngine:
         observations: Sequence[NormalizedFareObservation],
         prev_period: Optional[str] = None,
         prototype_median_fares: Optional[Dict[str, float]] = None,
-        candidate_replacements: Optional[List[Tuple[NormalizedFareObservation, NormalizedFareObservation]]] = None,
-    ) -> Tuple[APIxSeriesResult, List[ElementaryIndexResult], Dict[str, Any]]:
+    ) -> APIxSeriesResult:
         """
         Executes full Phase 29 calculation hierarchy for a given month period (YYYY-MM).
         
         Returns:
-            Tuple of (APIxSeriesResult, List[ElementaryIndexResult], diagnostic_meta_dict)
+            APIxSeriesResult (containing elementary_results and diagnostics_meta)
         """
         # Step 1: Convert raw observations to FareOffer models and perform Product Selection
         offers: List[FareOffer] = []
