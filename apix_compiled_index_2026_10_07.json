@@ -5,74 +5,74 @@
   "collection_date": "2026-10-07",
   "reference_period": "CY2024",
   "base_value": "100.00",
-  "index_value": "113.66",
-  "index_value_float": 113.66,
-  "mom_percent": 8.7656,
-  "yoy_percent": 12.7579,
-  "period_change_percent": 4.26,
-  "all_india_weighted_fare_inr": 9285.0,
-  "cpi_contribution_combined_pp": 0.002587,
-  "cpi_contribution_urban_pp": 0.001564,
-  "cpi_contribution_rural_pp": 0.001023,
+  "index_value": "113.46",
+  "index_value_float": 113.46,
+  "mom_percent": 8.5742,
+  "yoy_percent": 12.5595,
+  "period_change_percent": 4.07,
+  "all_india_weighted_fare_inr": 9273.0,
+  "cpi_contribution_combined_pp": 0.00253,
+  "cpi_contribution_urban_pp": 0.00153,
+  "cpi_contribution_rural_pp": 0.001,
   "route_indices": {
     "DEL-BOM": 116.3847,
     "BLR-DEL": 121.5786,
     "BLR-BOM": 90.8614,
-    "DEL-HYD": 128.2913,
+    "DEL-HYD": 127.5973,
     "DEL-PNQ": 104.6107,
     "DEL-CCU": 128.2506,
-    "AMD-DEL": 120.1972,
+    "AMD-DEL": 116.2244,
     "MAA-DEL": 126.8514,
     "HYD-BOM": 89.8215,
-    "DEL-SXR": 105.8843,
+    "DEL-SXR": 103.0524,
     "BLR-CCU": 115.2365,
     "MAA-BOM": 105.3514,
     "BLR-HYD": 157.0155,
     "AMD-BOM": 95.6592,
     "CCU-BOM": 82.9078,
     "BLR-PNQ": 110.3928,
-    "GOI-DEL": 97.022,
+    "GOI-DEL": 94.6495,
     "MAA-HYD": 133.4426,
-    "DEL-GAU": 119.1226,
+    "DEL-GAU": 117.275,
     "BLR-COK": 97.8769,
     "DEL-LKO": 108.8405,
     "GOI-BOM": 82.8764,
     "BLR-MAA": 93.3384,
     "DEL-PAT": 149.539,
-    "JAI-BOM": 97.7238,
-    "ATQ-DEL": 102.2979,
+    "JAI-BOM": 96.9141,
+    "ATQ-DEL": 99.8353,
     "COK-BOM": 96.9876,
     "HYD-CCU": 137.8264,
     "BBI-DEL": 91.2299,
     "BLR-GOI": 78.0721,
     "GAU-CCU": 148.0965,
     "GOX-BOM": 62.8432,
-    "IXB-DEL": 120.1794,
-    "DEL-COK": 119.5482,
+    "IXB-DEL": 118.4004,
+    "DEL-COK": 121.0044,
     "MAA-CCU": 117.5101,
-    "DEL-GOX": 91.2607,
+    "DEL-GOX": 96.5648,
     "LKO-BOM": 74.6551,
     "DEL-IXR": 107.5965,
     "GOI-HYD": 119.3884,
-    "AMD-BLR": 97.8626,
-    "DEL-IDR": 147.3915,
-    "IXC-DEL": 101.852,
+    "AMD-BLR": 95.3687,
+    "DEL-IDR": 147.298,
+    "IXC-DEL": 109.8947,
     "DEL-IXL": 83.5431,
     "MAA-CJB": 175.1153,
     "BLR-TRV": 152.3431,
     "HYD-VTZ": 152.9127,
-    "BLR-BBI": 97.6212,
-    "DEL-VNS": 140.3253,
-    "IXA-CCU": 93.3681,
+    "BLR-BBI": 103.2726,
+    "DEL-VNS": 140.7975,
+    "IXA-CCU": 92.6269,
     "DEL-RPR": 134.7772,
     "BOM-VNS": 113.7122,
-    "BLR-VNS": 110.4634,
+    "BLR-VNS": 113.4652,
     "BLR-GAU": 90.8044,
     "BLR-LKO": 139.1204,
     "CJB-BOM": 135.7595,
-    "IDR-BOM": 101.6935,
+    "IDR-BOM": 101.7721,
     "BLR-JAI": 134.4533,
-    "HYD-TIR": 145.4556,
+    "HYD-TIR": 138.7947,
     "HYD-COK": 193.3726,
     "BOM-NAG": 141.0379
   },
@@ -105,9 +105,9 @@
       "route": "DEL-HYD",
       "weight": 0.03566176,
       "base_fare_2024": 7200.0,
-      "live_fare": 10172.38,
-      "route_index": 128.2912,
-      "pct_change_vs_2024": 28.29
+      "live_fare": 10117.36,
+      "route_index": 127.5973,
+      "pct_change_vs_2024": 27.6
     },
     {
       "route": "DEL-PNQ",
@@ -129,9 +129,9 @@
       "route": "AMD-DEL",
       "weight": 0.02706171,
       "base_fare_2024": 7100.0,
-      "live_fare": 9398.23,
-      "route_index": 120.1973,
-      "pct_change_vs_2024": 20.2
+      "live_fare": 9087.59,
+      "route_index": 116.2244,
+      "pct_change_vs_2024": 16.22
     },
     {
       "route": "MAA-DEL",
@@ -153,9 +153,9 @@
       "route": "DEL-SXR",
       "weight": 0.02602129,
       "base_fare_2024": 7000.0,
-      "live_fare": 8162.49,
-      "route_index": 105.8843,
-      "pct_change_vs_2024": 5.88
+      "live_fare": 7944.18,
+      "route_index": 103.0524,
+      "pct_change_vs_2024": 3.05
     },
     {
       "route": "BLR-CCU",
@@ -209,9 +209,9 @@
       "route": "GOI-DEL",
       "weight": 0.01747668,
       "base_fare_2024": 9500.0,
-      "live_fare": 10150.48,
-      "route_index": 97.0219,
-      "pct_change_vs_2024": -2.98
+      "live_fare": 9902.28,
+      "route_index": 94.6495,
+      "pct_change_vs_2024": -5.35
     },
     {
       "route": "MAA-HYD",
@@ -225,9 +225,9 @@
       "route": "DEL-GAU",
       "weight": 0.01665173,
       "base_fare_2024": 8100.0,
-      "live_fare": 10626.06,
-      "route_index": 119.1226,
-      "pct_change_vs_2024": 19.12
+      "live_fare": 10461.25,
+      "route_index": 117.275,
+      "pct_change_vs_2024": 17.28
     },
     {
       "route": "BLR-COK",
@@ -273,17 +273,17 @@
       "route": "JAI-BOM",
       "weight": 0.01362684,
       "base_fare_2024": 8800.0,
-      "live_fare": 9470.57,
-      "route_index": 97.7238,
-      "pct_change_vs_2024": -2.28
+      "live_fare": 9392.1,
+      "route_index": 96.9141,
+      "pct_change_vs_2024": -3.09
     },
     {
       "route": "ATQ-DEL",
       "weight": 0.01346019,
       "base_fare_2024": 6100.0,
-      "live_fare": 6872.1,
-      "route_index": 102.2979,
-      "pct_change_vs_2024": 2.3
+      "live_fare": 6706.67,
+      "route_index": 99.8353,
+      "pct_change_vs_2024": -0.16
     },
     {
       "route": "COK-BOM",
@@ -337,17 +337,17 @@
       "route": "IXB-DEL",
       "weight": 0.01147485,
       "base_fare_2024": 7100.0,
-      "live_fare": 9396.83,
-      "route_index": 120.1794,
-      "pct_change_vs_2024": 20.18
+      "live_fare": 9257.73,
+      "route_index": 118.4004,
+      "pct_change_vs_2024": 18.4
     },
     {
       "route": "DEL-COK",
       "weight": 0.01101561,
       "base_fare_2024": 10200.0,
-      "live_fare": 13428.77,
-      "route_index": 119.5482,
-      "pct_change_vs_2024": 19.55
+      "live_fare": 13592.35,
+      "route_index": 121.0044,
+      "pct_change_vs_2024": 21.0
     },
     {
       "route": "MAA-CCU",
@@ -361,9 +361,9 @@
       "route": "DEL-GOX",
       "weight": 0.01032483,
       "base_fare_2024": 9200.0,
-      "live_fare": 9246.23,
-      "route_index": 91.2607,
-      "pct_change_vs_2024": -8.74
+      "live_fare": 9783.62,
+      "route_index": 96.5648,
+      "pct_change_vs_2024": -3.44
     },
     {
       "route": "LKO-BOM",
@@ -393,25 +393,25 @@
       "route": "AMD-BLR",
       "weight": 0.00992059,
       "base_fare_2024": 8800.0,
-      "live_fare": 9484.02,
-      "route_index": 97.8626,
-      "pct_change_vs_2024": -2.14
+      "live_fare": 9242.33,
+      "route_index": 95.3687,
+      "pct_change_vs_2024": -4.63
     },
     {
       "route": "DEL-IDR",
       "weight": 0.00979261,
       "base_fare_2024": 4600.0,
-      "live_fare": 7466.61,
-      "route_index": 147.3915,
-      "pct_change_vs_2024": 47.39
+      "live_fare": 7461.87,
+      "route_index": 147.298,
+      "pct_change_vs_2024": 47.3
     },
     {
       "route": "IXC-DEL",
       "weight": 0.00962106,
       "base_fare_2024": 5500.0,
-      "live_fare": 6169.15,
-      "route_index": 101.852,
-      "pct_change_vs_2024": 1.85
+      "live_fare": 6656.29,
+      "route_index": 109.8946,
+      "pct_change_vs_2024": 9.89
     },
     {
       "route": "DEL-IXL",
@@ -449,25 +449,25 @@
       "route": "BLR-BBI",
       "weight": 0.00897736,
       "base_fare_2024": 12000.0,
-      "live_fare": 12900.85,
-      "route_index": 97.6212,
-      "pct_change_vs_2024": -2.38
+      "live_fare": 13647.7,
+      "route_index": 103.2726,
+      "pct_change_vs_2024": 3.27
     },
     {
       "route": "DEL-VNS",
       "weight": 0.00871547,
       "base_fare_2024": 5500.0,
-      "live_fare": 8499.47,
-      "route_index": 140.3253,
-      "pct_change_vs_2024": 40.33
+      "live_fare": 8528.07,
+      "route_index": 140.7975,
+      "pct_change_vs_2024": 40.8
     },
     {
       "route": "IXA-CCU",
       "weight": 0.00858593,
       "base_fare_2024": 4500.0,
-      "live_fare": 4627.05,
-      "route_index": 93.3681,
-      "pct_change_vs_2024": -6.63
+      "live_fare": 4590.32,
+      "route_index": 92.6269,
+      "pct_change_vs_2024": -7.37
     },
     {
       "route": "DEL-RPR",
@@ -489,9 +489,9 @@
       "route": "BLR-VNS",
       "weight": 0.00814572,
       "base_fare_2024": 10700.0,
-      "live_fare": 13016.53,
-      "route_index": 110.4634,
-      "pct_change_vs_2024": 10.46
+      "live_fare": 13370.25,
+      "route_index": 113.4652,
+      "pct_change_vs_2024": 13.47
     },
     {
       "route": "BLR-LKO",
@@ -513,9 +513,9 @@
       "route": "IDR-BOM",
       "weight": 0.00776197,
       "base_fare_2024": 6800.0,
-      "live_fare": 7615.44,
-      "route_index": 101.6934,
-      "pct_change_vs_2024": 1.69
+      "live_fare": 7621.33,
+      "route_index": 101.7721,
+      "pct_change_vs_2024": 1.77
     },
     {
       "route": "BLR-JAI",
@@ -529,9 +529,9 @@
       "route": "HYD-TIR",
       "weight": 0.00758223,
       "base_fare_2024": 4500.0,
-      "live_fare": 7208.35,
-      "route_index": 145.4555,
-      "pct_change_vs_2024": 45.46
+      "live_fare": 6878.26,
+      "route_index": 138.7947,
+      "pct_change_vs_2024": 38.79
     },
     {
       "route": "HYD-COK",
@@ -552,7 +552,7 @@
   ],
   "calibration": {
     "method": "DGCA-weighted Young-Laspeyres aggregate with CY2024 base fare vector",
-    "raw_weighted_index": 125.169273,
+    "raw_weighted_index": 124.952104,
     "scale_factor": 0.908044,
     "routes_matched": 59,
     "routes_total": 60,
@@ -563,7 +563,7 @@
   },
   "methodology_version": "AERIX v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)",
   "weight_version": "DGCA CY2024",
-  "published_at": "2026-10-07T10:01:56.146842+00:00",
+  "published_at": "2026-10-07T10:15:28.373496+00:00",
   "data_status": "REAL_PRODUCTION_OBSERVATIONS",
   "governance": "BASKET_COVERAGE_AUDIT"
 }

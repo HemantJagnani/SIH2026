@@ -54,11 +54,14 @@ def get_existing_cells_today(target_date: str = None):
         cur.execute(f"""
             SELECT origin, destination, lead_days 
             FROM fare_observations 
-            WHERE collected_at >= '{target_date} 00:00:00+00:00'
+            WHERE DATE(collected_at) = '{target_date}'::date
+              AND total_fare > 0
             GROUP BY origin, destination, lead_days;
         """)
         for row in cur.fetchall():
-            existing.add((row[0], row[1], int(row[2])))
+            orig, dest, ld = row[0], row[1], int(row[2])
+            existing.add((orig, dest, ld))
+            existing.add((dest, orig, ld))
         conn.close()
     except Exception as e:
         logger.warning(f"Could not query existing cells: {e}")
@@ -75,7 +78,8 @@ def get_today_distinct_routes_count(target_date: str = None):
         cur.execute(f"""
             SELECT COUNT(DISTINCT origin || '-' || destination), COUNT(*) 
             FROM fare_observations 
-            WHERE collected_at >= '{target_date} 00:00:00+00:00';
+            WHERE DATE(collected_at) = '{target_date}'::date
+              AND total_fare > 0;
         """)
         row = cur.fetchone()
         conn.close()
