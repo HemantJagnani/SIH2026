@@ -199,9 +199,11 @@ function RoutePanel({
   const yTicks = sharedYScale.ticks(4).map(t => ({ val: t, y: sharedYScale(t) }));
 
   // Find highlighted curve
-  const highlightedIdx = selectedDate
-    ? sorted.findIndex(c => c.obs_date === selectedDate)
-    : n - 1;
+  const highlightedIdx = selectedDate === 'all'
+    ? -1
+    : selectedDate
+      ? sorted.findIndex(c => c.obs_date === selectedDate)
+      : n - 1;
 
   const latestCurve = sorted[n - 1];
   const latestPts = latestCurve ? (mode === 'indexed' ? indexCurve(latestCurve.points) : latestCurve.points) : [];
@@ -403,6 +405,7 @@ function RoutePanel({
 export default function BookingCurvesView({ selectedDate, onSelectDate }: Props) {
   const [routes, setRoutes] = useState<string[]>([]);
   const [allCurves, setAllCurves] = useState<Record<string, LeadCurve[]>>({});
+  const [availableDates, setAvailableDates] = useState<string[]>(['2026-10-07', '2026-10-06', '2026-09-27']);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('rupees');
@@ -427,57 +430,84 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
   useEffect(() => {
     setLoading(true);
     setError(null);
-    // Instant comprehensive loading from Matrix API and Coverage API
-    Promise.allSettled([
-      api.getCoverage(),
-      api.getMatrix(),
-    ]).then(([covRes, matRes]) => {
-      const data: Record<string, LeadCurve[]> = {};
-      const routesList: string[] = [];
 
-      if (covRes.status === 'fulfilled' && covRes.value.routes_with_data) {
-        routesList.push(...covRes.value.routes_with_data);
-      }
+    // 1. Discover all available production run dates dynamically
+    api.runs().then(runsList => {
+      const runDates = (runsList || [])
+        .map(r => r.run_date)
+        .filter(d => Boolean(d) && /^\d{4}-\d{2}-\d{2}$/.test(d));
+      const targetDates = Array.from(new Set([
+        ...runDates,
+        '2026-10-07',
+        '2026-10-06',
+        '2026-09-27'
+      ])).sort((a, b) => b.localeCompare(a)).slice(0, 3);
+      setAvailableDates(targetDates);
 
-      if (matRes.status === 'fulfilled' && matRes.value.cells) {
-        const cells: MatrixCell[] = matRes.value.cells;
-        // Group cells by route
-        const routeCellsMap = new Map<string, MatrixCell[]>();
-        for (const c of cells) {
-          if (!routeCellsMap.has(c.route)) {
-            routeCellsMap.set(c.route, []);
-          }
-          routeCellsMap.get(c.route)!.push(c);
+      // 2. Fetch coverage and matrix cells for each date in parallel
+      return Promise.allSettled([
+        api.getCoverage(),
+        ...targetDates.map(d => api.getMatrix({ collection_date: d }))
+      ]).then(([covRes, ...matResults]) => {
+        const data: Record<string, LeadCurve[]> = {};
+        const routesList: string[] = [];
+
+        if (covRes.status === 'fulfilled' && covRes.value.routes_with_data) {
+          routesList.push(...covRes.value.routes_with_data);
         }
 
-        const collectionDate = matRes.value.collection_period || (matRes.value.generated_at ? matRes.value.generated_at.slice(0, 10) : '2026-09-27');
-        for (const [r, rCells] of routeCellsMap.entries()) {
-          if (!routesList.includes(r)) routesList.push(r);
-          const points = rCells.map(c => {
-            const leadDays = parseInt(c.lead_time.replace('T+', '')) || 7;
-            return {
-              lead_days: leadDays,
-              dep_band: 'ALL',
-              price: c.median_fare_inr || c.mean_fare_inr,
-            };
-          });
-          if (points.length > 0) {
-            data[r] = [{
-              obs_date: collectionDate,
-              is_synthetic: false,
-              points,
-            }];
+        // Process matrices in chronological order (oldest to newest)
+        const datesChronological = [...targetDates].reverse();
+        const matResultsMap = new Map<string, MatrixCell[]>();
+
+        targetDates.forEach((d, idx) => {
+          const res = matResults[idx];
+          if (res && res.status === 'fulfilled' && res.value.cells) {
+            matResultsMap.set(d, res.value.cells);
+          }
+        });
+
+        for (const d of datesChronological) {
+          const cells = matResultsMap.get(d);
+          if (!cells) continue;
+
+          const routeCellsMap = new Map<string, MatrixCell[]>();
+          for (const c of cells) {
+            if (!routeCellsMap.has(c.route)) {
+              routeCellsMap.set(c.route, []);
+            }
+            routeCellsMap.get(c.route)!.push(c);
+          }
+
+          for (const [r, rCells] of routeCellsMap.entries()) {
+            if (!routesList.includes(r)) routesList.push(r);
+            const points = rCells.map(c => {
+              const leadDays = parseInt(c.lead_time.replace('T+', '')) || 7;
+              return {
+                lead_days: leadDays,
+                dep_band: 'ALL',
+                price: c.median_fare_inr || c.mean_fare_inr,
+              };
+            });
+            if (points.length > 0) {
+              if (!data[r]) data[r] = [];
+              data[r].push({
+                obs_date: d,
+                is_synthetic: false,
+                points,
+              });
+            }
           }
         }
-      }
 
-      if (routesList.length === 0 && Object.keys(data).length === 0) {
-        setError('Data unavailable — unable to retrieve the latest result.');
-      }
+        if (routesList.length === 0 && Object.keys(data).length === 0) {
+          setError('Data unavailable — unable to retrieve the latest result.');
+        }
 
-      setRoutes(routesList.sort());
-      setAllCurves(data);
-      setLoading(false);
+        setRoutes(routesList.sort());
+        setAllCurves(data);
+        setLoading(false);
+      });
     }).catch(() => {
       setError('Data unavailable — unable to retrieve the latest result.');
       setLoading(false);
@@ -615,6 +645,12 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
     return filteredRoutes.slice(0, 8);
   }, [filteredRoutes]);
 
+  const latestDate = availableDates[0] || '2026-10-07';
+  const pastDates = useMemo(
+    () => availableDates.filter(d => d !== latestDate),
+    [availableDates, latestDate]
+  );
+
   return (
     <div className="page">
       {/* Page Header */}
@@ -662,24 +698,78 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
           border: '1px solid var(--contour)',
         }}
       >
-        {/* Mode toggle */}
-        <div className="toggle-group">
-          <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>Mode:</span>
-          <button
-            className="toggle-btn"
-            aria-pressed={mode === 'rupees'}
-            onClick={() => setMode('rupees')}
-          >
-            Fare in rupees (₹)
-          </button>
-          <span className="toggle-sep">|</span>
-          <button
-            className="toggle-btn"
-            aria-pressed={mode === 'indexed'}
-            onClick={() => setMode('indexed')}
-          >
-            Indexed (30d = 100)
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          {/* Mode toggle */}
+          <div className="toggle-group">
+            <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>Mode:</span>
+            <button
+              className="toggle-btn"
+              aria-pressed={mode === 'rupees'}
+              onClick={() => setMode('rupees')}
+            >
+              Fare in rupees (₹)
+            </button>
+            <span className="toggle-sep">|</span>
+            <button
+              className="toggle-btn"
+              aria-pressed={mode === 'indexed'}
+              onClick={() => setMode('indexed')}
+            >
+              Indexed (30d = 100)
+            </button>
+          </div>
+
+          {/* Date Selector */}
+          <div className="toggle-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)', fontWeight: 600 }}>Date:</span>
+            <button
+              className="toggle-btn"
+              aria-pressed={!selectedDate || selectedDate === latestDate}
+              onClick={() => onSelectDate(null)}
+              style={{ fontWeight: (!selectedDate || selectedDate === latestDate) ? 700 : 400 }}
+            >
+              Latest ({fmtDateShort(latestDate)})
+            </button>
+            <span className="toggle-sep">|</span>
+            <button
+              className="toggle-btn"
+              aria-pressed={selectedDate === 'all'}
+              onClick={() => onSelectDate('all')}
+              style={{ fontWeight: selectedDate === 'all' ? 700 : 400 }}
+            >
+              All dates (Overlay)
+            </button>
+            {pastDates.length > 0 && (
+              <>
+                <span className="toggle-sep">|</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>Past:</span>
+                  <select
+                    value={selectedDate && selectedDate !== 'all' && selectedDate !== latestDate ? selectedDate : ''}
+                    onChange={(e) => onSelectDate(e.target.value)}
+                    style={{
+                      background: selectedDate && selectedDate !== 'all' && selectedDate !== latestDate ? 'var(--ink)' : 'var(--vellum)',
+                      color: selectedDate && selectedDate !== 'all' && selectedDate !== latestDate ? 'var(--vellum)' : 'var(--ink)',
+                      border: '1px solid var(--contour)',
+                      borderRadius: '2px',
+                      padding: '2px 8px',
+                      fontFamily: "'B612', monospace",
+                      fontSize: 'var(--t-axis)',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      fontWeight: selectedDate && selectedDate !== 'all' && selectedDate !== latestDate ? 700 : 400,
+                    }}
+                    aria-label="Select past booking curve date"
+                  >
+                    <option value="" disabled>Select date ▾</option>
+                    {pastDates.map(d => (
+                      <option key={d} value={d}>{fmtDateShort(d)}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Search input */}

@@ -278,31 +278,68 @@ def compile_index(target_date: str = None) -> dict:
     }
 
 
+def get_all_eligible_dates():
+    """Discover all dates with >= 50 routes scraped in Neon DB."""
+    try:
+        db_url = os.environ.get("DATABASE_URL_SYNC", "").replace("+psycopg2", "")
+        if not db_url or "localhost" in db_url:
+            direct = os.environ.get("DATABASE_URL_DIRECT", "")
+            if direct:
+                db_url = direct.replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
+            else:
+                db_url = "postgresql://neondb_owner:npg_TaKCLGyr28gl@ep-lively-sunset-b3e0gwgz.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT DATE(collected_at) AS col_date, COUNT(DISTINCT origin || chr(45) || destination) AS route_count
+            FROM fare_observations
+            GROUP BY DATE(collected_at)
+            HAVING COUNT(DISTINCT origin || chr(45) || destination) >= 50
+            ORDER BY col_date ASC;
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return [str(r[0]) for r in rows]
+    except Exception as e:
+        print(f"Warning: Failed to query eligible dates from DB: {e}")
+        return ["2026-09-27", "2026-10-06"]
+
+
 if __name__ == "__main__":
     print("=" * 60)
-    print("AERIX Dual Index Compilation: 27 Sep 2026 & 06 Oct 2026")
+    print("AERIX Automated Multi-Date Index Compilation Pipeline")
     print("=" * 60)
 
-    # 1. Compile 27 Sep 2026
-    compiled_sep = compile_index(target_date="2026-09-27")
-    out_sep = os.path.join(ROOT, "apix_compiled_index_2026_09_27.json")
-    with open(out_sep, "w", encoding="utf-8") as f:
-        json.dump(compiled_sep, f, indent=2)
-    print(f"Sep 27 Index = {compiled_sep['index_value']} | Fare = INR {compiled_sep['all_india_weighted_fare_inr']}")
+    # Allow specifying dates on CLI, otherwise discover all dates from DB
+    target_dates = sys.argv[1:] if len(sys.argv) > 1 else None
+    if not target_dates:
+        target_dates = get_all_eligible_dates()
 
-    # 2. Compile 06 Oct 2026
-    compiled_oct = compile_index(target_date="2026-10-06")
-    out_oct = os.path.join(ROOT, "apix_compiled_index_2026_10_06.json")
-    with open(out_oct, "w", encoding="utf-8") as f:
-        json.dump(compiled_oct, f, indent=2)
-    print(f"Oct 06 Index = {compiled_oct['index_value']} | Fare = INR {compiled_oct['all_india_weighted_fare_inr']}")
+    if not target_dates:
+        target_dates = ["2026-09-27", "2026-10-06"]
 
-    # 3. Write default latest to apix_compiled_index.json
-    out_latest = os.path.join(ROOT, "apix_compiled_index.json")
-    with open(out_latest, "w", encoding="utf-8") as f:
-        json.dump(compiled_oct, f, indent=2)
+    print(f"Discovered eligible dates for compilation: {target_dates}")
 
-    print("\nSuccessfully compiled and written:")
-    print("  ", out_sep)
-    print("  ", out_oct)
-    print("  ", out_latest)
+    compiled_results = {}
+    for d in target_dates:
+        print(f"\n--- Compiling AERIX Index for {d} ---")
+        try:
+            res = compile_index(target_date=d)
+            compiled_results[d] = res
+            out_path = os.path.join(ROOT, f"apix_compiled_index_{d.replace('-', '_')}.json")
+            with open(out_path, "w", encoding="utf-8") as f:
+                json.dump(res, f, indent=2)
+            print(f"  ✓ {d}: Index = {res['index_value']} | Fare = INR {res['all_india_weighted_fare_inr']} -> {out_path}")
+        except Exception as e:
+            print(f"  ✗ Error compiling for {d}: {e}")
+
+    # Set the most recent date as default apix_compiled_index.json
+    latest_date = sorted(list(compiled_results.keys()))[-1] if compiled_results else None
+    if latest_date and latest_date in compiled_results:
+        out_latest = os.path.join(ROOT, "apix_compiled_index.json")
+        with open(out_latest, "w", encoding="utf-8") as f:
+            json.dump(compiled_results[latest_date], f, indent=2)
+        print(f"\n✓ Default headline index updated to latest date ({latest_date}): {out_latest}")
+
+    print("\nCompilation run completed successfully.")

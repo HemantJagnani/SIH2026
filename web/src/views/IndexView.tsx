@@ -159,8 +159,9 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
   // Series / Data source: 'synthetic' (default 30-day panel Aug-Sep) | 'real' (production API sweeps)
   const [dataMode, setDataMode] = useState<'synthetic' | 'real'>('real');
-  // Selected real collection date: defaults to '2026-10-06'
-  const [selectedRealDate, setSelectedRealDate] = useState<string>('2026-10-06');
+  // Selected real collection date
+  const [selectedRealDate, setSelectedRealDate] = useState<string>(selectedDate || '2026-10-07');
+  const [userSelectedExplicitDate, setUserSelectedExplicitDate] = useState<boolean>(Boolean(selectedDate));
   // In Real mode, view can be 'lead_curve' (T+1 to T+45) or 'daily' (single observation stats)
   const [realChartView, setRealChartView] = useState<'lead_curve' | 'daily'>('lead_curve');
   const [realScrubIndex, setRealScrubIndex] = useState<number | null>(null);
@@ -176,16 +177,27 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       }
     }
     // Anchor verified complete production sweeps
+    dates.add('2026-10-07');
     dates.add('2026-10-06');
     dates.add('2026-09-27');
     return Array.from(dates).sort((a, b) => b.localeCompare(a));
   }, [runs]);
 
-  const latestRealDate = availableRealDates[0] || '2026-10-06';
+  const latestRealDate = availableRealDates[0] || '2026-10-07';
   const pastRealDates = useMemo(
     () => availableRealDates.filter((d) => d !== latestRealDate),
     [availableRealDates, latestRealDate]
   );
+
+  // Sync selectedRealDate with latest available run date unless user explicitly picked a date
+  useEffect(() => {
+    if (selectedDate && availableRealDates.includes(selectedDate)) {
+      setSelectedRealDate(selectedDate);
+      setUserSelectedExplicitDate(true);
+    } else if (!userSelectedExplicitDate && latestRealDate && selectedRealDate !== latestRealDate) {
+      setSelectedRealDate(latestRealDate);
+    }
+  }, [selectedDate, latestRealDate, availableRealDates, userSelectedExplicitDate, selectedRealDate]);
 
   const formattedWatermarkDate = useMemo(() => {
     const dt = parseDateSafe(selectedRealDate);
@@ -906,11 +918,13 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                   ? Number(indexData.index_value).toFixed(2)
                   : selectedRealDate === '2026-10-06'
                     ? '111.37'
-                    : '109.02'}
+                    : selectedRealDate === '2026-09-27'
+                      ? '109.02'
+                      : '—'}
               </span>{' '}(2024&nbsp;=&nbsp;100).
             </h1>
             <div className="font-num text-secondary" style={{ fontSize: '13px' }}>
-              {(coverage?.total_raw_observations || (selectedRealDate === '2026-10-06' ? 9676 : 12212)).toLocaleString('en-IN')} verified quotes&nbsp;&nbsp;
+              {(coverage?.total_raw_observations || (selectedRealDate === '2026-10-06' ? 9676 : selectedRealDate === '2026-09-27' ? 12212 : 10000)).toLocaleString('en-IN')} verified quotes&nbsp;&nbsp;
               {coverage?.routes_with_data_count || 60} routes&nbsp;&nbsp;
               {selectedRealDate}
               {selectedRealDate === latestRealDate && (
@@ -956,7 +970,9 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               aria-pressed={dataMode === 'real' && selectedRealDate === latestRealDate}
               onClick={() => {
                 setDataMode('real');
+                setUserSelectedExplicitDate(false);
                 setSelectedRealDate(latestRealDate);
+                onSelectDate?.(null);
               }}
               style={{ fontWeight: dataMode === 'real' && selectedRealDate === latestRealDate ? 700 : 400 }}
             >
@@ -971,7 +987,9 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                   const val = e.target.value;
                   if (val) {
                     setDataMode('real');
+                    setUserSelectedExplicitDate(true);
                     setSelectedRealDate(val);
+                    onSelectDate?.(val);
                   }
                 }}
                 style={{
@@ -1596,7 +1614,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 &nbsp;({realLeadCurveData[realScrubIndex].quote_count} quotes)
               </span>
             ) : (
-              <span>Real Production API ({fmtDateLong(selectedRealDate)}) · {(coverage?.total_raw_observations || (selectedRealDate === '2026-10-06' ? 9676 : 12212)).toLocaleString('en-IN')} Verified Quotes Across {matrixCells.length || 360} Cells</span>
+              <span>Real Production API ({fmtDateLong(selectedRealDate)}) · {(coverage?.total_raw_observations || (selectedRealDate === '2026-10-06' ? 9676 : selectedRealDate === '2026-09-27' ? 12212 : 10000)).toLocaleString('en-IN')} Verified Quotes Across {matrixCells.length || 360} Cells</span>
             )}
           </span>
           <span style={{ color: 'var(--ink-2)' }}>

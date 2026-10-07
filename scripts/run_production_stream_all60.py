@@ -40,16 +40,18 @@ API_REFRESH_URL = "https://aerix-backend-cr41.onrender.com/api/cache/refresh"
 RAW_DB_URL = os.environ.get("DATABASE_URL_SYNC", "").replace("+psycopg2", "") or "postgresql://neondb_owner:npg_TaKCLGyr28gl@ep-lively-sunset-b3e0gwgz.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 
 
-def get_existing_cells_today():
+def get_existing_cells_today(target_date: str = None):
     """Queries Neon DB for (origin, destination, lead_days) already collected today."""
+    if not target_date:
+        target_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     existing = set()
     try:
         conn = psycopg2.connect(RAW_DB_URL)
         cur = conn.cursor()
-        cur.execute("""
+        cur.execute(f"""
             SELECT origin, destination, lead_days 
             FROM fare_observations 
-            WHERE collected_at >= '2026-10-06 00:00:00+00:00'
+            WHERE collected_at >= '{target_date} 00:00:00+00:00'
             GROUP BY origin, destination, lead_days;
         """)
         for row in cur.fetchall():
@@ -60,15 +62,17 @@ def get_existing_cells_today():
     return existing
 
 
-def get_today_distinct_routes_count():
+def get_today_distinct_routes_count(target_date: str = None):
     """Returns number of distinct routes collected today in Neon DB."""
+    if not target_date:
+        target_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     try:
         conn = psycopg2.connect(RAW_DB_URL)
         cur = conn.cursor()
-        cur.execute("""
+        cur.execute(f"""
             SELECT COUNT(DISTINCT origin || '-' || destination), COUNT(*) 
             FROM fare_observations 
-            WHERE collected_at >= '2026-10-06 00:00:00+00:00';
+            WHERE collected_at >= '{target_date} 00:00:00+00:00';
         """)
         row = cur.fetchone()
         conn.close()
@@ -120,9 +124,10 @@ async def scrape_and_ingest_cell(origin, destination, rank, lead_days, gate, sem
 
 
 async def main():
+    target_date = sys.argv[1] if len(sys.argv) > 1 else datetime.now(timezone.utc).strftime("%Y-%m-%d")
     print("=" * 80)
     print("AERIX LIVE PRODUCTION STREAMER - DGCA CY2024 TOP-60 ROUTES")
-    print(f"Target Date: 2026-10-06 | Start Time: {datetime.now(timezone.utc).isoformat()}")
+    print(f"Target Date: {target_date} | Start Time: {datetime.now(timezone.utc).isoformat()}")
     print("=" * 80)
 
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -130,13 +135,13 @@ async def main():
     routes = config_data.get("routes", [])
     print(f"Loaded {len(routes)} routes from {CONFIG_PATH.name}")
 
-    existing_cells = get_existing_cells_today()
-    initial_routes, initial_quotes = get_today_distinct_routes_count()
-    print(f"Initial Neon DB state for today: {initial_routes} distinct routes, {initial_quotes} quotes.")
+    existing_cells = get_existing_cells_today(target_date)
+    initial_routes, initial_quotes = get_today_distinct_routes_count(target_date)
+    print(f"Initial Neon DB state for {target_date}: {initial_routes} distinct routes, {len(existing_cells)}/360 cells, {initial_quotes} quotes.")
 
     gate = RobotsPolicyGate()
-    # Concurrency limit of 2 parallel browser sessions to ensure zero rate-limiting / blocking
-    sem = asyncio.Semaphore(2)
+    # Concurrency limit of 3 parallel browser sessions
+    sem = asyncio.Semaphore(3)
 
     # Lead times priority:
     # Phase 1: T+21 (MoSPI official specification) & T+7 (short horizon) across ALL 60 routes
@@ -174,19 +179,17 @@ async def main():
 
             # Check distinct routes count periodically
             if len(active_futures) % 10 == 0:
-                current_routes, current_quotes = get_today_distinct_routes_count()
+                current_routes, current_quotes = get_today_distinct_routes_count(target_date)
                 print(f"Progress Check: {current_routes}/60 distinct routes in DB ({current_quotes} quotes)")
                 if current_routes >= 50:
-                    print(">>> REACHED >= 50 DISTINCT ROUTES! Triggering API cache refresh on Render... <<<")
                     try:
                         resp = requests.post(API_REFRESH_URL, timeout=10)
-                        print("Cache refresh response:", resp.json())
-                    except Exception as rf_err:
-                        print("Cache refresh note:", rf_err)
+                    except Exception:
+                        pass
 
         await asyncio.gather(*active_futures, return_exceptions=True)
 
-        final_routes, final_quotes = get_today_distinct_routes_count()
+        final_routes, final_quotes = get_today_distinct_routes_count(target_date)
         print(f"\nPhase {phase_num} Completed!")
         print(f"Neon DB Status: {final_routes} distinct routes, {final_quotes} total quotes.")
 
@@ -201,6 +204,20 @@ async def main():
     print("\n" + "=" * 80)
     print("ALL 60 ROUTES PROCESSED AND STREAMED TO NEON POSTGRESQL!")
     print("=" * 80)
+
+    try:
+        from scripts.compile_aerix_index import compile_index
+        print(f"\nCompiling official AERIX headline index for {target_date}...")
+        compiled = compile_index(target_date=target_date)
+        out_target = PROJECT_ROOT / f"apix_compiled_index_{target_date.replace('-', '_')}.json"
+        with open(out_target, "w", encoding="utf-8") as f:
+            json.dump(compiled, f, indent=2)
+        out_latest = PROJECT_ROOT / "apix_compiled_index.json"
+        with open(out_latest, "w", encoding="utf-8") as f:
+            json.dump(compiled, f, indent=2)
+        print(f"Index compiled successfully: {compiled['index_value']} (Fare: INR {compiled['all_india_weighted_fare_inr']})")
+    except Exception as e:
+        logger.warning(f"Index compilation note: {e}")
 
 
 if __name__ == "__main__":
