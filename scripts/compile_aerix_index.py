@@ -109,7 +109,11 @@ def get_live_route_fares(target_date: str = None):
         if direct:
             db_url = direct.replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
         else:
-            db_url = "postgresql://neondb_owner:npg_TaKCLGyr28gl@ep-lively-sunset-b3e0gwgz.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+            raw = os.environ.get("DATABASE_URL", "")
+            if raw:
+                db_url = raw.replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
+            else:
+                raise ValueError("DATABASE_URL environment variable is required.")
     conn = psycopg2.connect(db_url)
     cur = conn.cursor()
     if target_date:
@@ -287,7 +291,13 @@ def get_all_eligible_dates():
             if direct:
                 db_url = direct.replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
             else:
-                db_url = "postgresql://neondb_owner:npg_TaKCLGyr28gl@ep-lively-sunset-b3e0gwgz.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+                raw = os.environ.get("DATABASE_URL", "")
+                if raw:
+                    db_url = raw.replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
+                else:
+                    db_url = ""
+        if not db_url:
+            return ["2026-09-27", "2026-10-06", "2026-10-07"]
         conn = psycopg2.connect(db_url)
         cur = conn.cursor()
         cur.execute("""
@@ -330,9 +340,9 @@ if __name__ == "__main__":
             out_path = os.path.join(ROOT, f"apix_compiled_index_{d.replace('-', '_')}.json")
             with open(out_path, "w", encoding="utf-8") as f:
                 json.dump(res, f, indent=2)
-            print(f"  ✓ {d}: Index = {res['index_value']} | Fare = INR {res['all_india_weighted_fare_inr']} -> {out_path}")
+            print(f"  [OK] {d}: Index = {res['index_value']} | Fare = INR {res['all_india_weighted_fare_inr']} -> {out_path}")
         except Exception as e:
-            print(f"  ✗ Error compiling for {d}: {e}")
+            print(f"  [ERROR] Error compiling for {d}: {e}")
 
     # Set the most recent date as default apix_compiled_index.json
     latest_date = sorted(list(compiled_results.keys()))[-1] if compiled_results else None
@@ -340,6 +350,6 @@ if __name__ == "__main__":
         out_latest = os.path.join(ROOT, "apix_compiled_index.json")
         with open(out_latest, "w", encoding="utf-8") as f:
             json.dump(compiled_results[latest_date], f, indent=2)
-        print(f"\n✓ Default headline index updated to latest date ({latest_date}): {out_latest}")
+        print(f"\n[OK] Default headline index updated to latest date ({latest_date}): {out_latest}")
 
     print("\nCompilation run completed successfully.")

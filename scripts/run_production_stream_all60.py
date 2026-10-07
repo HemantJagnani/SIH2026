@@ -36,8 +36,11 @@ logging.basicConfig(
 logger = logging.getLogger("stream_all60")
 
 CONFIG_PATH = PROJECT_ROOT / "config" / "dgca_cy2024_top60.json"
-API_REFRESH_URL = "https://aerix-backend-cr41.onrender.com/api/cache/refresh"
-RAW_DB_URL = os.environ.get("DATABASE_URL_SYNC", "").replace("+psycopg2", "") or "postgresql://neondb_owner:npg_TaKCLGyr28gl@ep-lively-sunset-b3e0gwgz.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+RAW_DB_URL = (
+    os.environ.get("DATABASE_URL_SYNC", "").replace("+psycopg2", "")
+    or os.environ.get("DATABASE_URL_DIRECT", "").replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
+    or os.environ.get("DATABASE_URL", "").replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
+)
 
 
 def get_existing_cells_today(target_date: str = None):
