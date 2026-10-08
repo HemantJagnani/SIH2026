@@ -433,7 +433,7 @@ export const api = {
     if (params?.lead_time) q.set('lead_time', params.lead_time);
     if (params?.collection_date) q.set('collection_date', params.collection_date);
     const url = `${BASE}/v1/airfare-index?${q.toString()}`;
-    const isHistorical = params?.collection_date && ['2026-09-27', '2026-10-06', '2026-10-07'].includes(params.collection_date);
+    const isHistorical = Boolean(params?.collection_date);
     return fetchWithCache<APIxIndexResponse>(url, isHistorical ? 3_600_000 : 120_000);
   },
 
@@ -445,7 +445,7 @@ export const api = {
     const q = new URLSearchParams({ route });
     if (collection_date) q.set('collection_date', collection_date);
     const url = `${BASE}/v1/lead-curves?${q.toString()}`;
-    const isHistorical = collection_date && ['2026-09-27', '2026-10-06', '2026-10-07'].includes(collection_date);
+    const isHistorical = Boolean(collection_date);
     return fetchWithCache<LeadCurveResponse>(url, isHistorical ? 3_600_000 : 120_000);
   },
 
@@ -475,7 +475,7 @@ export const api = {
     if (params?.lead_time) q.set('lead_time', params.lead_time);
     if (params?.collection_date) q.set('collection_date', params.collection_date);
     const url = `${BASE}/v1/matrix?${q.toString()}`;
-    const isHistorical = params?.collection_date && ['2026-09-27', '2026-10-06', '2026-10-07'].includes(params.collection_date);
+    const isHistorical = Boolean(params?.collection_date);
     return fetchWithCache<MatrixResponse>(url, isHistorical ? 3_600_000 : 120_000);
   },
 
@@ -484,7 +484,7 @@ export const api = {
     if (params?.collection_date) q.set('collection_date', params.collection_date);
     const qs = q.toString() ? `?${q.toString()}` : '';
     const url = `${BASE}/v1/coverage${qs}`;
-    const isHistorical = params?.collection_date && ['2026-09-27', '2026-10-06', '2026-10-07'].includes(params.collection_date);
+    const isHistorical = Boolean(params?.collection_date);
     return fetchWithCache<CoverageResponse>(url, isHistorical ? 3_600_000 : 120_000);
   },
 

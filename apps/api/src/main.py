@@ -6,7 +6,7 @@ import time
 import statistics
 from decimal import Decimal
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Any
 import psycopg2
 import redis
 import csv
@@ -179,7 +179,7 @@ def load_top60_observations(collection_date: Optional[str] = None) -> List[dict]
     global _top60_obs_cache, _top60_obs_source, _top60_obs_cache_time
     now = time.time()
     cache_key = collection_date or "latest"
-    is_historical = collection_date in ("2026-09-27", "2026-10-06", "2026-10-07")
+    is_historical = collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08")
     effective_ttl = HISTORICAL_TTL_SECONDS if is_historical else CACHE_TTL_SECONDS
     if cache_key in _top60_obs_cache and (now - _top60_obs_cache_time.get(cache_key, 0.0)) < effective_ttl:
         return _top60_obs_cache[cache_key]
@@ -578,6 +578,21 @@ def load_compiled_index(collection_date: Optional[str] = None):
     cache_key = collection_date or "latest"
     if cache_key in _compiled_index_cache:
         return _compiled_index_cache[cache_key]
+
+    # 1. Check hosted Redis Key-Value cache (Singapore / Render)
+    redis_cli = get_redis_client()
+    if redis_cli:
+        try:
+            raw_idx = redis_cli.get(f"aerix:index:{cache_key}")
+            if raw_idx:
+                data = json.loads(raw_idx)
+                if data:
+                    _compiled_index_cache[cache_key] = data
+                    return data
+        except Exception as e:
+            print(f"Warning: Redis index read error: {e}")
+
+    # 2. Check local disk compiled file for specific collection date
     base_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..')
     if collection_date:
         fname = f"apix_compiled_index_{collection_date.replace('-', '_')}.json"
@@ -590,13 +605,16 @@ def load_compiled_index(collection_date: Optional[str] = None):
                     return data
             except Exception:
                 pass
+
+    # 3. Fallback to default index file
     idx_path = os.path.join(base_dir, 'apix_compiled_index.json')
     if os.path.exists(idx_path):
         try:
             with open(idx_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                _compiled_index_cache[cache_key] = data
-                return data
+                if collection_date is None or data.get("collection_date") == collection_date:
+                    _compiled_index_cache[cache_key] = data
+                    return data
         except Exception:
             pass
     return None
@@ -1009,7 +1027,7 @@ async def get_lead_curves(
 
     cache_k = f"lead_curves:{route}:{collection_date or 'latest'}"
     now = time.time()
-    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07") else CACHE_TTL_SECONDS
+    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08") else CACHE_TTL_SECONDS
     if cache_k in _endpoint_response_cache and (now - _endpoint_response_cache[cache_k][0]) < ttl:
         return _endpoint_response_cache[cache_k][1]
 
@@ -1515,7 +1533,7 @@ async def get_matrix(
 
     cache_k = f"matrix:{route or 'ALL'}:{lead_time or 'ALL'}:{collection_date or 'latest'}"
     now = time.time()
-    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07") else CACHE_TTL_SECONDS
+    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08") else CACHE_TTL_SECONDS
     if cache_k in _endpoint_response_cache and (now - _endpoint_response_cache[cache_k][0]) < ttl:
         return _endpoint_response_cache[cache_k][1]
 
@@ -1608,7 +1626,7 @@ async def get_coverage(
     """
     cache_k = f"coverage:{collection_date or 'latest'}"
     now = time.time()
-    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07") else CACHE_TTL_SECONDS
+    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08") else CACHE_TTL_SECONDS
     if cache_k in _endpoint_response_cache and (now - _endpoint_response_cache[cache_k][0]) < ttl:
         return _endpoint_response_cache[cache_k][1]
 
