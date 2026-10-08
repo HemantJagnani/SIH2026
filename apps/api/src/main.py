@@ -141,15 +141,24 @@ def _get_official_top60_routes() -> set:
 _top60_obs_cache: Dict[str, List[dict]] = {}
 _top60_obs_source: Dict[str, str] = {}
 _top60_obs_cache_time: Dict[str, float] = {}
-CACHE_TTL_SECONDS = 120.0  # 2 minutes auto-refresh
+CACHE_TTL_SECONDS = 300.0  # 5 minutes auto-refresh for active sweeps
+HISTORICAL_TTL_SECONDS = 86400.0  # 24 hours for immutable completed historical dates
+
+# Response-level caching for high-load API endpoints (matrix, coverage, lead-curves, backtest, runs)
+_endpoint_response_cache: Dict[str, Tuple[float, Any]] = {}
+_compiled_index_cache: Dict[str, Any] = {}
+_runs_cache_entry: Tuple[float, Any] = (0.0, None)
 
 
 def invalidate_top60_cache():
-    """Invalidates the in-memory and Redis L2 top-60 observations cache so next request fetches fresh data."""
-    global _top60_obs_cache, _top60_obs_cache_time, _top60_obs_source
+    """Invalidates the in-memory and Redis L2 top-60 observations and endpoint caches so next request fetches fresh data."""
+    global _top60_obs_cache, _top60_obs_cache_time, _top60_obs_source, _endpoint_response_cache, _compiled_index_cache, _runs_cache_entry
     _top60_obs_cache.clear()
     _top60_obs_cache_time.clear()
     _top60_obs_source.clear()
+    _endpoint_response_cache.clear()
+    _compiled_index_cache.clear()
+    _runs_cache_entry = (0.0, None)
     redis_cli = get_redis_client()
     if redis_cli:
         try:
@@ -157,6 +166,8 @@ def invalidate_top60_cache():
             redis_cli.delete("aerix:cache:top60_observations:latest")
             redis_cli.delete("aerix:cache:top60_observations:2026-09-27")
             redis_cli.delete("aerix:cache:top60_observations:2026-10-06")
+            redis_cli.delete("aerix:cache:top60_observations:2026-10-07")
+            redis_cli.delete("aerix:cache:top60_observations:2026-10-08")
         except Exception:
             pass
 
@@ -168,7 +179,9 @@ def load_top60_observations(collection_date: Optional[str] = None) -> List[dict]
     global _top60_obs_cache, _top60_obs_source, _top60_obs_cache_time
     now = time.time()
     cache_key = collection_date or "latest"
-    if cache_key in _top60_obs_cache and (now - _top60_obs_cache_time.get(cache_key, 0.0)) < CACHE_TTL_SECONDS:
+    is_historical = collection_date in ("2026-09-27", "2026-10-06", "2026-10-07")
+    effective_ttl = HISTORICAL_TTL_SECONDS if is_historical else CACHE_TTL_SECONDS
+    if cache_key in _top60_obs_cache and (now - _top60_obs_cache_time.get(cache_key, 0.0)) < effective_ttl:
         return _top60_obs_cache[cache_key]
 
     # Check L2 Render Redis Key-Value cache
@@ -562,6 +575,9 @@ def load_canonical_data() -> List[NormalizedFareObservation]:
 
 # Pre-compiled index cache
 def load_compiled_index(collection_date: Optional[str] = None):
+    cache_key = collection_date or "latest"
+    if cache_key in _compiled_index_cache:
+        return _compiled_index_cache[cache_key]
     base_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..')
     if collection_date:
         fname = f"apix_compiled_index_{collection_date.replace('-', '_')}.json"
@@ -569,14 +585,18 @@ def load_compiled_index(collection_date: Optional[str] = None):
         if os.path.exists(path):
             try:
                 with open(path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    _compiled_index_cache[cache_key] = data
+                    return data
             except Exception:
                 pass
     idx_path = os.path.join(base_dir, 'apix_compiled_index.json')
     if os.path.exists(idx_path):
         try:
             with open(idx_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                data = json.load(f)
+                _compiled_index_cache[cache_key] = data
+                return data
         except Exception:
             pass
     return None
@@ -987,6 +1007,12 @@ async def get_lead_curves(
             detail="Invalid route parameter. Expected 'ORIGIN-DESTINATION' (e.g. 'DEL-BOM')."
         )
 
+    cache_k = f"lead_curves:{route}:{collection_date or 'latest'}"
+    now = time.time()
+    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07") else CACHE_TTL_SECONDS
+    if cache_k in _endpoint_response_cache and (now - _endpoint_response_cache[cache_k][0]) < ttl:
+        return _endpoint_response_cache[cache_k][1]
+
     # Try real top-60 observations first
     top60_obs = load_top60_observations(collection_date=collection_date)
     def route_matches(o: dict) -> bool:
@@ -1030,7 +1056,7 @@ async def get_lead_curves(
         if curve_points:
             col_date = route_obs_top60[0].get('collection_date') if route_obs_top60 else (collection_date or '2026-10-06')
             col_period = col_date[:7] if col_date else '2026-10'
-            return {
+            lc_resp = {
                 'data_status': 'REAL_PRODUCTION_OBSERVATIONS',
                 'route': route,
                 'period': col_period,
@@ -1041,6 +1067,8 @@ async def get_lead_curves(
                 'curve_points': curve_points,
                 'last_updated': datetime.now(timezone.utc).isoformat()
             }
+            _endpoint_response_cache[cache_k] = (now, lc_resp)
+            return lc_resp
 
     # Fallback: canonical normalized data (EaseMyTrip)
     observations = load_canonical_data()
@@ -1089,6 +1117,11 @@ async def get_runs():
     Returns collection runs status for the frontend dashboard banner.
     Queries Neon DB first; falls back to top60 observation cache if offline.
     """
+    global _runs_cache_entry
+    now = time.time()
+    if _runs_cache_entry[1] is not None and (now - _runs_cache_entry[0]) < 60.0:
+        return _runs_cache_entry[1]
+
     conn = get_db_connection()
     if conn:
         try:
@@ -1125,6 +1158,8 @@ async def get_runs():
                     }
                     for r in rows
                 ]
+                _runs_cache_entry = (now, runs_res)
+                return runs_res
         except Exception as e:
             print(f"Warning: Error querying Neon runs: {e}")
             if conn:
@@ -1478,6 +1513,12 @@ async def get_matrix(
             detail=f"Invalid lead_time '{lead_time}'. Valid lead times are: {sorted(list(valid_lead_times))}."
         )
 
+    cache_k = f"matrix:{route or 'ALL'}:{lead_time or 'ALL'}:{collection_date or 'latest'}"
+    now = time.time()
+    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07") else CACHE_TTL_SECONDS
+    if cache_k in _endpoint_response_cache and (now - _endpoint_response_cache[cache_k][0]) < ttl:
+        return _endpoint_response_cache[cache_k][1]
+
     obs_all = load_top60_observations(collection_date=collection_date)
     if not obs_all:
         raise HTTPException(status_code=503, detail="No observations available to build price matrix.")
@@ -1540,7 +1581,7 @@ async def get_matrix(
     col_date = obs_all[0].get("collection_date") if obs_all else (collection_date or "2026-10-06")
     col_period = col_date[:7] if col_date else "2026-10"
 
-    return {
+    matrix_resp = {
         'data_status': 'REAL_PRODUCTION_OBSERVATIONS',
         'observation_period': col_period,
         'collection_period': col_date,
@@ -1552,6 +1593,8 @@ async def get_matrix(
         'total_observations': sum(c['observation_count'] for c in result),
         'cells': result,
     }
+    _endpoint_response_cache[cache_k] = (now, matrix_resp)
+    return matrix_resp
 
 
 @app.get("/api/v1/coverage", tags=["📊 Yield Curves & Route Matrix"])
@@ -1563,6 +1606,12 @@ async def get_coverage(
     route list, DGCA-weighted coverage, observation counts by status.
     Dynamically counts cells and raw observations from production dataset.
     """
+    cache_k = f"coverage:{collection_date or 'latest'}"
+    now = time.time()
+    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07") else CACHE_TTL_SECONDS
+    if cache_k in _endpoint_response_cache and (now - _endpoint_response_cache[cache_k][0]) < ttl:
+        return _endpoint_response_cache[cache_k][1]
+
     obs_all = load_top60_observations(collection_date=collection_date)
     if not obs_all:
         raise HTTPException(status_code=503, detail="Top-60 observations dataset unavailable.")
@@ -1606,7 +1655,7 @@ async def get_coverage(
     col_date = obs_all[0].get("collection_date") if obs_all else (collection_date or "2026-10-06")
     col_period = col_date[:7] if col_date else "2026-10"
 
-    return {
+    cov_resp = {
         'data_status': 'REAL_PRODUCTION_OBSERVATIONS',
         'observation_period': col_period,
         'collection_period': col_date,
@@ -1627,6 +1676,8 @@ async def get_coverage(
         'higher_fare_family': higher_fare_count,
         'foreign_transit': foreign_transit_count,
     }
+    _endpoint_response_cache[cache_k] = (now, cov_resp)
+    return cov_resp
 
 
 @app.get("/api/v1/backtest", tags=["🔬 Econometrics & 30-Day Backtest"])
@@ -1645,6 +1696,11 @@ async def get_backtest_results(
             status_code=400,
             detail=f"Invalid mode '{mode}'. Supported modes are: 'synthetic', 'real'."
         )
+
+    cache_k = f"backtest:{mode_normalized}"
+    now = time.time()
+    if cache_k in _endpoint_response_cache and (now - _endpoint_response_cache[cache_k][0]) < 600.0:
+        return _endpoint_response_cache[cache_k][1]
 
     if mode_normalized == "synthetic":
         bt_path = os.path.join(ROOT, 'backtest_results.json')
@@ -1681,14 +1737,17 @@ async def get_backtest_results(
         data["governance"] = "PROJECT_METHODOLOGY_DEMONSTRATION"
         data["note"] = "The 31-day August daily panel was synthesized from scraped baseline observations to evaluate econometric weighting and aggregation robustness; it is a demonstration series."
         data["last_updated"] = datetime.now(timezone.utc).isoformat()
+        _endpoint_response_cache[cache_k] = (now, data)
         return data
 
     # mode == "real"
     from collections import defaultdict
     by_date = defaultdict(list)
-    obs_all_oct = load_top60_observations("2026-10-06") or []
+    obs_all_oct8 = load_top60_observations("2026-10-08") or []
+    obs_all_oct7 = load_top60_observations("2026-10-07") or []
+    obs_all_oct6 = load_top60_observations("2026-10-06") or []
     obs_all_sep = load_top60_observations("2026-09-27") or []
-    obs_all = obs_all_oct + obs_all_sep
+    obs_all = obs_all_oct8 + obs_all_oct7 + obs_all_oct6 + obs_all_sep
     official = _get_official_top60_routes()
     if obs_all:
         for o in obs_all:
@@ -1780,7 +1839,7 @@ async def get_backtest_results(
         "reason": "Airfare tracking metrics (MAE/RMSE) require an external high-frequency airfare price benchmark (DGCA provides traffic volume weights, not daily price indices). A multi-period longitudinal baseline across the full 60-route scope is required before valid tracking error can be calculated."
     }
 
-    return {
+    real_resp = {
         "backtest_type": "REAL_DATA_VALIDATION",
         "data_status": "REAL_PRODUCTION_OBSERVATIONS",
         "evaluation_window": eval_start if eval_start == eval_end else f"{eval_start} to {eval_end}",
@@ -1800,6 +1859,8 @@ async def get_backtest_results(
         "daily_series": daily_series,
         "last_updated": datetime.now(timezone.utc).isoformat()
     }
+    _endpoint_response_cache[cache_k] = (now, real_resp)
+    return real_resp
 
 
 @app.get("/api/v1/sensitivity", tags=["🔬 Econometrics & 30-Day Backtest"])

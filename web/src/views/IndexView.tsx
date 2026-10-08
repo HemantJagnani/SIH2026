@@ -237,35 +237,45 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   const [scrubIndex, setScrubIndex] = useState<number | null>(null);
   const [activeTooltip, setActiveTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
+  // 1. Initial mount: fetch global longitudinal series and runs ONCE
   useEffect(() => {
-    setLoading(true);
-    setError(null);
     Promise.allSettled([
-      api.getAirfareIndex({ collection_date: selectedRealDate }),
       api.getBacktest('synthetic'),
       api.getRealBacktest(),
       api.runs(),
+    ]).then(([resBtSynth, resBtReal, resRuns]) => {
+      if (resBtSynth.status === 'fulfilled') setBacktest(resBtSynth.value);
+      if (resBtReal.status === 'fulfilled') setRealBacktest(resBtReal.value);
+      if (resRuns.status === 'fulfilled') setRuns(resRuns.value);
+    });
+  }, []);
+
+  // 2. Date-specific data fetching (Index, Coverage, Matrix)
+  useEffect(() => {
+    setError(null);
+    let isCurrent = true;
+
+    Promise.allSettled([
+      api.getAirfareIndex({ collection_date: selectedRealDate }),
       api.getCoverage({ collection_date: selectedRealDate }),
       api.getMatrix({ collection_date: selectedRealDate }),
-      api.getLeadCurves('DEL-BOM', selectedRealDate),
-      api.getLeadCurves('DEL-BLR', selectedRealDate),
-      api.getLeadCurves('BOM-BLR', selectedRealDate),
-    ]).then(([resIdx, resBtSynth, resBtReal, resRuns, resCov, resMat, resDelBom, resDelBlr, resBomBlr]) => {
-      let anyData = false;
-      if (resIdx.status === 'fulfilled') { setIndexData(resIdx.value); anyData = true; }
-      if (resBtSynth.status === 'fulfilled') { setBacktest(resBtSynth.value); anyData = true; }
-      if (resBtReal.status === 'fulfilled') { setRealBacktest(resBtReal.value); anyData = true; }
-      if (resRuns.status === 'fulfilled') setRuns(resRuns.value);
-      if (resCov.status === 'fulfilled') setCoverage(resCov.value);
+    ]).then(([resIdx, resCov, resMat]) => {
+      if (!isCurrent) return;
 
-      if (!anyData) {
-        setError('Data unavailable — unable to retrieve the latest result.');
+      let anyData = false;
+      if (resIdx.status === 'fulfilled') {
+        setIndexData(resIdx.value);
+        anyData = true;
+      }
+      if (resCov.status === 'fulfilled') {
+        setCoverage(resCov.value);
+        anyData = true;
       }
 
       const curvesMap: Record<string, { points: LeadPoint[]; isSynthetic: boolean; isReal: boolean }> = {};
 
-      // Populate lead curves dynamically for ALL routes from matrix cells
       if (resMat.status === 'fulfilled' && resMat.value?.cells) {
+        anyData = true;
         const cells = resMat.value.cells;
         setMatrixCells(cells);
         for (const c of cells) {
@@ -281,31 +291,23 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         for (const r of Object.keys(curvesMap)) {
           curvesMap[r].points.sort((a, b) => b.lead_days - a.lead_days);
         }
+        if (Object.keys(curvesMap).length > 0) {
+          setLeadCurves((prev) => ({ ...prev, ...curvesMap }));
+        }
       }
 
-      const processCurve = (route: string, res: PromiseSettledResult<LeadCurveResponse>) => {
-        if (res.status === 'fulfilled' && res.value?.curve_points?.length > 0) {
-          curvesMap[route] = {
-            isSynthetic: false,
-            isReal: true,
-            points: res.value.curve_points.map((p) => ({
-              lead_days: p.lead_days,
-              price: p.geometric_mean_inr || p.average_fare_inr || p.median_fare_inr || 0,
-            })),
-          };
-        }
-      };
-      processCurve('DEL-BOM', resDelBom);
-      processCurve('DEL-BLR', resDelBlr);
-      processCurve('BOM-BLR', resBomBlr);
-      if (Object.keys(curvesMap).length > 0) {
-        setLeadCurves((prev) => ({ ...prev, ...curvesMap }));
+      if (!anyData) {
+        setError('Data unavailable — unable to retrieve the latest result.');
       }
     }).catch(() => {
-      setError('Data unavailable — unable to retrieve the latest result.');
+      if (isCurrent) setError('Data unavailable — unable to retrieve the latest result.');
     }).finally(() => {
-      setLoading(false);
+      if (isCurrent) setLoading(false);
     });
+
+    return () => {
+      isCurrent = false;
+    };
   }, [selectedRealDate]);
 
   // ResizeObserver for chart responsiveness

@@ -36,6 +36,7 @@ logging.basicConfig(
 logger = logging.getLogger("stream_all60")
 
 CONFIG_PATH = PROJECT_ROOT / "config" / "dgca_cy2024_top60.json"
+API_REFRESH_URL = "https://aerix-backend-cr41.onrender.com/api/cache/refresh"
 RAW_DB_URL = (
     os.environ.get("DATABASE_URL_SYNC", "").replace("+psycopg2", "")
     or os.environ.get("DATABASE_URL_DIRECT", "").replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")

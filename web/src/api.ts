@@ -399,6 +399,32 @@ export interface Relative {
   is_synthetic: boolean;
 }
 
+interface CacheEntry<T> {
+  data: T;
+  expires: number;
+}
+const _clientCache = new Map<string, CacheEntry<any>>();
+
+export function clearClientCache(): void {
+  _clientCache.clear();
+}
+
+async function fetchWithCache<T>(url: string, ttlMs: number = 60_000): Promise<T> {
+  const cached = _clientCache.get(url);
+  const now = Date.now();
+  if (cached && cached.expires > now) {
+    return cached.data as T;
+  }
+  const res = await fetch(url);
+  if (!res.ok) {
+    if (cached) return cached.data as T;
+    throw new Error(`API error ${res.status}: ${url}`);
+  }
+  const data = await res.json();
+  _clientCache.set(url, { data, expires: now + ttlMs });
+  return data as T;
+}
+
 export const api = {
   // Official Production AERIX Endpoints
   getAirfareIndex: async (params?: { route?: string; lead_time?: string; collection_date?: string }): Promise<APIxIndexResponse> => {
@@ -406,31 +432,29 @@ export const api = {
     if (params?.route) q.set('route', params.route);
     if (params?.lead_time) q.set('lead_time', params.lead_time);
     if (params?.collection_date) q.set('collection_date', params.collection_date);
-    const res = await fetch(`${BASE}/v1/airfare-index?${q.toString()}`);
-    if (!res.ok) throw new Error(`API error ${res.status}: /v1/airfare-index`);
-    return res.json();
+    const url = `${BASE}/v1/airfare-index?${q.toString()}`;
+    const isHistorical = params?.collection_date && ['2026-09-27', '2026-10-06', '2026-10-07'].includes(params.collection_date);
+    return fetchWithCache<APIxIndexResponse>(url, isHistorical ? 3_600_000 : 120_000);
   },
 
   getQualityMetrics: async (): Promise<QualityMetrics> => {
-    const res = await fetch(`${BASE}/v1/quality-metrics`);
-    if (!res.ok) throw new Error(`API error ${res.status}: /v1/quality-metrics`);
-    return res.json();
+    return fetchWithCache<QualityMetrics>(`${BASE}/v1/quality-metrics`, 120_000);
   },
 
   getLeadCurves: async (route = 'DEL-BOM', collection_date?: string): Promise<LeadCurveResponse> => {
     const q = new URLSearchParams({ route });
     if (collection_date) q.set('collection_date', collection_date);
-    const res = await fetch(`${BASE}/v1/lead-curves?${q.toString()}`);
-    if (!res.ok) throw new Error(`API error ${res.status}: /v1/lead-curves`);
-    return res.json();
+    const url = `${BASE}/v1/lead-curves?${q.toString()}`;
+    const isHistorical = collection_date && ['2026-09-27', '2026-10-06', '2026-10-07'].includes(collection_date);
+    return fetchWithCache<LeadCurveResponse>(url, isHistorical ? 3_600_000 : 120_000);
   },
 
   getBacktest: async (mode?: 'synthetic' | 'real'): Promise<BacktestResponse> => {
     const q = new URLSearchParams();
     if (mode) q.set('mode', mode);
+    const url = `${BASE}/v1/backtest${mode ? `?${q.toString()}` : ''}`;
     try {
-      const res = await fetch(`${BASE}/v1/backtest${mode ? `?${q.toString()}` : ''}`);
-      if (res.ok) return await res.json();
+      return await fetchWithCache<BacktestResponse>(url, 600_000);
     } catch {}
     // Graceful fallback to bundled results if backend is offline or during testing
     const fallback = await import('./data/backtest_results.json');
@@ -438,16 +462,11 @@ export const api = {
   },
 
   getRealBacktest: async (): Promise<RealBacktestResponse> => {
-    const res = await fetch(`${BASE}/v1/backtest?mode=real`);
-    if (!res.ok) throw new Error(`API error ${res.status}: /v1/backtest?mode=real`);
-    return res.json();
+    return fetchWithCache<RealBacktestResponse>(`${BASE}/v1/backtest?mode=real`, 300_000);
   },
 
-
   getSensitivity: async (): Promise<SensitivityResponse> => {
-    const res = await fetch(`${BASE}/v1/sensitivity`);
-    if (!res.ok) throw new Error(`API error ${res.status}: /v1/sensitivity`);
-    return res.json();
+    return fetchWithCache<SensitivityResponse>(`${BASE}/v1/sensitivity`, 600_000);
   },
 
   getMatrix: async (params?: { route?: string; lead_time?: string; collection_date?: string }): Promise<MatrixResponse> => {
@@ -455,24 +474,22 @@ export const api = {
     if (params?.route) q.set('route', params.route);
     if (params?.lead_time) q.set('lead_time', params.lead_time);
     if (params?.collection_date) q.set('collection_date', params.collection_date);
-    const res = await fetch(`${BASE}/v1/matrix?${q.toString()}`);
-    if (!res.ok) throw new Error(`API error ${res.status}: /v1/matrix`);
-    return res.json();
+    const url = `${BASE}/v1/matrix?${q.toString()}`;
+    const isHistorical = params?.collection_date && ['2026-09-27', '2026-10-06', '2026-10-07'].includes(params.collection_date);
+    return fetchWithCache<MatrixResponse>(url, isHistorical ? 3_600_000 : 120_000);
   },
 
   getCoverage: async (params?: { collection_date?: string }): Promise<CoverageResponse> => {
     const q = new URLSearchParams();
     if (params?.collection_date) q.set('collection_date', params.collection_date);
     const qs = q.toString() ? `?${q.toString()}` : '';
-    const res = await fetch(`${BASE}/v1/coverage${qs}`);
-    if (!res.ok) throw new Error(`API error ${res.status}: /v1/coverage`);
-    return res.json();
+    const url = `${BASE}/v1/coverage${qs}`;
+    const isHistorical = params?.collection_date && ['2026-09-27', '2026-10-06', '2026-10-07'].includes(params.collection_date);
+    return fetchWithCache<CoverageResponse>(url, isHistorical ? 3_600_000 : 120_000);
   },
 
   runs: async (): Promise<Run[]> => {
-    const res = await fetch(`${BASE}/runs`);
-    if (!res.ok) throw new Error(`API error ${res.status}: /runs`);
-    return res.json();
+    return fetchWithCache<Run[]>(`${BASE}/runs`, 30_000);
   },
 
   observations: async (): Promise<Observation[]> => {
@@ -486,9 +503,7 @@ export const api = {
     if (params?.period) q.set('period', params.period);
     if (params?.collection_date) q.set('collection_date', params.collection_date);
     const qs = q.toString() ? `?${q.toString()}` : '';
-    const res = await fetch(`${BASE}/v1/nso/cpi-feed${qs}`);
-    if (!res.ok) throw new Error(`API error ${res.status}: /v1/nso/cpi-feed`);
-    return res.json();
+    return fetchWithCache<NSOCPIFeedResponse>(`${BASE}/v1/nso/cpi-feed${qs}`, 300_000);
   },
 
   methodology: async (): Promise<Methodology> => {
