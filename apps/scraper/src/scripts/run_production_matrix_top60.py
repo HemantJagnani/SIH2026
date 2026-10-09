@@ -106,7 +106,11 @@ async def execute_route_lead_job(
         f"=== Starting {source_name} [Rank {rank:2d}] {route_str} T+{lead_days:2d} ({travel_date}) ==="
     )
     t0 = time.monotonic()
-    result = await orchestrator.run(request)
+    try:
+        result = await asyncio.wait_for(orchestrator.run(request), timeout=45.0)
+    except asyncio.TimeoutError:
+        logger.warning(f"TIMEOUT: {source_name} [Rank {rank:2d}] {route_str} T+{lead_days} timed out after 45s.")
+        return {"terminal_state": "TIMEOUT", "was_blocked": False, "state": "TIMEOUT"}, []
     duration = round(time.monotonic() - t0, 2)
 
     obs_list = result.observations

@@ -97,12 +97,15 @@ async def scrape_and_ingest_cell(origin, destination, rank, lead_days, gate, sem
         # Attempt 1 & 2: Forward direction
         for attempt in range(1, 3):
             try:
-                job_res, obs = await execute_route_lead_job(
-                    origin=origin,
-                    destination=destination,
-                    rank=rank,
-                    lead_days=lead_days,
-                    policy_gate=gate,
+                job_res, obs = await asyncio.wait_for(
+                    execute_route_lead_job(
+                        origin=origin,
+                        destination=destination,
+                        rank=rank,
+                        lead_days=lead_days,
+                        policy_gate=gate,
+                    ),
+                    timeout=50.0,
                 )
                 obs_cnt = len(obs)
                 if obs_cnt > 0:
@@ -119,6 +122,9 @@ async def scrape_and_ingest_cell(origin, destination, rank, lead_days, gate, sem
                         f"RETRYING: {route_str} T+{lead_days} returned 0 quotes (state={job_res.get('state')}), attempt {attempt}..."
                     )
                     await asyncio.sleep(2.0)
+            except asyncio.TimeoutError:
+                logger.warning(f"TIMEOUT: {route_str} T+{lead_days} timed out on attempt {attempt}")
+                await asyncio.sleep(2.0)
             except Exception as exc:
                 logger.error(f"ERROR: {route_str} T+{lead_days} attempt {attempt}: {exc}")
                 await asyncio.sleep(2.0)
@@ -126,12 +132,15 @@ async def scrape_and_ingest_cell(origin, destination, rank, lead_days, gate, sem
         # Attempt 3: Fallback to reverse direction if forward returned 0
         try:
             logger.info(f"FALLBACK: Trying reverse direction {destination}-{origin} T+{lead_days}...")
-            job_res, obs = await execute_route_lead_job(
-                origin=destination,
-                destination=origin,
-                rank=rank,
-                lead_days=lead_days,
-                policy_gate=gate,
+            job_res, obs = await asyncio.wait_for(
+                execute_route_lead_job(
+                    origin=destination,
+                    destination=origin,
+                    rank=rank,
+                    lead_days=lead_days,
+                    policy_gate=gate,
+                ),
+                timeout=50.0,
             )
             obs_cnt = len(obs)
             if obs_cnt > 0:
@@ -145,6 +154,8 @@ async def scrape_and_ingest_cell(origin, destination, rank, lead_days, gate, sem
                 return True
             else:
                 logger.warning(f"EMPTY: {destination}-{origin} T+{lead_days} returned 0 quotes on reverse fallback.")
+        except asyncio.TimeoutError:
+            logger.warning(f"TIMEOUT: {destination}-{origin} T+{lead_days} timed out on reverse fallback.")
         except Exception as exc:
             logger.error(f"ERROR reverse {destination}-{origin} T+{lead_days}: {exc}")
 
