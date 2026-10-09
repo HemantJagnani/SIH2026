@@ -179,7 +179,7 @@ def load_top60_observations(collection_date: Optional[str] = None) -> List[dict]
     global _top60_obs_cache, _top60_obs_source, _top60_obs_cache_time
     now = time.time()
     cache_key = collection_date or "latest"
-    is_historical = collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08")
+    is_historical = collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09")
     effective_ttl = HISTORICAL_TTL_SECONDS if is_historical else CACHE_TTL_SECONDS
     if cache_key in _top60_obs_cache and (now - _top60_obs_cache_time.get(cache_key, 0.0)) < effective_ttl:
         return _top60_obs_cache[cache_key]
@@ -1027,7 +1027,7 @@ async def get_lead_curves(
 
     cache_k = f"lead_curves:{route}:{collection_date or 'latest'}"
     now = time.time()
-    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08") else CACHE_TTL_SECONDS
+    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09") else CACHE_TTL_SECONDS
     if cache_k in _endpoint_response_cache and (now - _endpoint_response_cache[cache_k][0]) < ttl:
         return _endpoint_response_cache[cache_k][1]
 
@@ -1533,7 +1533,7 @@ async def get_matrix(
 
     cache_k = f"matrix:{route or 'ALL'}:{lead_time or 'ALL'}:{collection_date or 'latest'}"
     now = time.time()
-    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08") else CACHE_TTL_SECONDS
+    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09") else CACHE_TTL_SECONDS
     if cache_k in _endpoint_response_cache and (now - _endpoint_response_cache[cache_k][0]) < ttl:
         return _endpoint_response_cache[cache_k][1]
 
@@ -1626,7 +1626,7 @@ async def get_coverage(
     """
     cache_k = f"coverage:{collection_date or 'latest'}"
     now = time.time()
-    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08") else CACHE_TTL_SECONDS
+    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09") else CACHE_TTL_SECONDS
     if cache_k in _endpoint_response_cache and (now - _endpoint_response_cache[cache_k][0]) < ttl:
         return _endpoint_response_cache[cache_k][1]
 
@@ -1761,11 +1761,12 @@ async def get_backtest_results(
     # mode == "real"
     from collections import defaultdict
     by_date = defaultdict(list)
-    obs_all_oct8 = load_top60_observations("2026-10-08") or []
-    obs_all_oct7 = load_top60_observations("2026-10-07") or []
-    obs_all_oct6 = load_top60_observations("2026-10-06") or []
-    obs_all_sep = load_top60_observations("2026-09-27") or []
-    obs_all = obs_all_oct8 + obs_all_oct7 + obs_all_oct6 + obs_all_sep
+    real_dates = ["2026-10-09", "2026-10-08", "2026-10-07", "2026-10-06", "2026-09-27"]
+    obs_all = []
+    for d in real_dates:
+        obs_d = load_top60_observations(d)
+        if obs_d:
+            obs_all.extend(obs_d)
     official = _get_official_top60_routes()
     if obs_all:
         for o in obs_all:
