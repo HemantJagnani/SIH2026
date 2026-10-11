@@ -177,6 +177,8 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       }
     }
     // Anchor verified complete production sweeps
+    dates.add('2026-10-11');
+    dates.add('2026-10-10');
     dates.add('2026-10-09');
     dates.add('2026-10-08');
     dates.add('2026-10-07');
@@ -185,7 +187,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     return Array.from(dates).sort((a, b) => b.localeCompare(a));
   }, [runs]);
 
-  const latestRealDate = availableRealDates[0] || '2026-10-09';
+  const latestRealDate = availableRealDates[0] || '2026-10-11';
   const pastRealDates = useMemo(
     () => availableRealDates.filter((d) => d !== latestRealDate),
     [availableRealDates, latestRealDate]
