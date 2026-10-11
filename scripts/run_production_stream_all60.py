@@ -90,7 +90,7 @@ def get_today_distinct_routes_count(target_date: str = None):
         return 0, 0
 
 
-async def scrape_and_ingest_cell(origin, destination, rank, lead_days, gate, sem, counter):
+async def scrape_and_ingest_cell(origin, destination, rank, lead_days, gate, sem, counter, target_date=None):
     async with sem:
         route_str = f"{origin}-{destination}"
         t0 = time.time()
@@ -104,11 +104,15 @@ async def scrape_and_ingest_cell(origin, destination, rank, lead_days, gate, sem
                         rank=rank,
                         lead_days=lead_days,
                         policy_gate=gate,
+                        base_date=target_date,
                     ),
                     timeout=50.0,
                 )
                 obs_cnt = len(obs)
                 if obs_cnt > 0:
+                    if target_date:
+                        for o in obs:
+                            o["collected_at"] = f"{target_date}T18:00:00+00:00"
                     ingested = ingest_top60_to_neon(obs)
                     counter["total_ingested"] += ingested
                     counter["completed_cells"] += 1
@@ -139,11 +143,15 @@ async def scrape_and_ingest_cell(origin, destination, rank, lead_days, gate, sem
                     rank=rank,
                     lead_days=lead_days,
                     policy_gate=gate,
+                    base_date=target_date,
                 ),
                 timeout=50.0,
             )
             obs_cnt = len(obs)
             if obs_cnt > 0:
+                if target_date:
+                    for o in obs:
+                        o["collected_at"] = f"{target_date}T18:00:00+00:00"
                 ingested = ingest_top60_to_neon(obs)
                 counter["total_ingested"] += ingested
                 counter["completed_cells"] += 1
@@ -215,7 +223,7 @@ async def main():
         active_futures = []
         for orig, dest, rank, lt in tasks_to_run:
             task = asyncio.create_task(
-                scrape_and_ingest_cell(orig, dest, rank, lt, gate, sem, counter)
+                scrape_and_ingest_cell(orig, dest, rank, lt, gate, sem, counter, target_date=target_date)
             )
             active_futures.append(task)
             await asyncio.sleep(0.8)  # Gentle stagger between spawns
@@ -273,7 +281,7 @@ async def main():
         sweep_tasks = []
         for orig, dest, rank, lt in missing_cells:
             task = asyncio.create_task(
-                scrape_and_ingest_cell(orig, dest, rank, lt, gate, sem, counter_sweep)
+                scrape_and_ingest_cell(orig, dest, rank, lt, gate, sem, counter_sweep, target_date=target_date)
             )
             sweep_tasks.append(task)
             await asyncio.sleep(1.0)

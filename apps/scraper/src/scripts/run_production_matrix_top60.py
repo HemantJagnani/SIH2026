@@ -77,14 +77,25 @@ async def execute_route_lead_job(
     policy_gate: RobotsPolicyGate,
     source_name: str = "google_flights",
     source_url: str = "https://www.google.com/travel/flights",
+    base_date: Optional[Any] = None,
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
-    travel_date = datetime.now(timezone.utc).date() + timedelta(days=lead_days)
+    if base_date is not None:
+        if isinstance(base_date, str):
+            b_date = datetime.strptime(base_date, "%Y-%m-%d").date()
+        elif hasattr(base_date, "date"):
+            b_date = base_date.date()
+        else:
+            b_date = base_date
+    else:
+        b_date = datetime.now(timezone.utc).date()
+    travel_date = b_date + timedelta(days=lead_days)
     route_str = f"{origin}-{destination}"
 
     request = FareSearchRequest(
         source=source_name,
         origin=origin,
         destination=destination,
+        collection_date=b_date,
         travel_date=travel_date,
         lead_days=lead_days,
         trip_type=TripType.ONE_WAY,

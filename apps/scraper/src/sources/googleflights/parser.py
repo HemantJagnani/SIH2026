@@ -364,7 +364,11 @@ def _extract_flight_data(
         "passenger_count": request.passenger_count.adults + request.passenger_count.children + request.passenger_count.infants,
         "trip_type": request.trip_type.value if hasattr(request.trip_type, 'value') else request.trip_type,
         "collection_run_id": str(run_id) if run_id else None,
-        "collected_at": datetime.now(timezone.utc).isoformat(),
+        "collected_at": (
+            datetime(request.collection_date.year, request.collection_date.month, request.collection_date.day, 18, 0, 0, tzinfo=timezone.utc).isoformat()
+            if getattr(request, "collection_date", None)
+            else datetime.now(timezone.utc).isoformat()
+        ),
         "lead_days": request.lead_days,
         "adapter_version": "1.0.0",
         "normalizer_version": "1.0.0",

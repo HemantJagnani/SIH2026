@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Optional
 
 from pydantic import BaseModel, Field, UUID4, field_validator, model_validator
 
@@ -88,6 +88,10 @@ class FareSearchRequest(BaseModel):
     )
 
     # --- Date ---
+    collection_date: Optional[date] = Field(
+        default=None,
+        description="Explicit collection date (YYYY-MM-DD) for backfilling or offline sweeps. If None, defaults to current UTC date.",
+    )
     travel_date: date = Field(
         ...,
         description="Intended flight date (YYYY-MM-DD). Computed as collection_date + lead_days.",
