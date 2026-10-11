@@ -922,11 +922,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               <span className="font-num">
                 {indexData?.index_value != null
                   ? Number(indexData.index_value).toFixed(2)
-                  : selectedRealDate === '2026-10-06'
-                    ? '111.37'
-                    : selectedRealDate === '2026-09-27'
-                      ? '109.02'
-                      : '—'}
+                  : '—'}
               </span>{' '}(2024&nbsp;=&nbsp;100).
             </h1>
             <div className="font-num text-secondary" style={{ fontSize: '13px' }}>

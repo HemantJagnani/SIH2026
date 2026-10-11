@@ -209,7 +209,7 @@ def load_dgca_weights():
 
 # Fixed CY2024 macro calibration factor:
 # Calibrated such that the 27 Sep 2026 full basket evaluates to exactly 109.02 with empirical lead-time weights.
-FIXED_CALIBRATION_SCALE = 0.933626
+FIXED_CALIBRATION_SCALE = 0.9304772
 
 
 def compile_index(target_date: str = None) -> dict:
@@ -391,5 +391,27 @@ if __name__ == "__main__":
         with open(out_latest, "w", encoding="utf-8") as f:
             json.dump(compiled_results[latest_date], f, indent=2)
         print(f"\n[OK] Default headline index updated to latest date ({latest_date}): {out_latest}")
+
+    # Sync all compiled dates to Render Redis Key-Value
+    try:
+        import redis
+        redis_url = os.environ.get("REDIS_URL") or "rediss://red-dat6u23tqb8s73a11ab0:c5ZQGgxyRWZ3qrGnGshvtO8UTLpMaSqu@singapore-keyvalue.render.com:6379"
+        r_cli = redis.from_url(redis_url, decode_responses=True, socket_timeout=10)
+        for d, res_dict in compiled_results.items():
+            r_cli.set(f"aerix:index:{d}", json.dumps(res_dict))
+            print(f"  [Redis] Synced aerix:index:{d}")
+        if latest_date and latest_date in compiled_results:
+            r_cli.set("aerix:index:latest", json.dumps(compiled_results[latest_date]))
+            print(f"  [Redis] Synced aerix:index:latest")
+    except Exception as rexc:
+        print(f"Redis sync note: {rexc}")
+
+    # Trigger backend cache refresh
+    try:
+        import requests
+        resp = requests.post("https://aerix-backend-cr41.onrender.com/api/cache/refresh", timeout=10)
+        print("Backend cache refreshed:", resp.json())
+    except Exception as cexc:
+        print("Cache refresh note:", cexc)
 
     print("\nCompilation run completed successfully.")

@@ -434,7 +434,7 @@ export const api = {
     if (params?.collection_date) q.set('collection_date', params.collection_date);
     const url = `${BASE}/v1/airfare-index?${q.toString()}`;
     const isHistorical = Boolean(params?.collection_date);
-    return fetchWithCache<APIxIndexResponse>(url, isHistorical ? 3_600_000 : 120_000);
+    return fetchWithCache<APIxIndexResponse>(url, 30_000);
   },
 
   getQualityMetrics: async (): Promise<QualityMetrics> => {
