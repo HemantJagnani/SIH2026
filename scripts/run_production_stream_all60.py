@@ -170,8 +170,8 @@ async def scrape_and_ingest_cell(origin, destination, rank, lead_days, gate, sem
         return False
 
 
-async def main():
-    target_date = sys.argv[1] if len(sys.argv) > 1 else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+async def run_stream(target_date: str = None):
+    target_date = target_date or (sys.argv[1] if len(sys.argv) > 1 else datetime.now(timezone.utc).strftime("%Y-%m-%d"))
     print("=" * 80)
     print("AERIX LIVE PRODUCTION STREAMER - DGCA CY2024 TOP-60 ROUTES")
     print(f"Target Date: {target_date} | Start Time: {datetime.now(timezone.utc).isoformat()}")
@@ -330,4 +330,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(run_stream())

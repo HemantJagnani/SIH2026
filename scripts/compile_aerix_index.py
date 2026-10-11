@@ -97,21 +97,6 @@ CY2024_BASE_FARES = {
     "IDR-BOM": 6800.0,
 }
 
-
-def get_live_route_fares(target_date: str = None):
-    """
-    Fetch geometric mean transaction fares per route from Neon DB for target date.
-    If target_date is None, selects the latest eligible date with >= 50 routes.
-    """
-    db_url = os.environ.get("DATABASE_URL_SYNC", "").replace("+psycopg2", "")
-    if not db_url or "localhost" in db_url:
-        direct = os.environ.get("DATABASE_URL_DIRECT", "")
-        if direct:
-            db_url = direct.replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
-        else:
-            raw = os.environ.get("DATABASE_URL", "")
-            if raw:
-                db_url = raw.replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
 LEAD_TIME_WEIGHTS = {
     1: 0.0509,
     7: 0.1350,
@@ -223,8 +208,8 @@ def load_dgca_weights():
 
 
 # Fixed CY2024 macro calibration factor:
-# Calibrated such that the 27 Sep 2026 full basket evaluates to exactly 109.02.
-FIXED_CALIBRATION_SCALE = 0.908044
+# Calibrated such that the 27 Sep 2026 full basket evaluates to exactly 109.02 with empirical lead-time weights.
+FIXED_CALIBRATION_SCALE = 0.933626
 
 
 def compile_index(target_date: str = None) -> dict:
