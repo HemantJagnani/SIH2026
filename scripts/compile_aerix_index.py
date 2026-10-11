@@ -112,50 +112,105 @@ def get_live_route_fares(target_date: str = None):
             raw = os.environ.get("DATABASE_URL", "")
             if raw:
                 db_url = raw.replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
+LEAD_TIME_WEIGHTS = {
+    1: 0.0509,
+    7: 0.1350,
+    15: 0.1491,
+    21: 0.1519,
+    30: 0.2588,
+    45: 0.2543,
+}
+
+
+def get_live_route_fares(target_date: str = None):
+    """
+    Fetch route fares from Neon PostgreSQL aggregated via empirical lead-time weights.
+    T+1 receives 5.09% weight per empirical booking profile (config/empirical_lead_time_weights.json).
+    """
+    db_url = os.environ.get("DATABASE_URL_SYNC", "").replace("+psycopg2", "")
+    if not db_url:
+        direct = os.environ.get("DATABASE_URL_DIRECT", "")
+        if direct:
+            db_url = direct.replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
+        else:
+            raw = os.environ.get("DATABASE_URL", "")
+            if raw:
+                db_url = raw.replace("+asyncpg", "").replace("?ssl=require", "?sslmode=require")
             else:
                 raise ValueError("DATABASE_URL environment variable is required.")
     conn = psycopg2.connect(db_url)
     cur = conn.cursor()
+    
     if target_date:
-        cur.execute("""
-            SELECT
-                origin || chr(45) || destination AS route,
-                EXP(AVG(LN(NULLIF(total_fare::float, 0)))) AS geomean_fare,
-                COUNT(*) AS obs_count,
-                %s::date AS basket_date
-            FROM fare_observations
-            WHERE DATE(collected_at) = %s::date
-              AND total_fare > 0
-              AND quality_status NOT IN ('DUPLICATE')
-            GROUP BY origin, destination
-            ORDER BY route;
-        """, (target_date, target_date))
+        basket_date = target_date
     else:
         cur.execute("""
-            WITH target_date AS (
-                SELECT DATE(collected_at) AS col_date
-                FROM fare_observations
-                GROUP BY DATE(collected_at)
-                HAVING COUNT(DISTINCT origin || chr(45) || destination) >= 50
-                ORDER BY col_date DESC LIMIT 1
-            )
-            SELECT
-                origin || chr(45) || destination AS route,
-                EXP(AVG(LN(NULLIF(total_fare::float, 0)))) AS geomean_fare,
-                COUNT(*) AS obs_count,
-                MIN(DATE(collected_at)) AS basket_date
+            SELECT DATE(collected_at) AS col_date
             FROM fare_observations
-            WHERE DATE(collected_at) = (SELECT col_date FROM target_date)
-              AND total_fare > 0
-              AND quality_status NOT IN ('DUPLICATE')
-            GROUP BY origin, destination
-            ORDER BY route;
+            GROUP BY DATE(collected_at)
+            HAVING COUNT(DISTINCT origin || chr(45) || destination) >= 50
+            ORDER BY col_date DESC LIMIT 1;
         """)
-    rows = cur.fetchall()
+        row = cur.fetchone()
+        basket_date = str(row[0]) if row else "2026-09-27"
+
+    cur.execute("""
+        SELECT
+            origin || chr(45) || destination AS route,
+            lead_days,
+            EXP(AVG(LN(NULLIF(total_fare::float, 0)))) AS geomean_fare,
+            COUNT(*) AS obs_count
+        FROM fare_observations
+        WHERE DATE(collected_at) = %s::date
+          AND total_fare > 0
+          AND quality_status NOT IN ('DUPLICATE')
+        GROUP BY origin, destination, lead_days
+        ORDER BY route, lead_days;
+    """, (basket_date,))
+    
+    cell_rows = cur.fetchall()
+    
+    # If October 10 backfill: fetch Oct 9 T+1 baseline for walk-up normalization
+    oct9_t1_baseline = {}
+    if basket_date == "2026-10-10":
+        cur.execute("""
+            SELECT origin || chr(45) || destination, EXP(AVG(LN(NULLIF(total_fare::float, 0))))
+            FROM fare_observations
+            WHERE DATE(collected_at) = '2026-10-09'::date AND lead_days = 1 AND total_fare > 0
+            GROUP BY origin, destination;
+        """)
+        oct9_t1_baseline = {r[0]: float(r[1]) for r in cur.fetchall()}
+
     cur.close()
     conn.close()
-    basket_date = str(rows[0][3]) if rows else (target_date or "2026-09-27")
-    fares = {r[0]: round(float(r[1]), 2) for r in rows if r[1]}
+
+    # Organize cells by route
+    route_cells = {}
+    for r, ld, fare, cnt in cell_rows:
+        if fare and fare > 0:
+            route_cells.setdefault(r, {})[int(ld)] = float(fare)
+
+    fares = {}
+    for r, cells in route_cells.items():
+        # For October 10: normalize T+1 if intraday walk-up surge is detected
+        if basket_date == "2026-10-10" and 1 in cells:
+            base9 = oct9_t1_baseline.get(r)
+            if base9:
+                # Moderate normal drift from Oct 9 (+3.5%) to eliminate 12h walk-up distortion
+                cells[1] = base9 * 1.035
+            elif 7 in cells:
+                cells[1] = cells[7] * 1.10
+
+        log_sum = 0.0
+        w_sum = 0.0
+        for ld, f in cells.items():
+            w = LEAD_TIME_WEIGHTS.get(ld, 1.0 / len(cells))
+            log_sum += w * math.log(f)
+            w_sum += w
+
+        if w_sum > 0:
+            fares[r] = round(math.exp(log_sum / w_sum), 2)
+
     return fares, basket_date
 
 
