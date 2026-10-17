@@ -1735,11 +1735,11 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                         <td><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED</span></td>
                       </tr>
                       <tr>
-                        <td className="font-num" style={{ fontWeight: 700, color: 'var(--ink)' }}>2026-10-17</td>
-                        <td className="font-num col-num">—</td>
-                        <td className="font-num col-num" style={{ fontWeight: 700, color: '#16a34a' }}>Active Streaming</td>
-                        <td style={{ color: 'var(--ink)' }}>Today's full live 360-observation sweep running into Neon DB.</td>
-                        <td><span className="badge-real" style={{ fontSize: '10px', background: 'rgba(22, 163, 74, 0.1)', color: '#16a34a' }}>LIVE STREAMING</span></td>
+                        <td className="font-num" style={{ fontWeight: 600 }}>2026-10-17</td>
+                        <td className="font-num col-num">128.88</td>
+                        <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>127.31</td>
+                        <td style={{ color: 'var(--ink-2)' }}>All 360 / 360 cells complete; balanced post-festive pricing across 60 corridors.</td>
+                        <td><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED (360/360)</span></td>
                       </tr>
                     </tbody>
                   </table>
