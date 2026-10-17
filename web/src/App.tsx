@@ -43,7 +43,13 @@ const TAB_LABELS: Record<Tab, string> = {
 const TABS: Tab[] = ['overview', 'index', 'curves', 'backtest', 'flow', 'method'];
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('overview');
+  const [tab, setTab] = useState<Tab>(() => {
+    const p = new URLSearchParams(window.location.search);
+    const urlTab = p.get('tab') as Tab | null;
+    if (urlTab && TABS.includes(urlTab)) return urlTab;
+    if (p.get('d')) return 'index';
+    return 'overview';
+  });
   const [runs, setRuns] = useState<Run[]>([]);
   const [lastRunDate, setLastRunDate] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(getDateFromUrl());

@@ -436,12 +436,20 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
       const runDates = (runsList || [])
         .map(r => r.run_date)
         .filter(d => Boolean(d) && /^\d{4}-\d{2}-\d{2}$/.test(d));
-      const targetDates = Array.from(new Set([
-        ...runDates,
+      const allKnownDates = [
+        '2026-10-17',
+        '2026-10-11',
+        '2026-10-10',
+        '2026-10-09',
+        '2026-10-08',
         '2026-10-07',
         '2026-10-06',
-        '2026-09-27'
-      ])).sort((a, b) => b.localeCompare(a)).slice(0, 3);
+        '2026-09-27',
+      ];
+      const targetDates = Array.from(new Set([
+        ...allKnownDates,
+        ...runDates,
+      ])).sort((a, b) => b.localeCompare(a));
       setAvailableDates(targetDates);
 
       // 2. Fetch coverage and matrix cells for each date in parallel

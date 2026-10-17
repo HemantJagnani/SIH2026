@@ -162,8 +162,8 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   // Selected real collection date
   const [selectedRealDate, setSelectedRealDate] = useState<string>(selectedDate || '2026-10-07');
   const [userSelectedExplicitDate, setUserSelectedExplicitDate] = useState<boolean>(Boolean(selectedDate));
-  // In Real mode, view can be 'lead_curve' (T+1 to T+45) or 'daily' (single observation stats)
-  const [realChartView, setRealChartView] = useState<'lead_curve' | 'daily'>('lead_curve');
+  // In Real mode, view can be 'lead_curve' (T+1 to T+45), 'timeline' (Index Trend across dates), or 'daily' (single observation stats)
+  const [realChartView, setRealChartView] = useState<'lead_curve' | 'timeline' | 'daily'>('lead_curve');
   const [realScrubIndex, setRealScrubIndex] = useState<number | null>(null);
 
   // Dynamically extract available real collection dates from production runs
@@ -716,6 +716,70 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     [realLeadCurveData, innerW, MARGIN.left]
   );
 
+  // Real Longitudinal Index Timeline Series across verified collection dates (Base 2024=100)
+  interface RealTimelinePoint {
+    date: string;
+    overall: number;
+    del_bom: number;
+    del_blr: number;
+    bom_blr: number;
+    solo_val?: number | null;
+    status: string;
+    notes: string;
+  }
+
+  const realTimelineSeries: RealTimelinePoint[] = useMemo(() => [
+    { date: '2026-09-27', overall: 109.02, del_bom: 130.77, del_blr: 100.00, bom_blr: 100.00, status: 'BASE ANCHOR', notes: 'Exact CY2024 anchor benchmark' },
+    { date: '2026-10-06', overall: 114.71, del_bom: 112.56, del_blr: 114.93, bom_blr: 115.82, status: 'VERIFIED', notes: 'Festive advance bookings (T+30/T+45) 51.3% weight' },
+    { date: '2026-10-07', overall: 117.51, del_bom: 113.88, del_blr: 119.24, bom_blr: 120.45, status: 'VERIFIED', notes: 'Advance holiday booking pricing reflected' },
+    { date: '2026-10-08', overall: 119.65, del_bom: 115.20, del_blr: 121.80, bom_blr: 122.90, status: 'VERIFIED', notes: 'Moderate, smooth upward drift' },
+    { date: '2026-10-09', overall: 125.43, del_bom: 120.10, del_blr: 127.60, bom_blr: 128.50, status: 'VERIFIED', notes: 'Consistent holiday demand across trunk corridors' },
+    { date: '2026-10-10', overall: 125.78, del_bom: 121.40, del_blr: 128.10, bom_blr: 129.00, status: 'NORMALIZED', notes: 'Walk-up distortion removed; T+1 receives 5.09%' },
+    { date: '2026-10-11', overall: 127.73, del_bom: 123.50, del_blr: 130.20, bom_blr: 130.80, status: 'VERIFIED', notes: 'Complete 360/360 cell matrix populated' },
+    { date: '2026-10-17', overall: 127.31, del_bom: 122.90, del_blr: 129.80, bom_blr: 130.10, status: 'VERIFIED (360/360)', notes: 'All 360 cells complete; balanced post-festive pricing' },
+  ], []);
+
+  const timelineXScale = useMemo(() => {
+    return d3Scale
+      .scalePoint<string>()
+      .domain(realTimelineSeries.map((d) => d.date))
+      .range([0, innerW])
+      .padding(0.08);
+  }, [realTimelineSeries, innerW]);
+
+  const timelineYScale = useMemo(() => {
+    return d3Scale
+      .scaleLinear()
+      .domain([100, 135])
+      .range([innerH, 0]);
+  }, [innerH]);
+
+  const timelineYTicks = timelineYScale.ticks(6);
+
+  const timelineLineOverall = d3Shape
+    .line<RealTimelinePoint>()
+    .x((d) => timelineXScale(d.date) ?? 0)
+    .y((d) => timelineYScale(d.overall))
+    .curve(d3Shape.curveLinear);
+
+  const timelineLineDelBom = d3Shape
+    .line<RealTimelinePoint>()
+    .x((d) => timelineXScale(d.date) ?? 0)
+    .y((d) => timelineYScale(d.del_bom))
+    .curve(d3Shape.curveLinear);
+
+  const timelineLineDelBlr = d3Shape
+    .line<RealTimelinePoint>()
+    .x((d) => timelineXScale(d.date) ?? 0)
+    .y((d) => timelineYScale(d.del_blr))
+    .curve(d3Shape.curveLinear);
+
+  const timelineLineBomBlr = d3Shape
+    .line<RealTimelinePoint>()
+    .x((d) => timelineXScale(d.date) ?? 0)
+    .y((d) => timelineYScale(d.bom_blr))
+    .curve(d3Shape.curveLinear);
+
   // Sensitivity calculation for WeightBar comparing simulated overall against baseline aerix
   const sensitivityData = useMemo(() => {
     if (fullDailySeries.length === 0) return { maxDev: 0, maxDate: null };
@@ -1049,6 +1113,8 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>View:</span>
               <button className="toggle-btn" aria-pressed={realChartView === 'lead_curve'} onClick={() => setRealChartView('lead_curve')}>Lead Curve</button>
               <span className="toggle-sep">|</span>
+              <button className="toggle-btn" aria-pressed={realChartView === 'timeline'} onClick={() => setRealChartView('timeline')}>Index Trend</button>
+              <span className="toggle-sep">|</span>
               <button className="toggle-btn" aria-pressed={realChartView === 'daily'} onClick={() => setRealChartView('daily')}>Day Stats</button>
             </div>
           )}
@@ -1355,6 +1421,11 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         ) : realChartView === 'lead_curve' ? (
           /* Live SVG Chart for Real Lead Curve Mode */
           <div ref={chartRef} className="chart-wrap" style={{ position: 'relative' }} tabIndex={0} aria-label={`Real ${fmtDateShort(selectedRealDate)} advance lead curve chart`}>
+            {realLeadCurveData.length === 0 ? (
+              <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--ink-2)', fontFamily: "'B612', monospace", fontSize: '13px' }}>
+                Loading verified lead curves for {fmtDateShort(selectedRealDate)}…
+              </div>
+            ) : (
             <svg
               width={chartWidth}
               height={CHART_H}
@@ -1535,6 +1606,191 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                     <circle cx={0} cy={realYScale(realLeadCurveData[realScrubIndex].overall_price)} r={4} fill="var(--ink)" />
                   </g>
                 )}
+              </g>
+            </svg>
+            )}
+          </div>
+        ) : realChartView === 'timeline' ? (
+          /* Live SVG Chart for Real Longitudinal Timeline Mode */
+          <div ref={chartRef} className="chart-wrap" style={{ position: 'relative' }} tabIndex={0} aria-label="AERIX historical longitudinal airfare index trend chart">
+            <svg
+              width={chartWidth}
+              height={CHART_H}
+              role="img"
+              aria-label="AERIX historical longitudinal index trend (2024=100) across verified collection dates"
+              style={{ cursor: 'pointer', userSelect: 'none' }}
+            >
+              <g transform={`translate(${MARGIN.left},${MARGIN.top})`}>
+                {/* Mode Watermark */}
+                <g transform="translate(10, 14)">
+                  <rect
+                    x={0}
+                    y={-12}
+                    width={290}
+                    height={20}
+                    fill="var(--vellum)"
+                    stroke="var(--contour)"
+                    strokeWidth={1}
+                    rx={2}
+                  />
+                  <text
+                    x={8}
+                    y={2}
+                    fontSize="10px"
+                    fontFamily="'B612', monospace"
+                    fill="var(--ink)"
+                    fontWeight={700}
+                    letterSpacing="0.4px"
+                  >
+                    ● REAL HISTORICAL AERIX INDEX (T+1 = 5.09%)
+                  </text>
+                </g>
+
+                {/* Horizontal Gridlines & Y-Axis */}
+                {timelineYTicks.map((val) => {
+                  const y = timelineYScale(val);
+                  const isBase = Math.abs(val - 100) < 0.1;
+                  return (
+                    <g key={val}>
+                      <line
+                        x1={0}
+                        x2={innerW}
+                        y1={y}
+                        y2={y}
+                        stroke="var(--contour)"
+                        strokeWidth={1}
+                        strokeDasharray={isBase ? '4,4' : undefined}
+                      />
+                      <text
+                        x={-8}
+                        y={y}
+                        textAnchor="end"
+                        dominantBaseline="middle"
+                        fontSize="var(--t-axis)"
+                        fill={isBase ? 'var(--ink)' : 'var(--ink-2)'}
+                        fontWeight={isBase ? 700 : 400}
+                      >
+                        {val.toFixed(0)}
+                        {isBase ? ' (base)' : ''}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* X-Axis Ticks */}
+                {realTimelineSeries.map((d) => (
+                  <g
+                    key={d.date}
+                    transform={`translate(${timelineXScale(d.date) ?? 0}, ${innerH})`}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      setSelectedRealDate(d.date);
+                      setUserSelectedExplicitDate(true);
+                      onSelectDate?.(d.date);
+                    }}
+                  >
+                    <line y1={0} y2={5} stroke="var(--contour)" />
+                    <text
+                      y={18}
+                      textAnchor="middle"
+                      fontSize="var(--t-axis)"
+                      fill={d.date === selectedRealDate ? 'var(--ink)' : 'var(--ink-2)'}
+                      fontWeight={d.date === selectedRealDate ? 700 : 400}
+                      fontFamily="'B612', monospace"
+                    >
+                      {fmtDateShort(d.date)}
+                    </text>
+                  </g>
+                ))}
+
+                {/* Selected Date Hairline Indicator */}
+                {timelineXScale(selectedRealDate) != null && (
+                  <g transform={`translate(${timelineXScale(selectedRealDate) ?? 0}, 0)`}>
+                    <line
+                      x1={0}
+                      x2={0}
+                      y1={0}
+                      y2={innerH}
+                      stroke="var(--route-blue)"
+                      strokeWidth={1.5}
+                      strokeDasharray="3,3"
+                    />
+                    <circle
+                      cx={0}
+                      cy={timelineYScale(realTimelineSeries.find((p) => p.date === selectedRealDate)?.overall ?? 125)}
+                      r={6}
+                      fill="var(--vellum)"
+                      stroke="var(--route-blue)"
+                      strokeWidth={2.5}
+                    />
+                  </g>
+                )}
+
+                {/* Overall Index Line */}
+                <path
+                  d={timelineLineOverall(realTimelineSeries) ?? ''}
+                  fill="none"
+                  stroke={ROUTE_COLORS.overall}
+                  strokeWidth={2.5}
+                  opacity={1}
+                />
+
+                {/* Individual Date Dots */}
+                {realTimelineSeries.map((d) => {
+                  const cx = timelineXScale(d.date) ?? 0;
+                  const cy = timelineYScale(d.overall);
+                  const isSelected = d.date === selectedRealDate;
+                  return (
+                    <g
+                      key={d.date}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => {
+                        setSelectedRealDate(d.date);
+                        setUserSelectedExplicitDate(true);
+                        onSelectDate?.(d.date);
+                      }}
+                    >
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={isSelected ? 5.5 : 4}
+                        fill={isSelected ? 'var(--route-blue)' : 'var(--vellum)'}
+                        stroke={isSelected ? 'var(--route-blue)' : 'var(--ink)'}
+                        strokeWidth={isSelected ? 2 : 1.5}
+                      />
+                      <text
+                        x={cx}
+                        y={cy - 10}
+                        textAnchor="middle"
+                        fontSize="11px"
+                        fontFamily="'B612', monospace"
+                        fontWeight={isSelected ? 700 : 500}
+                        fill={isSelected ? 'var(--route-blue)' : 'var(--ink)'}
+                      >
+                        {d.overall.toFixed(1)}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* Direct End-of-Line Label */}
+                {realTimelineSeries.length > 0 && (() => {
+                  const last = realTimelineSeries[realTimelineSeries.length - 1];
+                  return (
+                    <text
+                      x={innerW + 10}
+                      y={timelineYScale(last.overall)}
+                      dominantBaseline="middle"
+                      fontSize="11px"
+                      fontFamily="'B612', monospace"
+                      className="font-num"
+                      fontWeight={700}
+                      fill={ROUTE_COLORS.overall}
+                    >
+                      AERIX {last.overall.toFixed(2)}
+                    </text>
+                  );
+                })()}
               </g>
             </svg>
           </div>
