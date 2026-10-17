@@ -179,7 +179,7 @@ def load_top60_observations(collection_date: Optional[str] = None) -> List[dict]
     global _top60_obs_cache, _top60_obs_source, _top60_obs_cache_time
     now = time.time()
     cache_key = collection_date or "latest"
-    is_historical = collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09")
+    is_historical = collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11")
     effective_ttl = HISTORICAL_TTL_SECONDS if is_historical else CACHE_TTL_SECONDS
     if cache_key in _top60_obs_cache and (now - _top60_obs_cache_time.get(cache_key, 0.0)) < effective_ttl:
         return _top60_obs_cache[cache_key]
@@ -1761,7 +1761,7 @@ async def get_backtest_results(
     # mode == "real"
     from collections import defaultdict
     by_date = defaultdict(list)
-    real_dates = ["2026-10-09", "2026-10-08", "2026-10-07", "2026-10-06", "2026-09-27"]
+    real_dates = ["2026-10-17", "2026-10-11", "2026-10-10", "2026-10-09", "2026-10-08", "2026-10-07", "2026-10-06", "2026-09-27"]
     obs_all = []
     for d in real_dates:
         obs_d = load_top60_observations(d)
