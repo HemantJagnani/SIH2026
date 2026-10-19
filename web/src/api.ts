@@ -23,6 +23,7 @@ export interface AERIXIndexResponse {
   lead_time_indices: Record<string, number>;
   methodology_version: string;
   all_india_weighted_fare_inr?: number;
+  collection_date?: string;
   published_at: string;
 }
 
@@ -490,6 +491,10 @@ export const api = {
 
   runs: async (): Promise<Run[]> => {
     return fetchWithCache<Run[]>(`${BASE}/runs`, 30_000);
+  },
+
+  getAvailableDates: async (): Promise<{ latest_date: string; available_dates: string[]; count: number }> => {
+    return fetchWithCache<{ latest_date: string; available_dates: string[]; count: number }>(`${BASE}/v1/available-dates`, 30_000);
   },
 
   observations: async (): Promise<Observation[]> => {

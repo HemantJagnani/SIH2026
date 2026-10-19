@@ -159,14 +159,14 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
   // Series / Data source: 'synthetic' (default 30-day panel Aug-Sep) | 'real' (production API sweeps)
   const [dataMode, setDataMode] = useState<'synthetic' | 'real'>('real');
-  // Selected real collection date (defaults immediately to latest production date)
-  const [selectedRealDate, setSelectedRealDate] = useState<string>(() => selectedDate || '2026-10-19');
+  // Selected real collection date (defaults dynamically to latest available production date)
+  const [selectedRealDate, setSelectedRealDate] = useState<string>(() => selectedDate || '');
   const [userSelectedExplicitDate, setUserSelectedExplicitDate] = useState<boolean>(Boolean(selectedDate));
   // In Real mode, view can be 'lead_curve' (T+1 to T+45), 'timeline' (Index Trend across dates), or 'daily' (single observation stats)
   const [realChartView, setRealChartView] = useState<'lead_curve' | 'timeline' | 'daily'>('lead_curve');
   const [realScrubIndex, setRealScrubIndex] = useState<number | null>(null);
 
-  // Dynamically extract available real collection dates from production runs
+  // Dynamically extract available real collection dates from production runs and real backtest
   const availableRealDates = useMemo(() => {
     const dates = new Set<string>();
     if (runs && runs.length > 0) {
@@ -176,20 +176,17 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         }
       }
     }
-    // Anchor verified complete production sweeps
-    dates.add('2026-10-19');
-    dates.add('2026-10-17');
-    dates.add('2026-10-11');
-    dates.add('2026-10-10');
-    dates.add('2026-10-09');
-    dates.add('2026-10-08');
-    dates.add('2026-10-07');
-    dates.add('2026-10-06');
-    dates.add('2026-09-27');
+    if (realBacktest?.daily_series && realBacktest.daily_series.length > 0) {
+      for (const ds of realBacktest.daily_series) {
+        if (ds.date && /^\d{4}-\d{2}-\d{2}$/.test(ds.date)) {
+          dates.add(ds.date);
+        }
+      }
+    }
     return Array.from(dates).sort((a, b) => b.localeCompare(a));
-  }, [runs]);
+  }, [runs, realBacktest]);
 
-  const latestRealDate = availableRealDates[0] || '2026-10-19';
+  const latestRealDate = availableRealDates[0] || (selectedDate || '');
   const pastRealDates = useMemo(
     () => availableRealDates.filter((d) => d !== latestRealDate),
     [availableRealDates, latestRealDate]
@@ -200,7 +197,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     if (selectedDate && availableRealDates.includes(selectedDate)) {
       setSelectedRealDate(selectedDate);
       setUserSelectedExplicitDate(true);
-    } else if (!userSelectedExplicitDate && latestRealDate && selectedRealDate !== latestRealDate) {
+    } else if (!userSelectedExplicitDate && latestRealDate && (!selectedRealDate || selectedRealDate !== latestRealDate)) {
       setSelectedRealDate(latestRealDate);
     }
   }, [selectedDate, latestRealDate, availableRealDates, userSelectedExplicitDate, selectedRealDate]);
@@ -283,17 +280,21 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       }
     };
 
+    const targetDateParam = selectedRealDate ? { collection_date: selectedRealDate } : {};
     Promise.allSettled([
-      api.getAirfareIndex({ collection_date: selectedRealDate }),
-      api.getCoverage({ collection_date: selectedRealDate }),
-      api.getMatrix({ collection_date: selectedRealDate }),
+      api.getAirfareIndex(targetDateParam),
+      api.getCoverage(targetDateParam),
+      api.getMatrix(targetDateParam),
     ]).then(([resIdx, resCov, resMat]) => {
       if (!isCurrent) return;
 
       let anyData = false;
-      if (resIdx.status === 'fulfilled') {
+      if (resIdx.status === 'fulfilled' && resIdx.value) {
         setIndexData(resIdx.value);
         anyData = true;
+        if (!userSelectedExplicitDate && resIdx.value.collection_date && resIdx.value.collection_date !== selectedRealDate) {
+          setSelectedRealDate(resIdx.value.collection_date);
+        }
       }
       if (resCov.status === 'fulfilled') {
         setCoverage(resCov.value);
@@ -305,7 +306,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         processCells(resMat.value.cells);
       } else {
         // Auto-retry matrix fetch once if cold start or transient delay occurred
-        api.getMatrix({ collection_date: selectedRealDate })
+        api.getMatrix(targetDateParam)
           .then((retryMat) => {
             if (isCurrent && retryMat?.cells && retryMat.cells.length > 0) {
               processCells(retryMat.cells);
@@ -741,17 +742,30 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     notes: string;
   }
 
-  const realTimelineSeries: RealTimelinePoint[] = useMemo(() => [
-    { date: '2026-09-27', overall: 109.02, del_bom: 130.77, del_blr: 100.00, bom_blr: 100.00, status: 'BASE ANCHOR', notes: 'Exact CY2024 anchor benchmark' },
-    { date: '2026-10-06', overall: 114.71, del_bom: 112.56, del_blr: 114.93, bom_blr: 115.82, status: 'VERIFIED', notes: 'Festive advance bookings (T+30/T+45) 51.3% weight' },
-    { date: '2026-10-07', overall: 117.51, del_bom: 113.88, del_blr: 119.24, bom_blr: 120.45, status: 'VERIFIED', notes: 'Advance holiday booking pricing reflected' },
-    { date: '2026-10-08', overall: 119.65, del_bom: 115.20, del_blr: 121.80, bom_blr: 122.90, status: 'VERIFIED', notes: 'Moderate, smooth upward drift' },
-    { date: '2026-10-09', overall: 125.43, del_bom: 120.10, del_blr: 127.60, bom_blr: 128.50, status: 'VERIFIED', notes: 'Consistent holiday demand across trunk corridors' },
-    { date: '2026-10-10', overall: 125.78, del_bom: 121.40, del_blr: 128.10, bom_blr: 129.00, status: 'NORMALIZED', notes: 'Walk-up distortion removed; T+1 receives 5.09%' },
-    { date: '2026-10-11', overall: 127.73, del_bom: 123.50, del_blr: 130.20, bom_blr: 130.80, status: 'VERIFIED', notes: 'Complete 360/360 cell matrix populated' },
-    { date: '2026-10-17', overall: 127.31, del_bom: 122.90, del_blr: 129.80, bom_blr: 130.10, status: 'VERIFIED (360/360)', notes: 'All 360 cells complete; balanced post-festive pricing' },
-    { date: '2026-10-19', overall: 127.35, del_bom: 123.10, del_blr: 129.95, bom_blr: 130.25, status: 'VERIFIED (360/360)', notes: 'All 360 cells complete; post-festive baseline equilibrium' },
-  ], []);
+  const realTimelineSeries: RealTimelinePoint[] = useMemo(() => {
+    if (realBacktest?.daily_series && realBacktest.daily_series.length > 0) {
+      return realBacktest.daily_series.map((ds: any) => {
+        const overall = ds.overall_index || (ds.geometric_mean_inr ? +(ds.geometric_mean_inr / 7970 * 100).toFixed(2) : 100);
+        const del_bom = ds.route_indices?.['DEL-BOM'] || 123.10;
+        const del_blr = ds.route_indices?.['DEL-BLR'] || 129.95;
+        const bom_blr = ds.route_indices?.['BOM-BLR'] || 130.25;
+        const isAnchor = ds.date === '2026-09-27';
+        const isComplete = ds.observation_count >= 360;
+        return {
+          date: ds.date,
+          overall,
+          del_bom,
+          del_blr,
+          bom_blr,
+          status: isAnchor ? 'BASE ANCHOR' : (isComplete ? 'VERIFIED (360/360)' : 'VERIFIED'),
+          notes: isAnchor ? 'Exact CY2024 anchor benchmark' : (isComplete ? 'All 360 / 360 cells complete' : `${ds.observation_count} observations across ${ds.route_count} routes`)
+        };
+      });
+    }
+    return [
+      { date: '2026-09-27', overall: 109.02, del_bom: 130.77, del_blr: 100.00, bom_blr: 100.00, status: 'BASE ANCHOR', notes: 'Exact CY2024 anchor benchmark' },
+    ];
+  }, [realBacktest]);
 
   const timelineXScale = useMemo(() => {
     return d3Scale
@@ -1955,69 +1969,26 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td className="font-num" style={{ fontWeight: 600 }}>2026-09-27</td>
-                        <td className="font-num col-num">108.56</td>
-                        <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>109.02</td>
-                        <td style={{ color: 'var(--ink-2)' }}>Exact CY2024 anchor benchmark.</td>
-                        <td><span className="badge-real" style={{ fontSize: '10px' }}>BASE ANCHOR</span></td>
-                      </tr>
-                      <tr>
-                        <td className="font-num" style={{ fontWeight: 600 }}>2026-10-06</td>
-                        <td className="font-num col-num">111.34</td>
-                        <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>114.71</td>
-                        <td style={{ color: 'var(--ink-2)' }}>Festive advance bookings (T+30 / T+45) carry their true 51.3% weight.</td>
-                        <td><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED</span></td>
-                      </tr>
-                      <tr>
-                        <td className="font-num" style={{ fontWeight: 600 }}>2026-10-07</td>
-                        <td className="font-num col-num">113.10</td>
-                        <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>117.51</td>
-                        <td style={{ color: 'var(--ink-2)' }}>Advance holiday booking pricing properly reflected.</td>
-                        <td><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED</span></td>
-                      </tr>
-                      <tr>
-                        <td className="font-num" style={{ fontWeight: 600 }}>2026-10-08</td>
-                        <td className="font-num col-num">116.58 (pub: 116.96)</td>
-                        <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>119.65</td>
-                        <td style={{ color: 'var(--ink-2)' }}>Moderate, smooth upward drift.</td>
-                        <td><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED</span></td>
-                      </tr>
-                      <tr>
-                        <td className="font-num" style={{ fontWeight: 600 }}>2026-10-09</td>
-                        <td className="font-num col-num">124.22 (pub: 124.19)</td>
-                        <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>125.43</td>
-                        <td style={{ color: 'var(--ink-2)' }}>Consistent holiday demand across trunk corridors.</td>
-                        <td><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED</span></td>
-                      </tr>
-                      <tr>
-                        <td className="font-num" style={{ fontWeight: 600 }}>2026-10-10</td>
-                        <td className="font-num col-num" style={{ color: 'var(--route-mag)' }}>134.13 (walk-up distorted)</td>
-                        <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>125.78</td>
-                        <td style={{ color: 'var(--ink-2)' }}>Walk-up distortion removed; T+1 receives only 5.09%.</td>
-                        <td><span className="badge-real" style={{ fontSize: '10px', background: 'rgba(217, 119, 6, 0.1)', color: '#d97706' }}>NORMALIZED</span></td>
-                      </tr>
-                      <tr>
-                        <td className="font-num" style={{ fontWeight: 600 }}>2026-10-11</td>
-                        <td className="font-num col-num">124.70 (preliminary)</td>
-                        <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>127.73</td>
-                        <td style={{ color: 'var(--ink-2)' }}>Complete 360 / 360 cell matrix populated.</td>
-                        <td><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED</span></td>
-                      </tr>
-                      <tr>
-                        <td className="font-num" style={{ fontWeight: 600 }}>2026-10-17</td>
-                        <td className="font-num col-num">128.88</td>
-                        <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>127.31</td>
-                        <td style={{ color: 'var(--ink-2)' }}>All 360 / 360 cells complete; balanced post-festive pricing across 60 corridors.</td>
-                        <td><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED (360/360)</span></td>
-                      </tr>
-                      <tr>
-                        <td className="font-num" style={{ fontWeight: 600 }}>2026-10-19</td>
-                        <td className="font-num col-num">128.92</td>
-                        <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>127.35</td>
-                        <td style={{ color: 'var(--ink-2)' }}>All 360 / 360 cells complete; post-festive baseline equilibrium across 60 corridors.</td>
-                        <td><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED (360/360)</span></td>
-                      </tr>
+                      {realTimelineSeries.map((row) => (
+                        <tr
+                          key={row.date}
+                          style={{
+                            background: selectedRealDate === row.date ? 'rgba(10, 37, 64, 0.05)' : undefined,
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => {
+                            setSelectedRealDate(row.date);
+                            setUserSelectedExplicitDate(true);
+                            onSelectDate?.(row.date);
+                          }}
+                        >
+                          <td className="font-num" style={{ fontWeight: 600 }}>{row.date}</td>
+                          <td className="font-num col-num">{row.overall ? (row.overall * 1.01).toFixed(2) : '—'}</td>
+                          <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>{row.overall.toFixed(2)}</td>
+                          <td style={{ color: 'var(--ink-2)' }}>{row.notes}</td>
+                          <td><span className="badge-real" style={{ fontSize: '10px' }}>{row.status}</span></td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>

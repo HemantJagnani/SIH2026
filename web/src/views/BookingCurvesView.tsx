@@ -405,17 +405,7 @@ function RoutePanel({
 export default function BookingCurvesView({ selectedDate, onSelectDate }: Props) {
   const [routes, setRoutes] = useState<string[]>([]);
   const [allCurves, setAllCurves] = useState<Record<string, LeadCurve[]>>({});
-  const [availableDates, setAvailableDates] = useState<string[]>([
-    '2026-10-19',
-    '2026-10-17',
-    '2026-10-11',
-    '2026-10-10',
-    '2026-10-09',
-    '2026-10-08',
-    '2026-10-07',
-    '2026-10-06',
-    '2026-09-27',
-  ]);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('rupees');
@@ -442,25 +432,26 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
     setError(null);
 
     // 1. Discover all available production run dates dynamically
-    api.runs().then(runsList => {
-      const runDates = (runsList || [])
-        .map(r => r.run_date)
-        .filter(d => Boolean(d) && /^\d{4}-\d{2}-\d{2}$/.test(d));
-      const allKnownDates = [
-        '2026-10-19',
-        '2026-10-17',
-        '2026-10-11',
-        '2026-10-10',
-        '2026-10-09',
-        '2026-10-08',
-        '2026-10-07',
-        '2026-10-06',
-        '2026-09-27',
-      ];
-      const targetDates = Array.from(new Set([
-        ...allKnownDates,
-        ...runDates,
-      ])).sort((a, b) => b.localeCompare(a));
+    Promise.allSettled([
+      api.runs(),
+      api.getAvailableDates(),
+    ]).then(([resRuns, resAvail]) => {
+      const datesSet = new Set<string>();
+      if (resRuns.status === 'fulfilled' && resRuns.value) {
+        for (const r of resRuns.value) {
+          if (r.run_date && /^\d{4}-\d{2}-\d{2}$/.test(r.run_date)) {
+            datesSet.add(r.run_date);
+          }
+        }
+      }
+      if (resAvail.status === 'fulfilled' && resAvail.value?.available_dates) {
+        for (const d of resAvail.value.available_dates) {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+            datesSet.add(d);
+          }
+        }
+      }
+      const targetDates = Array.from(datesSet).sort((a, b) => b.localeCompare(a));
       setAvailableDates(targetDates);
 
       // 2. Fetch coverage and matrix cells for each date in parallel
@@ -664,7 +655,7 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
     return filteredRoutes.slice(0, 8);
   }, [filteredRoutes]);
 
-  const latestDate = availableDates[0] || '2026-10-19';
+  const latestDate = availableDates[0] || (selectedDate || '');
   const pastDates = useMemo(
     () => availableDates.filter(d => d !== latestDate),
     [availableDates, latestDate]

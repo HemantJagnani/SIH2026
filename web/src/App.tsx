@@ -51,7 +51,7 @@ export default function App() {
     return 'overview';
   });
   const [runs, setRuns] = useState<Run[]>([]);
-  const [lastRunDate, setLastRunDate] = useState<string | null>('2026-10-19');
+  const [lastRunDate, setLastRunDate] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(getDateFromUrl());
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function App() {
       api.runs().then(r => {
         if (!mounted) return;
         setRuns(r);
-        if (r.length > 0) setLastRunDate(r[0].run_date);
+        if (r.length > 0 && r[0].run_date) setLastRunDate(r[0].run_date);
       }).catch(() => {});
     };
     fetchRuns();

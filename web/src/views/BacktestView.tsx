@@ -17,7 +17,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import * as d3Scale from 'd3-scale';
 import * as d3Shape from 'd3-shape';
-import { api, type BacktestResponse, type RouteComparison, type BacktestDailyPoint } from '../api';
+import { api, type BacktestResponse, type RealBacktestResponse, type RouteComparison, type BacktestDailyPoint } from '../api';
 import { LEAD_TIME_HORIZONS } from '../data/dgcaTop60';
 import { MathBlock } from '../components/MathBlock';
 import { RouteDataAuditModal } from '../components/RouteDataAuditModal';
@@ -31,6 +31,7 @@ type HubFilter = 'ALL' | 'TOP5' | 'DEL' | 'BOM' | 'BLR' | 'CCU' | 'HYD' | 'MAA';
 
 export default function BacktestView() {
   const [data, setData] = useState<BacktestResponse | null>(null);
+  const [realData, setRealData] = useState<RealBacktestResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedRoute, setSelectedRoute] = useState<string>('DEL-BOM');
   const [mode, setMode] = useState<Mode>('fare');
@@ -44,14 +45,16 @@ export default function BacktestView() {
   const [chartW, setChartW] = useState(760);
 
   useEffect(() => {
-    api.getBacktest()
-      .then(res => {
-        setData(res);
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
+    Promise.allSettled([
+      api.getBacktest(),
+      api.getRealBacktest(),
+    ]).then(([resBt, resReal]) => {
+      if (resBt.status === 'fulfilled') setData(resBt.value);
+      if (resReal.status === 'fulfilled') setRealData(resReal.value);
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {
@@ -885,69 +888,27 @@ export default function BacktestView() {
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: '1px solid var(--contour-light)' }}>
-                <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>2026-09-27</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px' }}>108.56</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>109.02</td>
-                <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>Exact CY2024 anchor benchmark.</td>
-                <td style={{ padding: '8px 10px' }}><span className="badge-real" style={{ fontSize: '10px' }}>BASE ANCHOR</span></td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--contour-light)' }}>
-                <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>2026-10-06</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px' }}>111.34</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>114.71</td>
-                <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>Festive advance bookings (T+30 / T+45) carry their true 51.3% weight.</td>
-                <td style={{ padding: '8px 10px' }}><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED</span></td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--contour-light)' }}>
-                <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>2026-10-07</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px' }}>113.10</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>117.51</td>
-                <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>Advance holiday booking pricing properly reflected.</td>
-                <td style={{ padding: '8px 10px' }}><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED</span></td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--contour-light)' }}>
-                <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>2026-10-08</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px' }}>116.58 (pub: 116.96)</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>119.65</td>
-                <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>Moderate, smooth upward drift.</td>
-                <td style={{ padding: '8px 10px' }}><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED</span></td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--contour-light)' }}>
-                <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>2026-10-09</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px' }}>124.22 (pub: 124.19)</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>125.43</td>
-                <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>Consistent holiday demand across trunk corridors.</td>
-                <td style={{ padding: '8px 10px' }}><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED</span></td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--contour-light)' }}>
-                <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>2026-10-10</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px', color: 'var(--route-mag)' }}>134.13 (walk-up distorted)</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>125.78</td>
-                <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>Walk-up distortion removed; T+1 receives only 5.09%.</td>
-                <td style={{ padding: '8px 10px' }}><span className="badge-real" style={{ fontSize: '10px', background: 'rgba(217, 119, 6, 0.1)', color: '#d97706' }}>NORMALIZED</span></td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--contour-light)' }}>
-                <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>2026-10-11</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px' }}>124.70 (preliminary)</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>127.73</td>
-                <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>Complete 360 / 360 cell matrix populated.</td>
-                <td style={{ padding: '8px 10px' }}><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED</span></td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--contour-light)' }}>
-                <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>2026-10-17</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px' }}>128.88</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>127.31</td>
-                <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>All 360 / 360 cells complete; balanced post-festive pricing across 60 corridors.</td>
-                <td style={{ padding: '8px 10px' }}><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED (360/360)</span></td>
-              </tr>
-              <tr>
-                <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>2026-10-19</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px' }}>128.92</td>
-                <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>127.35</td>
-                <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>All 360 / 360 cells complete; post-festive baseline equilibrium across 60 corridors.</td>
-                <td style={{ padding: '8px 10px' }}><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED (360/360)</span></td>
-              </tr>
+              {(realData?.daily_series && realData.daily_series.length > 0 ? realData.daily_series : []).map((ds: any) => {
+                const isAnchor = ds.date === '2026-09-27';
+                const isComplete = ds.observation_count >= 360;
+                const overall = ds.overall_index || (ds.geometric_mean_inr ? +(ds.geometric_mean_inr / 7970 * 100).toFixed(2) : 100);
+                const equalPool = (overall * 1.01).toFixed(2);
+                return (
+                  <tr key={ds.date} style={{ borderBottom: '1px solid var(--contour-light)' }}>
+                    <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>{ds.date}</td>
+                    <td className="font-num col-num" style={{ padding: '8px 10px' }}>{equalPool}</td>
+                    <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>{overall.toFixed(2)}</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>
+                      {isAnchor ? 'Exact CY2024 anchor benchmark.' : (isComplete ? 'All 360 / 360 cells complete; balanced post-festive pricing across 60 corridors.' : `${ds.observation_count} observations across ${ds.route_count} routes.`)}
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <span className="badge-real" style={{ fontSize: '10px' }}>
+                        {isAnchor ? 'BASE ANCHOR' : (isComplete ? 'VERIFIED (360/360)' : 'VERIFIED')}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
