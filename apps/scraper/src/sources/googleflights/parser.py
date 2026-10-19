@@ -265,21 +265,42 @@ def _extract_flight_data(
             pass
 
     # 3. Airline Extraction
-    airline = "Unknown"
+    KNOWN_DOMESTIC_AIRLINES = [
+        "Air India Express", "Air India", "Akasa Air", "SpiceJet",
+        "IndiGo", "Vistara", "Alliance Air", "Fly91", "Star Air"
+    ]
+    AIRPORT_CODES = {
+        "DEL", "BOM", "BLR", "HYD", "CCU", "MAA", "GOI", "GOX", "PNQ", "AMD",
+        "GAU", "COK", "LKO", "SXR", "PAT", "VNS", "IDR", "JAI", "TRV", "IXR",
+        "TIR", "CJB", "BBI", "ATQ", "IXB", "IXA", "VTZ", "NAG", "IXC", "IXL", "RPR"
+    }
+    airline = "Domestic Carrier"
     snippets = [s.strip() for s in text.split(" | ") if s.strip()]
     for snippet in snippets:
-        if (
-            len(snippet) > 2
-            and not re.search(r'\d', snippet)
-            and "stop" not in snippet.lower()
-            and "min" not in snippet.lower()
-            and "hr" not in snippet.lower()
-            and "flight" not in snippet.lower()
-            and "included" not in snippet.lower()
-            and "deal" not in snippet.lower()
-        ):
-            airline = snippet
+        for kn in KNOWN_DOMESTIC_AIRLINES:
+            if kn.lower() in snippet.lower():
+                airline = kn
+                break
+        if airline != "Domestic Carrier":
             break
+
+    if airline == "Domestic Carrier":
+        for snippet in snippets:
+            sn_clean = snippet.strip()
+            if (
+                len(sn_clean) > 2
+                and sn_clean.upper() not in AIRPORT_CODES
+                and not re.search(r'\d', sn_clean)
+                and "stop" not in sn_clean.lower()
+                and "min" not in sn_clean.lower()
+                and "hr" not in sn_clean.lower()
+                and "flight" not in sn_clean.lower()
+                and "included" not in sn_clean.lower()
+                and "deal" not in sn_clean.lower()
+                and "economy" not in sn_clean.lower()
+            ):
+                airline = sn_clean
+                break
 
     # 4. Stops
     stops = 0

@@ -113,7 +113,7 @@ class FlightNumberResolver:
                     if match:
                         code = match.group(1).upper()
                         num = match.group(2)
-                        if code in AIRLINE_IATA_CODES or "flight" in candidate.lower():
+                        if code in AIRLINE_IATA_CODES:
                             return f"{code}-{num}"
         return None
 
