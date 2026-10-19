@@ -1034,8 +1034,8 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
           <>
             <h1 className="headline" style={{ marginBottom: 'var(--sp-2)', color: 'var(--ink)' }}>
               {scrubIndex != null
-                ? <>On {fmtDateLong(activePoint.date)}, the index was {activePoint.overall.toFixed(2)} (2024&nbsp;=&nbsp;100).</>
-                : <>On {fmtDateLong(latestPoint.date)}, the index was {latestPoint.overall.toFixed(2)} (2024&nbsp;=&nbsp;100).</>}
+                ? <>On {fmtDateLong(activePoint.date)}, the index was {Number(activePoint.overall || 100).toFixed(2)} (2024&nbsp;=&nbsp;100).</>
+                : <>On {fmtDateLong(latestPoint.date)}, the index was {Number(latestPoint.overall || 100).toFixed(2)} (2024&nbsp;=&nbsp;100).</>}
             </h1>
             <div className="font-num text-secondary" style={{ fontSize: '13px' }}>
               Simulated Aug 2026 panel &middot; 1 Aug to 31 Aug ({backtest?.summary?.total_days ?? 31} observations) &middot; Synthetic demonstration
@@ -1937,10 +1937,10 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                     <tr key={d.date}>
                       <td className="font-num">{d.date}</td>
                       <td className="font-num col-num" style={{ fontWeight: 700 }}>
-                        {d.overall.toFixed(2)}
+                        {Number(d.overall).toFixed(2)}
                       </td>
                       <td className="font-num col-num" style={{ color: 'var(--route-blue)' }}>
-                        {d.del_bom.toFixed(2)}
+                        {Number(d.del_bom).toFixed(2)}
                       </td>
                       <td className="font-num col-num" style={{ color: 'var(--route-mag)' }}>
                         {d.del_blr != null ? d.del_blr.toFixed(2) : '—'}
