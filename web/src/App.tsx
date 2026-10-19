@@ -51,7 +51,7 @@ export default function App() {
     return 'overview';
   });
   const [runs, setRuns] = useState<Run[]>([]);
-  const [lastRunDate, setLastRunDate] = useState<string | null>(null);
+  const [lastRunDate, setLastRunDate] = useState<string | null>('2026-10-19');
   const [selectedDate, setSelectedDate] = useState<string | null>(getDateFromUrl());
 
   useEffect(() => {
@@ -135,7 +135,6 @@ export default function App() {
         >
           {tab === 'index' && (
             <IndexView
-              key={lastRunDate || 'initial'}
               selectedDate={selectedDate}
               onSelectDate={handleSetDate}
               onNavigate={(nextTab) => setTab(nextTab)}

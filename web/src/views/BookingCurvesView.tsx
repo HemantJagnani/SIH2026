@@ -405,7 +405,17 @@ function RoutePanel({
 export default function BookingCurvesView({ selectedDate, onSelectDate }: Props) {
   const [routes, setRoutes] = useState<string[]>([]);
   const [allCurves, setAllCurves] = useState<Record<string, LeadCurve[]>>({});
-  const [availableDates, setAvailableDates] = useState<string[]>(['2026-10-07', '2026-10-06', '2026-09-27']);
+  const [availableDates, setAvailableDates] = useState<string[]>([
+    '2026-10-19',
+    '2026-10-17',
+    '2026-10-11',
+    '2026-10-10',
+    '2026-10-09',
+    '2026-10-08',
+    '2026-10-07',
+    '2026-10-06',
+    '2026-09-27',
+  ]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('rupees');
@@ -654,7 +664,7 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
     return filteredRoutes.slice(0, 8);
   }, [filteredRoutes]);
 
-  const latestDate = availableDates[0] || '2026-10-07';
+  const latestDate = availableDates[0] || '2026-10-19';
   const pastDates = useMemo(
     () => availableDates.filter(d => d !== latestDate),
     [availableDates, latestDate]

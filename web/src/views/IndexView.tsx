@@ -159,8 +159,8 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
   // Series / Data source: 'synthetic' (default 30-day panel Aug-Sep) | 'real' (production API sweeps)
   const [dataMode, setDataMode] = useState<'synthetic' | 'real'>('real');
-  // Selected real collection date
-  const [selectedRealDate, setSelectedRealDate] = useState<string>(selectedDate || '2026-10-07');
+  // Selected real collection date (defaults immediately to latest production date)
+  const [selectedRealDate, setSelectedRealDate] = useState<string>(() => selectedDate || '2026-10-19');
   const [userSelectedExplicitDate, setUserSelectedExplicitDate] = useState<boolean>(Boolean(selectedDate));
   // In Real mode, view can be 'lead_curve' (T+1 to T+45), 'timeline' (Index Trend across dates), or 'daily' (single observation stats)
   const [realChartView, setRealChartView] = useState<'lead_curve' | 'timeline' | 'daily'>('lead_curve');
@@ -259,7 +259,29 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   // 2. Date-specific data fetching (Index, Coverage, Matrix)
   useEffect(() => {
     setError(null);
+    setLoading(true);
     let isCurrent = true;
+
+    const processCells = (cells: MatrixCell[]) => {
+      setMatrixCells(cells);
+      const curvesMap: Record<string, { points: LeadPoint[]; isSynthetic: boolean; isReal: boolean }> = {};
+      for (const c of cells) {
+        const leadDays = parseInt(c.lead_time.replace('T+', '')) || 7;
+        if (!curvesMap[c.route]) {
+          curvesMap[c.route] = { isSynthetic: false, isReal: true, points: [] };
+        }
+        curvesMap[c.route].points.push({
+          lead_days: leadDays,
+          price: c.median_fare_inr || c.mean_fare_inr,
+        });
+      }
+      for (const r of Object.keys(curvesMap)) {
+        curvesMap[r].points.sort((a, b) => b.lead_days - a.lead_days);
+      }
+      if (Object.keys(curvesMap).length > 0) {
+        setLeadCurves((prev) => ({ ...prev, ...curvesMap }));
+      }
+    };
 
     Promise.allSettled([
       api.getAirfareIndex({ collection_date: selectedRealDate }),
@@ -278,28 +300,18 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         anyData = true;
       }
 
-      const curvesMap: Record<string, { points: LeadPoint[]; isSynthetic: boolean; isReal: boolean }> = {};
-
       if (resMat.status === 'fulfilled' && resMat.value?.cells) {
         anyData = true;
-        const cells = resMat.value.cells;
-        setMatrixCells(cells);
-        for (const c of cells) {
-          const leadDays = parseInt(c.lead_time.replace('T+', '')) || 7;
-          if (!curvesMap[c.route]) {
-            curvesMap[c.route] = { isSynthetic: false, isReal: true, points: [] };
-          }
-          curvesMap[c.route].points.push({
-            lead_days: leadDays,
-            price: c.median_fare_inr || c.mean_fare_inr,
-          });
-        }
-        for (const r of Object.keys(curvesMap)) {
-          curvesMap[r].points.sort((a, b) => b.lead_days - a.lead_days);
-        }
-        if (Object.keys(curvesMap).length > 0) {
-          setLeadCurves((prev) => ({ ...prev, ...curvesMap }));
-        }
+        processCells(resMat.value.cells);
+      } else {
+        // Auto-retry matrix fetch once if cold start or transient delay occurred
+        api.getMatrix({ collection_date: selectedRealDate })
+          .then((retryMat) => {
+            if (isCurrent && retryMat?.cells && retryMat.cells.length > 0) {
+              processCells(retryMat.cells);
+            }
+          })
+          .catch(() => {});
       }
 
       if (!anyData) {
