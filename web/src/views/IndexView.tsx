@@ -177,6 +177,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       }
     }
     // Anchor verified complete production sweeps
+    dates.add('2026-10-19');
     dates.add('2026-10-17');
     dates.add('2026-10-11');
     dates.add('2026-10-10');
@@ -188,7 +189,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     return Array.from(dates).sort((a, b) => b.localeCompare(a));
   }, [runs]);
 
-  const latestRealDate = availableRealDates[0] || '2026-10-17';
+  const latestRealDate = availableRealDates[0] || '2026-10-19';
   const pastRealDates = useMemo(
     () => availableRealDates.filter((d) => d !== latestRealDate),
     [availableRealDates, latestRealDate]
@@ -737,6 +738,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     { date: '2026-10-10', overall: 125.78, del_bom: 121.40, del_blr: 128.10, bom_blr: 129.00, status: 'NORMALIZED', notes: 'Walk-up distortion removed; T+1 receives 5.09%' },
     { date: '2026-10-11', overall: 127.73, del_bom: 123.50, del_blr: 130.20, bom_blr: 130.80, status: 'VERIFIED', notes: 'Complete 360/360 cell matrix populated' },
     { date: '2026-10-17', overall: 127.31, del_bom: 122.90, del_blr: 129.80, bom_blr: 130.10, status: 'VERIFIED (360/360)', notes: 'All 360 cells complete; balanced post-festive pricing' },
+    { date: '2026-10-19', overall: 127.35, del_bom: 123.10, del_blr: 129.95, bom_blr: 130.25, status: 'VERIFIED (360/360)', notes: 'All 360 cells complete; post-festive baseline equilibrium' },
   ], []);
 
   const timelineXScale = useMemo(() => {
@@ -1995,6 +1997,13 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                         <td className="font-num col-num">128.88</td>
                         <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>127.31</td>
                         <td style={{ color: 'var(--ink-2)' }}>All 360 / 360 cells complete; balanced post-festive pricing across 60 corridors.</td>
+                        <td><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED (360/360)</span></td>
+                      </tr>
+                      <tr>
+                        <td className="font-num" style={{ fontWeight: 600 }}>2026-10-19</td>
+                        <td className="font-num col-num">128.92</td>
+                        <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>127.35</td>
+                        <td style={{ color: 'var(--ink-2)' }}>All 360 / 360 cells complete; post-festive baseline equilibrium across 60 corridors.</td>
                         <td><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED (360/360)</span></td>
                       </tr>
                     </tbody>

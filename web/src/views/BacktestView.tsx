@@ -934,11 +934,18 @@ export default function BacktestView() {
                 <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>Complete 360 / 360 cell matrix populated.</td>
                 <td style={{ padding: '8px 10px' }}><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED</span></td>
               </tr>
-              <tr>
+              <tr style={{ borderBottom: '1px solid var(--contour-light)' }}>
                 <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>2026-10-17</td>
                 <td className="font-num col-num" style={{ padding: '8px 10px' }}>128.88</td>
                 <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>127.31</td>
                 <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>All 360 / 360 cells complete; balanced post-festive pricing across 60 corridors.</td>
+                <td style={{ padding: '8px 10px' }}><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED (360/360)</span></td>
+              </tr>
+              <tr>
+                <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>2026-10-19</td>
+                <td className="font-num col-num" style={{ padding: '8px 10px' }}>128.92</td>
+                <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>127.35</td>
+                <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>All 360 / 360 cells complete; post-festive baseline equilibrium across 60 corridors.</td>
                 <td style={{ padding: '8px 10px' }}><span className="badge-real" style={{ fontSize: '10px' }}>VERIFIED (360/360)</span></td>
               </tr>
             </tbody>

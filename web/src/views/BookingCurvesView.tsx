@@ -437,6 +437,7 @@ export default function BookingCurvesView({ selectedDate, onSelectDate }: Props)
         .map(r => r.run_date)
         .filter(d => Boolean(d) && /^\d{4}-\d{2}-\d{2}$/.test(d));
       const allKnownDates = [
+        '2026-10-19',
         '2026-10-17',
         '2026-10-11',
         '2026-10-10',

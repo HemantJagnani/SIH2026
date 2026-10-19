@@ -1862,7 +1862,7 @@ async def get_backtest_results(
     # mode == "real"
     from collections import defaultdict
     by_date = defaultdict(list)
-    real_dates = ["2026-10-17", "2026-10-11", "2026-10-10", "2026-10-09", "2026-10-08", "2026-10-07", "2026-10-06", "2026-09-27"]
+    real_dates = ["2026-10-19", "2026-10-17", "2026-10-11", "2026-10-10", "2026-10-09", "2026-10-08", "2026-10-07", "2026-10-06", "2026-09-27"]
     obs_all = []
     for d in real_dates:
         obs_d = load_top60_observations(d)

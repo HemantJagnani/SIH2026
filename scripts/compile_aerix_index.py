@@ -95,6 +95,7 @@ CY2024_BASE_FARES = {
     "BOM-NAG": 5200.0,
     "IXC-DEL": 5500.0,
     "IDR-BOM": 6800.0,
+    "BLR-GAU": 9800.0,
 }
 
 LEAD_TIME_WEIGHTS = {
