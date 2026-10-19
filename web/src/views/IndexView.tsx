@@ -1409,7 +1409,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                         style={{ cursor: 'pointer', userSelect: 'none' }}
                         onClick={() => handleToggleSolo(lbl.id)}
                       >
-                        {lbl.name} {lbl.val.toFixed(2)}
+                        {lbl.name} {Number(lbl.val).toFixed(2)}
                       </text>
                     );
                   });
@@ -1885,10 +1885,10 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             {dataMode === 'synthetic' ? (
               scrubIndex != null ? (
                 <span style={{ color: 'var(--ink)', fontWeight: 700 }}>
-                  {fmtDateShort(activePoint.date)}: Overall (Synthetic) {activePoint.overall.toFixed(2)} · DEL-BOM{' '}
-                  {activePoint.del_bom.toFixed(2)}
-                  {activePoint.del_blr != null ? ` · DEL-BLR ${activePoint.del_blr.toFixed(2)}` : ''}
-                  {activePoint.bom_blr != null ? ` · BOM-BLR ${activePoint.bom_blr.toFixed(2)}` : ''}
+                  {fmtDateShort(activePoint.date)}: Overall (Synthetic) {Number(activePoint.overall).toFixed(2)} · DEL-BOM{' '}
+                  {Number(activePoint.del_bom).toFixed(2)}
+                  {activePoint.del_blr != null ? ` · DEL-BLR ${Number(activePoint.del_blr).toFixed(2)}` : ''}
+                  {activePoint.bom_blr != null ? ` · BOM-BLR ${Number(activePoint.bom_blr).toFixed(2)}` : ''}
                 </span>
               ) : (
                 <span>Synthetic 30-Day Panel · Move pointer or use &larr; / &rarr; keys to inspect dates</span>
