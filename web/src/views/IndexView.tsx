@@ -162,6 +162,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   // Selected real collection date (defaults dynamically to latest available production date)
   const [selectedRealDate, setSelectedRealDate] = useState<string>(() => selectedDate || '');
   const [userSelectedExplicitDate, setUserSelectedExplicitDate] = useState<boolean>(Boolean(selectedDate));
+  const lastFetchedDateRef = useRef<string | null>(null);
   // In Real mode, view can be 'lead_curve' (T+1 to T+45), 'timeline' (Index Trend across dates), or 'daily' (single observation stats)
   const [realChartView, setRealChartView] = useState<'lead_curve' | 'timeline' | 'daily'>('lead_curve');
   const [realScrubIndex, setRealScrubIndex] = useState<number | null>(null);
@@ -183,10 +184,16 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         }
       }
     }
+    if (selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+      dates.add(selectedDate);
+    }
+    if (selectedRealDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedRealDate)) {
+      dates.add(selectedRealDate);
+    }
     return Array.from(dates).sort((a, b) => b.localeCompare(a));
-  }, [runs, realBacktest]);
+  }, [runs, realBacktest, selectedDate, selectedRealDate]);
 
-  const latestRealDate = availableRealDates[0] || (selectedDate || '');
+  const latestRealDate = availableRealDates[0] || (selectedDate || selectedRealDate || '');
   const pastRealDates = useMemo(
     () => availableRealDates.filter((d) => d !== latestRealDate),
     [availableRealDates, latestRealDate]
@@ -194,13 +201,13 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
   // Sync selectedRealDate with latest available run date unless user explicitly picked a date
   useEffect(() => {
-    if (selectedDate && availableRealDates.includes(selectedDate)) {
+    if (selectedDate && (!selectedRealDate || selectedRealDate !== selectedDate)) {
       setSelectedRealDate(selectedDate);
       setUserSelectedExplicitDate(true);
     } else if (!userSelectedExplicitDate && latestRealDate && (!selectedRealDate || selectedRealDate !== latestRealDate)) {
       setSelectedRealDate(latestRealDate);
     }
-  }, [selectedDate, latestRealDate, availableRealDates, userSelectedExplicitDate, selectedRealDate]);
+  }, [selectedDate, latestRealDate, userSelectedExplicitDate, selectedRealDate]);
 
   const formattedWatermarkDate = useMemo(() => {
     const dt = parseDateSafe(selectedRealDate);
@@ -243,18 +250,29 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   // 1. Initial mount: fetch global longitudinal series and runs ONCE
   useEffect(() => {
     Promise.allSettled([
-      api.getBacktest('synthetic'),
       api.getRealBacktest(),
       api.runs(),
-    ]).then(([resBtSynth, resBtReal, resRuns]) => {
-      if (resBtSynth.status === 'fulfilled') setBacktest(resBtSynth.value);
+    ]).then(([resBtReal, resRuns]) => {
       if (resBtReal.status === 'fulfilled') setRealBacktest(resBtReal.value);
       if (resRuns.status === 'fulfilled') setRuns(resRuns.value);
     });
   }, []);
 
+  // Lazy-load heavy synthetic backtest (184 KB) only if user switches to synthetic mode
+  useEffect(() => {
+    if (dataMode === 'synthetic' && !backtest) {
+      api.getBacktest('synthetic').then(setBacktest).catch(() => {});
+    }
+  }, [dataMode, backtest]);
+
   // 2. Date-specific data fetching (Index, Coverage, Matrix)
   useEffect(() => {
+    // If we already have complete data loaded for this date, do not re-fetch!
+    if (selectedRealDate && lastFetchedDateRef.current === selectedRealDate && indexData && matrixCells.length > 0) {
+      setLoading(false);
+      return;
+    }
+
     setError(null);
     setLoading(true);
     let isCurrent = true;
@@ -289,11 +307,13 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       if (!isCurrent) return;
 
       let anyData = false;
+      let effectiveLoadedDate = selectedRealDate;
+
       if (resIdx.status === 'fulfilled' && resIdx.value) {
         setIndexData(resIdx.value);
         anyData = true;
-        if (!userSelectedExplicitDate && resIdx.value.collection_date && resIdx.value.collection_date !== selectedRealDate) {
-          setSelectedRealDate(resIdx.value.collection_date);
+        if (resIdx.value.collection_date) {
+          effectiveLoadedDate = resIdx.value.collection_date;
         }
       }
       if (resCov.status === 'fulfilled') {
@@ -317,6 +337,11 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
       if (!anyData) {
         setError('Data unavailable — unable to retrieve the latest result.');
+      } else if (effectiveLoadedDate) {
+        lastFetchedDateRef.current = effectiveLoadedDate;
+        if (!userSelectedExplicitDate && effectiveLoadedDate !== selectedRealDate) {
+          setSelectedRealDate(effectiveLoadedDate);
+        }
       }
     }).catch(() => {
       if (isCurrent) setError('Data unavailable — unable to retrieve the latest result.');
@@ -327,7 +352,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
     return () => {
       isCurrent = false;
     };
-  }, [selectedRealDate]);
+  }, [selectedRealDate, userSelectedExplicitDate, indexData, matrixCells.length]);
 
   // ResizeObserver for chart responsiveness
   useEffect(() => {
@@ -1012,18 +1037,18 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         {dataMode === 'real' ? (
           <>
             <h1 className="headline" style={{ marginBottom: 'var(--sp-2)', color: 'var(--ink)' }}>
-              On {fmtDateLong(selectedRealDate)}, the index was{' '}
+              On {fmtDateLong(selectedRealDate || latestRealDate)}, the index was{' '}
               <span className="font-num">
                 {indexData?.index_value != null
                   ? Number(indexData.index_value).toFixed(2)
-                  : '—'}
+                  : (loading ? '…' : '—')}
               </span>{' '}(2024&nbsp;=&nbsp;100).
             </h1>
             <div className="font-num text-secondary" style={{ fontSize: '13px' }}>
               {(coverage?.total_raw_observations || (selectedRealDate === '2026-10-06' ? 9676 : selectedRealDate === '2026-09-27' ? 12212 : 10000)).toLocaleString('en-IN')} verified quotes&nbsp;&nbsp;
               {coverage?.routes_with_data_count || 60} routes&nbsp;&nbsp;
-              {selectedRealDate}
-              {selectedRealDate === latestRealDate && (
+              {selectedRealDate || latestRealDate}
+              {(selectedRealDate === latestRealDate || !selectedRealDate) && (
                 <span style={{ marginLeft: '8px', padding: '1px 5px', fontSize: '10px', background: 'var(--ink)', color: 'var(--vellum)', borderRadius: '2px', fontWeight: 600 }}>
                   LATEST
                 </span>
@@ -1449,17 +1474,17 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
           </div>
         ) : realChartView === 'lead_curve' ? (
           /* Live SVG Chart for Real Lead Curve Mode */
-          <div ref={chartRef} className="chart-wrap" style={{ position: 'relative' }} tabIndex={0} aria-label={`Real ${fmtDateShort(selectedRealDate)} advance lead curve chart`}>
+          <div ref={chartRef} className="chart-wrap" style={{ position: 'relative' }} tabIndex={0} aria-label={`Real ${fmtDateShort(selectedRealDate || latestRealDate)} advance lead curve chart`}>
             {realLeadCurveData.length === 0 ? (
               <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--ink-2)', fontFamily: "'B612', monospace", fontSize: '13px' }}>
-                Loading verified lead curves for {fmtDateShort(selectedRealDate)}…
+                Loading verified lead curves for {fmtDateShort(selectedRealDate || latestRealDate)}…
               </div>
             ) : (
             <svg
               width={chartWidth}
               height={CHART_H}
               role="img"
-              aria-label={`Real production ${fmtDateShort(selectedRealDate)} advance lead curve across T+1 to T+45`}
+              aria-label={`Real production ${fmtDateShort(selectedRealDate || latestRealDate)} advance lead curve across T+1 to T+45`}
               onPointerMove={handleRealPointerMove}
               onPointerLeave={() => setRealScrubIndex(null)}
               style={{ cursor: 'crosshair', userSelect: 'none' }}
@@ -1902,13 +1927,13 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                 &nbsp;({realLeadCurveData[realScrubIndex].quote_count} quotes)
               </span>
             ) : (
-              <span>Real Production API ({fmtDateLong(selectedRealDate)}) · {(coverage?.total_raw_observations || (selectedRealDate === '2026-10-06' ? 9676 : selectedRealDate === '2026-09-27' ? 12212 : 10000)).toLocaleString('en-IN')} Verified Quotes Across {matrixCells.length || 360} Cells</span>
+              <span>Real Production API ({fmtDateLong(selectedRealDate || latestRealDate)}) · {(coverage?.total_raw_observations || (selectedRealDate === '2026-10-06' ? 9676 : selectedRealDate === '2026-09-27' ? 12212 : 10000)).toLocaleString('en-IN')} Verified Quotes Across {matrixCells.length || 360} Cells</span>
             )}
           </span>
           <span style={{ color: 'var(--ink-2)' }}>
             {dataMode === 'synthetic'
               ? (soloRoute ? `Showing Overall + ${soloRoute} · Click route strip again to clear` : 'Click any route below to overlay it on the chart')
-              : `Source: Hosted Neon DB (${selectedRealDate})`}
+              : `Source: Hosted Neon DB (${selectedRealDate || latestRealDate})`}
           </span>
         </div>
 
@@ -1917,7 +1942,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
           <summary>
             {dataMode === 'synthetic'
               ? 'Show synthetic daily series as table'
-              : `Show ${fmtDateShort(selectedRealDate)} real production observation details as table`}
+              : `Show ${fmtDateShort(selectedRealDate || latestRealDate)} real production observation details as table`}
           </summary>
           <div style={{ overflowX: 'auto', marginTop: 'var(--sp-2)' }}>
             {dataMode === 'synthetic' ? (

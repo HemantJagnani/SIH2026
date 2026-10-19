@@ -148,17 +148,19 @@ HISTORICAL_TTL_SECONDS = 86400.0  # 24 hours for immutable completed historical 
 _endpoint_response_cache: Dict[str, Tuple[float, Any]] = {}
 _compiled_index_cache: Dict[str, Any] = {}
 _runs_cache_entry: Tuple[float, Any] = (0.0, None)
+_available_dates_cache_entry: Tuple[float, List[str]] = (0.0, [])
 
 
 def invalidate_top60_cache():
     """Invalidates the in-memory and Redis L2 top-60 observations and endpoint caches so next request fetches fresh data."""
-    global _top60_obs_cache, _top60_obs_cache_time, _top60_obs_source, _endpoint_response_cache, _compiled_index_cache, _runs_cache_entry
+    global _top60_obs_cache, _top60_obs_cache_time, _top60_obs_source, _endpoint_response_cache, _compiled_index_cache, _runs_cache_entry, _available_dates_cache_entry
     _top60_obs_cache.clear()
     _top60_obs_cache_time.clear()
     _top60_obs_source.clear()
     _endpoint_response_cache.clear()
     _compiled_index_cache.clear()
     _runs_cache_entry = (0.0, None)
+    _available_dates_cache_entry = (0.0, [])
     redis_cli = get_redis_client()
     if redis_cli:
         try:
@@ -178,11 +180,15 @@ def load_top60_observations(collection_date: Optional[str] = None) -> List[dict]
     """
     global _top60_obs_cache, _top60_obs_source, _top60_obs_cache_time
     now = time.time()
-    cache_key = collection_date or "latest"
-    is_historical = collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11")
+    available = get_available_real_dates()
+    effective_date = collection_date or (available[0] if available else "2026-10-19")
+    cache_key = effective_date
+    is_historical = effective_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11")
     effective_ttl = HISTORICAL_TTL_SECONDS if is_historical else CACHE_TTL_SECONDS
     if cache_key in _top60_obs_cache and (now - _top60_obs_cache_time.get(cache_key, 0.0)) < effective_ttl:
         return _top60_obs_cache[cache_key]
+    if collection_date is None and "latest" in _top60_obs_cache and (now - _top60_obs_cache_time.get("latest", 0.0)) < effective_ttl:
+        return _top60_obs_cache["latest"]
 
     # Check L2 Render Redis Key-Value cache
     redis_cli = get_redis_client()
@@ -212,45 +218,17 @@ def load_top60_observations(collection_date: Optional[str] = None) -> List[dict]
     if conn:
         try:
             cur = conn.cursor()
-            if collection_date:
-                cur.execute("""
-                    SELECT observation_id, origin, destination, airline, airline_code, flight_number,
-                           travel_date, lead_days, total_fare, base_fare, taxes, currency, source,
-                           cabin, stops, fare_family, quality_status, product_stratum_id,
-                           itinerary_fingerprint, offer_fingerprint, collected_at,
-                           departure_time_local, arrival_time_local, requires_self_transfer,
-                           price_status, passenger_count, availability
-                    FROM fare_observations
-                    WHERE DATE(collected_at) = %s::date
-                    ORDER BY travel_date ASC;
-                """, (collection_date,))
-            else:
-                cur.execute("""
-                    WITH eligible_dates AS (
-                        SELECT DATE(collected_at) AS col_date, COUNT(DISTINCT origin || '-' || destination) AS route_count
-                        FROM fare_observations
-                        GROUP BY DATE(collected_at)
-                        HAVING COUNT(DISTINCT origin || '-' || destination) >= 50
-                    ),
-                    target_date AS (
-                        SELECT col_date FROM eligible_dates ORDER BY col_date DESC LIMIT 1
-                    )
-                    SELECT observation_id, origin, destination, airline, airline_code, flight_number,
-                           travel_date, lead_days, total_fare, base_fare, taxes, currency, source,
-                           cabin, stops, fare_family, quality_status, product_stratum_id,
-                           itinerary_fingerprint, offer_fingerprint, collected_at,
-                           departure_time_local, arrival_time_local, requires_self_transfer,
-                           price_status, passenger_count, availability
-                    FROM fare_observations
-                    WHERE DATE(collected_at) = (
-                        SELECT COALESCE(
-                            (SELECT col_date FROM target_date),
-                            (SELECT DATE(collected_at) FROM fare_observations ORDER BY collected_at DESC LIMIT 1),
-                            '2026-10-06'::date
-                        )
-                    )
-                    ORDER BY travel_date ASC;
-                """)
+            cur.execute("""
+                SELECT observation_id, origin, destination, airline, airline_code, flight_number,
+                       travel_date, lead_days, total_fare, base_fare, taxes, currency, source,
+                       cabin, stops, fare_family, quality_status, product_stratum_id,
+                       itinerary_fingerprint, offer_fingerprint, collected_at,
+                       departure_time_local, arrival_time_local, requires_self_transfer,
+                       price_status, passenger_count, availability
+                FROM fare_observations
+                WHERE DATE(collected_at) = %s::date
+                ORDER BY travel_date ASC;
+            """, (effective_date,))
             rows = cur.fetchall()
             cur.close()
             conn.close()
@@ -348,12 +326,18 @@ def load_top60_observations(collection_date: Optional[str] = None) -> List[dict]
                 _top60_obs_cache[cache_key] = parsed_records
                 _top60_obs_source[cache_key] = "HOSTED_NEON_DB"
                 _top60_obs_cache_time[cache_key] = now
+                if collection_date is None or collection_date == effective_date:
+                    _top60_obs_cache["latest"] = parsed_records
+                    _top60_obs_source["latest"] = "HOSTED_NEON_DB"
+                    _top60_obs_cache_time["latest"] = now
                 if redis_cli:
                     try:
                         import zlib, base64
                         raw_json = json.dumps(parsed_records)
                         compressed_payload = "gz:" + base64.b64encode(zlib.compress(raw_json.encode('utf-8'))).decode('ascii')
                         redis_cli.set(f"aerix:cache:top60_observations:{cache_key}", compressed_payload, ex=300)
+                        if collection_date is None or collection_date == effective_date:
+                            redis_cli.set("aerix:cache:top60_observations:latest", compressed_payload, ex=300)
                     except Exception as e:
                         print(f"Warning: Redis L2 cache write error: {e}")
                 return parsed_records
@@ -575,6 +559,11 @@ def load_canonical_data() -> List[NormalizedFareObservation]:
 
 # Available real collection dates dynamically discovered from Neon DB and storage
 def get_available_real_dates() -> List[str]:
+    global _available_dates_cache_entry
+    now = time.time()
+    if _available_dates_cache_entry[1] and (now - _available_dates_cache_entry[0]) < 60.0:
+        return _available_dates_cache_entry[1]
+
     conn = get_db_connection()
     if conn:
         try:
@@ -590,6 +579,7 @@ def get_available_real_dates() -> List[str]:
             if rows:
                 dates = [r[0].strftime("%Y-%m-%d") if hasattr(r[0], "strftime") else str(r[0])[:10] for r in rows]
                 if dates:
+                    _available_dates_cache_entry = (now, dates)
                     return dates
         except Exception as e:
             print(f"Warning querying real dates: {e}")
@@ -609,16 +599,22 @@ def get_available_real_dates() -> List[str]:
         if m:
             dates.append(f"{m.group(1)}-{m.group(2)}-{m.group(3)}")
     if dates:
-        return sorted(list(set(dates)), reverse=True)
-    return ["2026-10-19", "2026-10-17", "2026-10-11", "2026-10-10", "2026-10-09", "2026-10-08", "2026-10-07", "2026-10-06", "2026-09-27"]
+        res = sorted(list(set(dates)), reverse=True)
+        _available_dates_cache_entry = (now, res)
+        return res
+    fallback = ["2026-10-19", "2026-10-17", "2026-10-11", "2026-10-10", "2026-10-09", "2026-10-08", "2026-10-07", "2026-10-06", "2026-09-27"]
+    _available_dates_cache_entry = (now, fallback)
+    return fallback
 
 # Pre-compiled index cache
 def load_compiled_index(collection_date: Optional[str] = None):
     available = get_available_real_dates()
     effective_date = collection_date or (available[0] if available else None)
-    cache_key = collection_date or "latest"
+    cache_key = effective_date or "latest"
     if cache_key in _compiled_index_cache:
         return _compiled_index_cache[cache_key]
+    if collection_date is None and "latest" in _compiled_index_cache:
+        return _compiled_index_cache["latest"]
 
     # 1. Check hosted Redis Key-Value cache (Singapore / Render)
     redis_cli = get_redis_client()
@@ -632,6 +628,8 @@ def load_compiled_index(collection_date: Optional[str] = None):
                         if not data.get("collection_date") and effective_date:
                             data["collection_date"] = effective_date
                         _compiled_index_cache[cache_key] = data
+                        if collection_date is None or collection_date == effective_date:
+                            _compiled_index_cache["latest"] = data
                         return data
         except Exception as e:
             print(f"Warning: Redis index read error: {e}")
@@ -648,6 +646,8 @@ def load_compiled_index(collection_date: Optional[str] = None):
                     if not data.get("collection_date"):
                         data["collection_date"] = effective_date
                     _compiled_index_cache[cache_key] = data
+                    if collection_date is None or collection_date == effective_date:
+                        _compiled_index_cache["latest"] = data
                     return data
             except Exception:
                 pass
@@ -662,6 +662,8 @@ def load_compiled_index(collection_date: Optional[str] = None):
                     if not data.get("collection_date") and effective_date:
                         data["collection_date"] = effective_date
                     _compiled_index_cache[cache_key] = data
+                    if collection_date is None or collection_date == effective_date:
+                        _compiled_index_cache["latest"] = data
                     return data
         except Exception:
             pass
@@ -1595,13 +1597,20 @@ async def get_matrix(
             detail=f"Invalid lead_time '{lead_time}'. Valid lead times are: {sorted(list(valid_lead_times))}."
         )
 
-    cache_k = f"matrix:{route or 'ALL'}:{lead_time or 'ALL'}:{collection_date or 'latest'}"
+    available = get_available_real_dates()
+    effective_date = collection_date or (available[0] if available else "2026-10-19")
+    cache_k = f"matrix:{route or 'ALL'}:{lead_time or 'ALL'}:{effective_date}"
     now = time.time()
-    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09") else CACHE_TTL_SECONDS
+    is_historical = effective_date != (available[0] if available else "")
+    ttl = HISTORICAL_TTL_SECONDS if is_historical else CACHE_TTL_SECONDS
     if cache_k in _endpoint_response_cache and (now - _endpoint_response_cache[cache_k][0]) < ttl:
         return _endpoint_response_cache[cache_k][1]
+    if collection_date is None:
+        latest_k = f"matrix:{route or 'ALL'}:{lead_time or 'ALL'}:latest"
+        if latest_k in _endpoint_response_cache and (now - _endpoint_response_cache[latest_k][0]) < ttl:
+            return _endpoint_response_cache[latest_k][1]
 
-    obs_all = load_top60_observations(collection_date=collection_date)
+    obs_all = load_top60_observations(collection_date=effective_date)
     if not obs_all:
         idx_data = None
         redis_cli = get_redis_client()
@@ -1734,6 +1743,8 @@ async def get_matrix(
         'cells': result,
     }
     _endpoint_response_cache[cache_k] = (now, matrix_resp)
+    if collection_date is None or collection_date == effective_date:
+        _endpoint_response_cache[f"matrix:{route or 'ALL'}:{lead_time or 'ALL'}:latest"] = (now, matrix_resp)
     return matrix_resp
 
 
@@ -1746,13 +1757,18 @@ async def get_coverage(
     route list, DGCA-weighted coverage, observation counts by status.
     Dynamically counts cells and raw observations from production dataset.
     """
-    cache_k = f"coverage:{collection_date or 'latest'}"
+    available = get_available_real_dates()
+    effective_date = collection_date or (available[0] if available else "2026-10-19")
+    cache_k = f"coverage:{effective_date}"
     now = time.time()
-    ttl = HISTORICAL_TTL_SECONDS if collection_date in ("2026-09-27", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09") else CACHE_TTL_SECONDS
+    is_historical = effective_date != (available[0] if available else "")
+    ttl = HISTORICAL_TTL_SECONDS if is_historical else CACHE_TTL_SECONDS
     if cache_k in _endpoint_response_cache and (now - _endpoint_response_cache[cache_k][0]) < ttl:
         return _endpoint_response_cache[cache_k][1]
+    if collection_date is None and "coverage:latest" in _endpoint_response_cache and (now - _endpoint_response_cache["coverage:latest"][0]) < ttl:
+        return _endpoint_response_cache["coverage:latest"][1]
 
-    obs_all = load_top60_observations(collection_date=collection_date)
+    obs_all = load_top60_observations(collection_date=effective_date)
     if not obs_all:
         idx_data = None
         redis_cli = get_redis_client()
@@ -1860,6 +1876,8 @@ async def get_coverage(
         'foreign_transit': foreign_transit_count,
     }
     _endpoint_response_cache[cache_k] = (now, cov_resp)
+    if collection_date is None or collection_date == effective_date:
+        _endpoint_response_cache["coverage:latest"] = (now, cov_resp)
     return cov_resp
 
 

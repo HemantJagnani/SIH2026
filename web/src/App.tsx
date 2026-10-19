@@ -56,11 +56,23 @@ export default function App() {
 
   useEffect(() => {
     let mounted = true;
+
+    // Fast dynamic date resolution on boot (180 bytes, <100ms)
+    api.getAvailableDates().then(res => {
+      if (!mounted) return;
+      if (res.latest_date) {
+        setLastRunDate(res.latest_date);
+        if (!selectedDate) {
+          setSelectedDate(res.latest_date);
+        }
+      }
+    }).catch(() => {});
+
     const fetchRuns = () => {
       api.runs().then(r => {
         if (!mounted) return;
         setRuns(r);
-        if (r.length > 0 && r[0].run_date) setLastRunDate(r[0].run_date);
+        if (r.length > 0 && r[0].run_date && !lastRunDate) setLastRunDate(r[0].run_date);
       }).catch(() => {});
     };
     fetchRuns();
@@ -135,7 +147,7 @@ export default function App() {
         >
           {tab === 'index' && (
             <IndexView
-              selectedDate={selectedDate}
+              selectedDate={selectedDate || lastRunDate}
               onSelectDate={handleSetDate}
               onNavigate={(nextTab) => setTab(nextTab)}
             />
@@ -159,8 +171,8 @@ export default function App() {
         >
           {tab === 'curves' && (
             <BookingCurvesView
-              key={lastRunDate || 'initial'}
-              selectedDate={selectedDate}
+              key={selectedDate || lastRunDate || 'initial'}
+              selectedDate={selectedDate || lastRunDate}
               onSelectDate={handleSetDate}
             />
           )}
