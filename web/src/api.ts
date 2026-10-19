@@ -361,6 +361,7 @@ import {
   DGCA_TOP60_METADATA,
   MOSPI_CPI_EXPENDITURE_WEIGHT,
 } from './data/dgcaTop60';
+import REAL_BACKTEST_FALLBACK from './data/real_backtest_fallback.json';
 
 export interface Methodology {
   base_value: number;
@@ -463,7 +464,12 @@ export const api = {
   },
 
   getRealBacktest: async (): Promise<RealBacktestResponse> => {
-    return fetchWithCache<RealBacktestResponse>(`${BASE}/v1/backtest?mode=real`, 300_000);
+    try {
+      return await fetchWithCache<RealBacktestResponse>(`${BASE}/v1/backtest?mode=real`, 300_000);
+    } catch {
+      // Graceful instant fallback to bundled verified longitudinal series
+      return REAL_BACKTEST_FALLBACK as unknown as RealBacktestResponse;
+    }
   },
 
   getSensitivity: async (): Promise<SensitivityResponse> => {

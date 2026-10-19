@@ -18,6 +18,7 @@ import { getRouteColor } from '../lib/palette';
 import { RouteDataAuditModal } from '../components/RouteDataAuditModal';
 import { EaseMyTripLogo, GoogleFlightsLogo } from '../components/ProviderAndAirlineLogos';
 import { InstitutionalBadge } from '../components/SovereignLogos';
+import REAL_BACKTEST_FALLBACK from '../data/real_backtest_fallback.json';
 
 interface IndexViewProps {
   selectedDate?: string | null;
@@ -768,15 +769,19 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   }
 
   const realTimelineSeries: RealTimelinePoint[] = useMemo(() => {
-    if (realBacktest?.daily_series && realBacktest.daily_series.length > 0) {
-      return realBacktest.daily_series.map((ds: any) => {
+    const rawSeries = (realBacktest?.daily_series && realBacktest.daily_series.length > 0)
+      ? realBacktest.daily_series
+      : ((REAL_BACKTEST_FALLBACK as any)?.daily_series || []);
+
+    if (rawSeries && rawSeries.length > 0) {
+      return rawSeries.map((ds: any) => {
         const rawOverall = ds.overall_index ?? (ds.geometric_mean_inr ? (ds.geometric_mean_inr / 7970 * 100) : 100);
         const overall = typeof rawOverall === 'number' ? rawOverall : (parseFloat(String(rawOverall)) || 100);
         const del_bom = parseFloat(String(ds.route_indices?.['DEL-BOM'])) || 123.10;
         const del_blr = parseFloat(String(ds.route_indices?.['DEL-BLR'])) || 129.95;
         const bom_blr = parseFloat(String(ds.route_indices?.['BOM-BLR'])) || 130.25;
         const isAnchor = ds.date === '2026-09-27';
-        const isComplete = ds.observation_count >= 360;
+        const isComplete = (ds.observation_count || 0) >= 360;
         return {
           date: ds.date,
           overall,
@@ -802,11 +807,16 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   }, [realTimelineSeries, innerW]);
 
   const timelineYScale = useMemo(() => {
+    const vals = realTimelineSeries.map((d) => d.overall).filter((v) => typeof v === 'number' && !isNaN(v));
+    const minVal = vals.length > 0 ? Math.min(...vals) : 95;
+    const maxVal = vals.length > 0 ? Math.max(...vals) : 135;
+    const yMin = Math.min(95, Math.floor(minVal - 2));
+    const yMax = Math.max(135, Math.ceil(maxVal + 2));
     return d3Scale
       .scaleLinear()
-      .domain([100, 135])
+      .domain([yMin, yMax])
       .range([innerH, 0]);
-  }, [innerH]);
+  }, [realTimelineSeries, innerH]);
 
   const timelineYTicks = timelineYScale.ticks(6);
 
@@ -1167,7 +1177,18 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               <span style={{ fontSize: 'var(--t-axis)', color: 'var(--ink-2)' }}>View:</span>
               <button className="toggle-btn" aria-pressed={realChartView === 'lead_curve'} onClick={() => setRealChartView('lead_curve')}>Lead Curve</button>
               <span className="toggle-sep">|</span>
-              <button className="toggle-btn" aria-pressed={realChartView === 'timeline'} onClick={() => setRealChartView('timeline')}>Index Trend</button>
+              <button
+                className="toggle-btn"
+                aria-pressed={realChartView === 'timeline'}
+                onClick={() => {
+                  setRealChartView('timeline');
+                  if (!realBacktest) {
+                    api.getRealBacktest().then(setRealBacktest).catch(() => {});
+                  }
+                }}
+              >
+                Index Trend
+              </button>
               <span className="toggle-sep">|</span>
               <button className="toggle-btn" aria-pressed={realChartView === 'daily'} onClick={() => setRealChartView('daily')}>Day Stats</button>
             </div>
