@@ -571,7 +571,7 @@
   },
   "methodology_version": "AERIX v2.0 (MoSPI CPI 2024 + Eurostat HICP Aligned)",
   "weight_version": "DGCA CY2024",
-  "published_at": "2026-10-19T14:54:25.032161+00:00",
+  "published_at": "2026-10-19T16:37:43.299425+00:00",
   "data_status": "REAL_PRODUCTION_OBSERVATIONS",
   "governance": "BASKET_COVERAGE_AUDIT"
 }
