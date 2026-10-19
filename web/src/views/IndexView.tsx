@@ -963,6 +963,28 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
   // Helper for route sparkline progression
   const getRouteSparkPoints = useCallback((route: string): number[] | null => {
+    const normRoute = route;
+    const revRoute = route.split('-').reverse().join('-');
+
+    // In real mode, use the actual longitudinal route index progression across verified collection dates
+    if (dataMode === 'real') {
+      const series = (realBacktest?.daily_series && realBacktest.daily_series.length > 0)
+        ? realBacktest.daily_series
+        : ((REAL_BACKTEST_FALLBACK as any)?.daily_series || []);
+
+      if (series && series.length > 0) {
+        const pts: number[] = [];
+        for (const ds of series) {
+          const rIndices = ds.route_indices;
+          const val = rIndices?.[normRoute] ?? rIndices?.[revRoute];
+          if (val != null) {
+            pts.push(Number(val));
+          }
+        }
+        if (pts.length >= 2) return pts;
+      }
+    }
+
     if (route === 'DEL-BOM') {
       const pts = fullDailySeries.map((p) => p.del_bom);
       return pts.length > 0 ? pts : null;
@@ -976,15 +998,15 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       return pts.length > 0 ? pts : null;
     }
 
-    // Lead curve profile from matrix cells for all 60 routes (T+45 down to T+1)
-    const curvePts = leadCurves[route]?.points;
+    // Lead curve fallback only if no historical time-series exists
+    const curvePts = leadCurves[normRoute]?.points ?? leadCurves[revRoute]?.points;
     if (curvePts && curvePts.length >= 2) {
       const sorted = [...curvePts].sort((a, b) => a.lead_days - b.lead_days);
       return sorted.map((p) => p.price);
     }
 
     return null;
-  }, [fullDailySeries, leadCurves]);
+  }, [dataMode, realBacktest, fullDailySeries, leadCurves]);
 
   // Helper for route current level
   // Returns a ₹ fare for every route in the basket table (consistent display)
