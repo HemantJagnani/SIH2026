@@ -745,10 +745,11 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   const realTimelineSeries: RealTimelinePoint[] = useMemo(() => {
     if (realBacktest?.daily_series && realBacktest.daily_series.length > 0) {
       return realBacktest.daily_series.map((ds: any) => {
-        const overall = ds.overall_index || (ds.geometric_mean_inr ? +(ds.geometric_mean_inr / 7970 * 100).toFixed(2) : 100);
-        const del_bom = ds.route_indices?.['DEL-BOM'] || 123.10;
-        const del_blr = ds.route_indices?.['DEL-BLR'] || 129.95;
-        const bom_blr = ds.route_indices?.['BOM-BLR'] || 130.25;
+        const rawOverall = ds.overall_index ?? (ds.geometric_mean_inr ? (ds.geometric_mean_inr / 7970 * 100) : 100);
+        const overall = typeof rawOverall === 'number' ? rawOverall : (parseFloat(String(rawOverall)) || 100);
+        const del_bom = parseFloat(String(ds.route_indices?.['DEL-BOM'])) || 123.10;
+        const del_blr = parseFloat(String(ds.route_indices?.['DEL-BLR'])) || 129.95;
+        const bom_blr = parseFloat(String(ds.route_indices?.['BOM-BLR'])) || 130.25;
         const isAnchor = ds.date === '2026-09-27';
         const isComplete = ds.observation_count >= 360;
         return {
@@ -1795,7 +1796,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                         fontWeight={isSelected ? 700 : 500}
                         fill={isSelected ? 'var(--route-blue)' : 'var(--ink)'}
                       >
-                        {d.overall.toFixed(1)}
+                        {Number(d.overall).toFixed(1)}
                       </text>
                     </g>
                   );
@@ -1815,7 +1816,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                       fontWeight={700}
                       fill={ROUTE_COLORS.overall}
                     >
-                      AERIX {last.overall.toFixed(2)}
+                      AERIX {Number(last.overall).toFixed(2)}
                     </text>
                   );
                 })()}
@@ -1983,8 +1984,8 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
                           }}
                         >
                           <td className="font-num" style={{ fontWeight: 600 }}>{row.date}</td>
-                          <td className="font-num col-num">{row.overall ? (row.overall * 1.01).toFixed(2) : '—'}</td>
-                          <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>{row.overall.toFixed(2)}</td>
+                          <td className="font-num col-num">{row.overall ? (Number(row.overall) * 1.01).toFixed(2) : '—'}</td>
+                          <td className="font-num col-num" style={{ fontWeight: 700, color: 'var(--route-blue)' }}>{Number(row.overall).toFixed(2)}</td>
                           <td style={{ color: 'var(--ink-2)' }}>{row.notes}</td>
                           <td><span className="badge-real" style={{ fontSize: '10px' }}>{row.status}</span></td>
                         </tr>

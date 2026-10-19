@@ -1991,8 +1991,22 @@ async def get_backtest_results(
         geom_f = _geomean(fares) if fares else 0.0
 
         c_idx = load_compiled_index(d_str)
-        overall_idx = c_idx.get("index_value") if c_idx else (round((geom_f / 7970.0) * 100, 2) if geom_f > 0 else 100.0)
-        route_indices = c_idx.get("route_indices", {}) if c_idx else {}
+        raw_val = c_idx.get("index_value") if c_idx else None
+        if raw_val is not None:
+            try:
+                overall_idx = float(raw_val)
+            except Exception:
+                overall_idx = round((geom_f / 7970.0) * 100, 2) if geom_f > 0 else 100.0
+        else:
+            overall_idx = round((geom_f / 7970.0) * 100, 2) if geom_f > 0 else 100.0
+
+        route_indices = {}
+        if c_idx and "route_indices" in c_idx:
+            for rk, rv in c_idx["route_indices"].items():
+                try:
+                    route_indices[rk] = float(rv)
+                except Exception:
+                    pass
 
         daily_series.append({
             "day": day_idx + 1,

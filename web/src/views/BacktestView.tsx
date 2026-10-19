@@ -891,13 +891,14 @@ export default function BacktestView() {
               {(realData?.daily_series && realData.daily_series.length > 0 ? realData.daily_series : []).map((ds: any) => {
                 const isAnchor = ds.date === '2026-09-27';
                 const isComplete = ds.observation_count >= 360;
-                const overall = ds.overall_index || (ds.geometric_mean_inr ? +(ds.geometric_mean_inr / 7970 * 100).toFixed(2) : 100);
-                const equalPool = (overall * 1.01).toFixed(2);
+                const rawOverall = ds.overall_index ?? (ds.geometric_mean_inr ? (ds.geometric_mean_inr / 7970 * 100) : 100);
+                const overall = typeof rawOverall === 'number' ? rawOverall : (parseFloat(String(rawOverall)) || 100);
+                const equalPool = (Number(overall) * 1.01).toFixed(2);
                 return (
                   <tr key={ds.date} style={{ borderBottom: '1px solid var(--contour-light)' }}>
                     <td className="font-num" style={{ padding: '8px 10px', fontWeight: 600 }}>{ds.date}</td>
                     <td className="font-num col-num" style={{ padding: '8px 10px' }}>{equalPool}</td>
-                    <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>{overall.toFixed(2)}</td>
+                    <td className="font-num col-num" style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--route-blue)' }}>{Number(overall).toFixed(2)}</td>
                     <td style={{ padding: '8px 10px', color: 'var(--ink-2)' }}>
                       {isAnchor ? 'Exact CY2024 anchor benchmark.' : (isComplete ? 'All 360 / 360 cells complete; balanced post-festive pricing across 60 corridors.' : `${ds.observation_count} observations across ${ds.route_count} routes.`)}
                     </td>
