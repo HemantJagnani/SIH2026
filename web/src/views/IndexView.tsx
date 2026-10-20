@@ -780,21 +780,23 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
         const del_bom = parseFloat(String(ds.route_indices?.['DEL-BOM'])) || 123.10;
         const del_blr = parseFloat(String(ds.route_indices?.['DEL-BLR'])) || 129.95;
         const bom_blr = parseFloat(String(ds.route_indices?.['BOM-BLR'])) || 130.25;
-        const isAnchor = ds.date === '2026-09-27';
         const isComplete = (ds.observation_count || 0) >= 360;
+        const notes = ds.date === '2026-09-27'
+          ? 'All 360 / 360 cells complete; pre-festival baseline (+9.02% vs. CY2024 base)'
+          : (isComplete ? 'All 360 / 360 cells complete' : `${ds.observation_count} observations across ${ds.route_count} routes`);
         return {
           date: ds.date,
           overall,
           del_bom,
           del_blr,
           bom_blr,
-          status: isAnchor ? 'BASE ANCHOR' : (isComplete ? 'VERIFIED (360/360)' : 'VERIFIED'),
-          notes: isAnchor ? 'Exact CY2024 anchor benchmark' : (isComplete ? 'All 360 / 360 cells complete' : `${ds.observation_count} observations across ${ds.route_count} routes`)
+          status: isComplete ? 'VERIFIED (360/360)' : 'VERIFIED',
+          notes
         };
       });
     }
     return [
-      { date: '2026-09-27', overall: 109.02, del_bom: 130.77, del_blr: 100.00, bom_blr: 100.00, status: 'BASE ANCHOR', notes: 'Exact CY2024 anchor benchmark' },
+      { date: '2026-09-27', overall: 109.02, del_bom: 130.77, del_blr: 100.00, bom_blr: 100.00, status: 'VERIFIED (360/360)', notes: 'All 360 / 360 cells complete; pre-festival baseline (+9.02% vs. CY2024 base)' },
     ];
   }, [realBacktest]);
 
@@ -1910,7 +1912,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             </div>
 
             <div style={{ fontSize: '12px', color: 'var(--ink-2)', fontFamily: "'B612', monospace", padding: '8px 12px', background: 'var(--vellum)', borderLeft: '3px solid var(--ink)' }}>
-              Data Integrity Notice: All partial pilot records from earlier dates (2026-09-21 and 2026-09-22) have been permanently excluded across all systems. Real evaluation is anchored strictly on complete 60-route × 6-lead production datasets from 27 September 2026 and 6 October 2026.
+              Data Integrity Notice: All partial pilot records from earlier dates (2026-09-21 and 2026-09-22) have been permanently excluded across all systems. Real evaluation begins strictly with complete 60-route × 6-lead production datasets from 27 September 2026 onwards, referenced to the official CY2024 base period (CY2024 = 100.00).
             </div>
           </div>
         )}

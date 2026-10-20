@@ -405,7 +405,7 @@ export default function Phase28View() {
           <div style={{ background: '#ffffff', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 4 }}>
             <div style={{ fontSize: 10, color: 'var(--ink-2)', fontWeight: 600 }}>PROJECT REFERENCE</div>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--route-blue)' }}>{INR(headline.base_price_inr)} (2026-09-26)</div>
-            <div style={{ fontSize: 10, color: '#64748b' }}>Provisional POC anchor</div>
+            <div style={{ fontSize: 10, color: '#64748b' }}>Provisional POC reference price</div>
           </div>
           <div style={{ background: '#ffffff', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 4 }}>
             <div style={{ fontSize: 10, color: 'var(--ink-2)', fontWeight: 600 }}>MOSPI INDEX REFERENCE</div>
@@ -448,7 +448,7 @@ export default function Phase28View() {
         </div>
 
         <p style={{ margin: '8px 0 0 0', fontSize: 11, color: '#64748b', fontStyle: 'italic' }}>
-          * Institutional distinction: The provisional project reference price ({INR(headline.base_price_inr)}) is an experimental operational anchor and is NOT the official MoSPI calendar-year 2024 price reference.
+          * Institutional distinction: The provisional project reference price ({INR(headline.base_price_inr)}) is an experimental operational diagnostic and is NOT the official MoSPI calendar-year 2024 price reference.
         </p>
       </div>
 

@@ -2082,7 +2082,7 @@ async def get_backtest_results(
         "metrics": real_metrics,
         "summary": real_metrics,
         "limitations": [
-            "Longitudinal history is strictly anchored on the complete 60-route x 6 lead-time (360 cells) production dataset collected on 2026-09-27. Partial observations from earlier test dates have been completely removed.",
+            "Longitudinal live observation tracking begins with the complete 60-route x 6 lead-time (360 cells) production dataset collected on 2026-09-27, compiled against the official DGCA CY2024 annual base anchor (Base = 100.00). Partial observations from earlier preliminary test dates have been completely removed.",
             "DGCA publishes domestic passenger volumes (traffic representativeness), not daily ticket transaction prices; therefore, airfare MAE and RMSE cannot be computed against DGCA data.",
             "Time-series tracking metrics (MAE, RMSE, correlation) require a multi-period longitudinal baseline across identical route scopes; computing them on a single collection day is not statistically appropriate."
         ],

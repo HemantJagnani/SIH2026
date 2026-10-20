@@ -78,7 +78,7 @@ export default function CalculationFlowView({ onNavigate }: CalculationFlowViewP
     return tw > 0 ? Math.round(ws / tw) : null;
   }, [currentRouteCells]);
 
-  const liveHeadlineIndex = indexData?.index_value != null ? Number(indexData.index_value) : 109.02;
+  const liveHeadlineIndex = indexData?.index_value != null ? Number(indexData.index_value) : 123.33;
   const liveNationalFare = nsoFeed?.all_india_weighted_fare_inr || indexData?.all_india_weighted_fare_inr || 8864;
   const liveMoM = indexData?.mom_percent != null ? Number(indexData.mom_percent) : 4.33;
   const liveCpiContrib = nsoFeed?.mospi_cpi_contribution?.mom_contribution_combined_pp ?? 0.001276;

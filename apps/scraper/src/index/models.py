@@ -152,8 +152,7 @@ class APIxSeriesResult(BaseModel):
     # Backward compatibility aliases (Explicit aliases only)
     reference_period: str = "2026-09"
     base_value: Decimal = Field(default=Decimal("100.00"), description="Explicit alias for reference_index_value")
-    base_price: Optional[Decimal] = Field(default=Decimal("8641.45"), description="Explicit alias for experimental_project_reference_price (descriptive diagnostic only)")
-    base_period: Optional[str] = Field(default="2026-09-27", description="Explicit alias for experimental_reference_period")
+    base_period: Optional[str] = Field(default="CY2024", description="Official sovereign base period (CY2024 = 100.00)")
 
     index_value: Decimal
     mom_percent: Optional[Decimal] = None
