@@ -1,17 +1,17 @@
 {
   "backtest_type": "REAL_DATA_VALIDATION",
   "data_status": "REAL_PRODUCTION_OBSERVATIONS",
-  "evaluation_window": "2026-09-27 to 2026-10-19",
+  "evaluation_window": "2026-09-27 to 2026-10-20",
   "evaluation_start": "2026-09-27",
-  "evaluation_end": "2026-10-19",
-  "observation_days": 10,
-  "total_real_observations": 36383,
+  "evaluation_end": "2026-10-20",
+  "observation_days": 11,
+  "total_real_observations": 43733,
   "benchmark_source": "DGCA CY2024 Traffic Volume Benchmark (DGCA publishes Top-60 city-pair passenger traffic distributions, not daily market transaction airfare prices)",
   "provenance_note": "Evaluated strictly on genuinely observed production quotes from hosted Neon PostgreSQL database (fare_observations). No synthetic points, no interpolation, and no fabricated index series.",
   "metrics": {
-    "evaluation_period": "2026-09-27 to 2026-10-19",
-    "total_days": 10,
-    "total_observations": 36383,
+    "evaluation_period": "2026-09-27 to 2026-10-20",
+    "total_days": 11,
+    "total_observations": 43733,
     "mean_absolute_error_mae": null,
     "root_mean_squared_error_rmse": null,
     "benchmark_correlation": null,
@@ -21,9 +21,9 @@
     "reason": "Airfare tracking metrics (MAE/RMSE) require an external high-frequency airfare price benchmark (DGCA provides traffic volume weights, not daily price indices). A multi-period longitudinal baseline across the full 60-route scope is required before valid tracking error can be calculated."
   },
   "summary": {
-    "evaluation_period": "2026-09-27 to 2026-10-19",
-    "total_days": 10,
-    "total_observations": 36383,
+    "evaluation_period": "2026-09-27 to 2026-10-20",
+    "total_days": 11,
+    "total_observations": 43733,
     "mean_absolute_error_mae": null,
     "root_mean_squared_error_rmse": null,
     "benchmark_correlation": null,
@@ -60,15 +60,15 @@
       ],
       "mean_fare_inr": 9916.72,
       "median_fare_inr": 8645.0,
-      "geometric_mean_inr": 8815.72,
+      "geometric_mean_inr": 8645.0,
       "min_fare_inr": 3196.0,
       "max_fare_inr": 175132.0,
       "route_median_fares": {
-        "AMD-BLR": 8546.0,
-        "AMD-BOM": 6831.0,
-        "AMD-DEL": 6234.0,
-        "ATQ-DEL": 5629.0,
-        "BBI-DEL": 12059.0
+        "DEL-BOM": 6674.65,
+        "BLR-DEL": 9865.41,
+        "BLR-BOM": 7945.06,
+        "DEL-HYD": 10498.87,
+        "DEL-PNQ": 9362.42
       },
       "overall_index": 109.02,
       "route_indices": {
@@ -141,21 +141,30 @@
       "observation_count": 712,
       "route_count": 1,
       "sample_routes": [
-        "DEL-BOM"
+        "AMD-BLR",
+        "AMD-BOM",
+        "AMD-DEL",
+        "ATQ-DEL",
+        "BBI-DEL",
+        "BLR-BBI",
+        "BLR-BOM",
+        "BLR-CCU",
+        "BLR-COK",
+        "BLR-DEL"
       ],
       "collection_sources": [
         "google_flights"
       ],
       "mean_fare_inr": 8083.96,
       "median_fare_inr": 6963.0,
-      "geometric_mean_inr": 7763.2,
+      "geometric_mean_inr": 6963.0,
       "min_fare_inr": 6083.0,
       "max_fare_inr": 24747.0,
-      "route_median_fares": {
-        "DEL-BOM": 6963.0
-      },
+      "route_median_fares": {},
       "overall_index": 97.41,
-      "route_indices": {},
+      "route_indices": {
+        "DEL-BOM": 97.41
+      },
       "data_status": "REAL_PRODUCTION_OBSERVATIONS"
     },
     {
@@ -180,15 +189,15 @@
       ],
       "mean_fare_inr": 7879.36,
       "median_fare_inr": 7377.0,
-      "geometric_mean_inr": 7452.32,
+      "geometric_mean_inr": 7377.0,
       "min_fare_inr": 3330.0,
       "max_fare_inr": 20093.0,
       "route_median_fares": {
-        "AMD-BLR": 7325.0,
-        "AMD-BOM": 5825.0,
-        "AMD-DEL": 6244.0,
-        "ATQ-DEL": 4433.0,
-        "BBI-DEL": 10379.0
+        "DEL-BOM": 7508.69,
+        "BLR-DEL": 12244.46,
+        "BLR-BOM": 9143.35,
+        "DEL-HYD": 10417.72,
+        "DEL-PNQ": 9779.66
       },
       "overall_index": 114.71,
       "route_indices": {
@@ -277,15 +286,15 @@
       ],
       "mean_fare_inr": 7924.77,
       "median_fare_inr": 7310.0,
-      "geometric_mean_inr": 7453.61,
+      "geometric_mean_inr": 7310.0,
       "min_fare_inr": 3183.0,
       "max_fare_inr": 22088.0,
       "route_median_fares": {
-        "AMD-BLR": 7842.0,
-        "AMD-BOM": 5597.0,
-        "AMD-DEL": 6244.0,
-        "ATQ-DEL": 4711.5,
-        "BBI-DEL": 10379.0
+        "DEL-BOM": 7842.13,
+        "BLR-DEL": 13180.36,
+        "BLR-BOM": 9447.71,
+        "DEL-HYD": 10357.73,
+        "DEL-PNQ": 9957.7
       },
       "overall_index": 117.51,
       "route_indices": {
@@ -374,15 +383,15 @@
       ],
       "mean_fare_inr": 8110.77,
       "median_fare_inr": 7446.0,
-      "geometric_mean_inr": 7612.26,
+      "geometric_mean_inr": 7446.0,
       "min_fare_inr": 3183.0,
       "max_fare_inr": 22275.0,
       "route_median_fares": {
-        "AMD-BLR": 7645.5,
-        "AMD-BOM": 5825.0,
-        "AMD-DEL": 6244.0,
-        "ATQ-DEL": 4870.0,
-        "BBI-DEL": 10749.0
+        "DEL-BOM": 7721.16,
+        "BLR-DEL": 13867.69,
+        "BLR-BOM": 9386.11,
+        "DEL-HYD": 10442.84,
+        "DEL-PNQ": 9868.15
       },
       "overall_index": 119.65,
       "route_indices": {
@@ -453,7 +462,7 @@
       "day": 6,
       "date": "2026-10-09",
       "observation_count": 1064,
-      "route_count": 60,
+      "route_count": 80,
       "sample_routes": [
         "AMD-BLR",
         "AMD-BOM",
@@ -471,15 +480,15 @@
       ],
       "mean_fare_inr": 8598.01,
       "median_fare_inr": 7787.5,
-      "geometric_mean_inr": 7995.4,
+      "geometric_mean_inr": 7787.5,
       "min_fare_inr": 3394.0,
       "max_fare_inr": 92571.0,
       "route_median_fares": {
-        "AMD-BLR": 7638.0,
-        "AMD-BOM": 5718.0,
-        "AMD-DEL": 6528.5,
-        "ATQ-DEL": 4717.0,
-        "BBI-DEL": 11766.0
+        "DEL-BOM": 7820.62,
+        "BLR-DEL": 12899.76,
+        "BLR-BOM": 8820.57,
+        "DEL-HYD": 10472.22,
+        "DEL-PNQ": 9098.65
       },
       "overall_index": 125.43,
       "route_indices": {
@@ -568,15 +577,15 @@
       ],
       "mean_fare_inr": 10751.36,
       "median_fare_inr": 10148.48,
-      "geometric_mean_inr": 10298.0,
+      "geometric_mean_inr": 10148.48,
       "min_fare_inr": 5232.85,
       "max_fare_inr": 23475.37,
       "route_median_fares": {
-        "AMD-BLR": 9748.18,
-        "AMD-BOM": 8626.99,
-        "AMD-DEL": 9065.47,
-        "ATQ-DEL": 7251.86,
-        "BBI-DEL": 14316.47
+        "DEL-BOM": 7658.11,
+        "BLR-DEL": 12104.07,
+        "BLR-BOM": 8648.73,
+        "DEL-HYD": 11697.04,
+        "DEL-PNQ": 10232.16
       },
       "overall_index": 125.78,
       "route_indices": {
@@ -647,7 +656,7 @@
       "day": 8,
       "date": "2026-10-11",
       "observation_count": 2160,
-      "route_count": 60,
+      "route_count": 95,
       "sample_routes": [
         "AMD-BLR",
         "AMD-BOM",
@@ -665,15 +674,15 @@
       ],
       "mean_fare_inr": 9008.09,
       "median_fare_inr": 8119.0,
-      "geometric_mean_inr": 8299.14,
+      "geometric_mean_inr": 8119.0,
       "min_fare_inr": 3717.0,
       "max_fare_inr": 98615.0,
       "route_median_fares": {
-        "AMD-BLR": 7903.5,
-        "AMD-BOM": 5764.0,
-        "AMD-DEL": 6355.0,
-        "ATQ-DEL": 5363.0,
-        "BBI-DEL": 11180.5
+        "DEL-BOM": 8506.99,
+        "BLR-DEL": 11709.71,
+        "BLR-BOM": 7798.71,
+        "DEL-HYD": 11532.03,
+        "DEL-PNQ": 9992.78
       },
       "overall_index": 127.73,
       "route_indices": {
@@ -744,7 +753,7 @@
       "day": 9,
       "date": "2026-10-17",
       "observation_count": 7350,
-      "route_count": 60,
+      "route_count": 82,
       "sample_routes": [
         "AMD-BLR",
         "AMD-BOM",
@@ -762,15 +771,15 @@
       ],
       "mean_fare_inr": 12042.73,
       "median_fare_inr": 9607.0,
-      "geometric_mean_inr": 10236.83,
+      "geometric_mean_inr": 9607.0,
       "min_fare_inr": 3230.0,
       "max_fare_inr": 150283.0,
       "route_median_fares": {
-        "AMD-BLR": 8368.0,
-        "AMD-BOM": 5553.0,
-        "AMD-DEL": 7542.5,
-        "ATQ-DEL": 5840.0,
-        "BBI-DEL": 12303.5
+        "DEL-BOM": 8572.69,
+        "BLR-DEL": 12747.53,
+        "BLR-BOM": 7700.99,
+        "DEL-HYD": 11519.39,
+        "DEL-PNQ": 12354.86
       },
       "overall_index": 127.31,
       "route_indices": {
@@ -859,15 +868,15 @@
       ],
       "mean_fare_inr": 10901.84,
       "median_fare_inr": 10556.82,
-      "geometric_mean_inr": 10487.22,
+      "geometric_mean_inr": 10556.82,
       "min_fare_inr": 5311.19,
       "max_fare_inr": 25739.29,
       "route_median_fares": {
-        "AMD-BLR": 10098.71,
-        "AMD-BOM": 7353.97,
-        "AMD-DEL": 9227.35,
-        "ATQ-DEL": 7633.43,
-        "BBI-DEL": 14010.76
+        "DEL-BOM": 8311.84,
+        "BLR-DEL": 12753.46,
+        "BLR-BOM": 7707.28,
+        "DEL-HYD": 11526.52,
+        "DEL-PNQ": 12374.07
       },
       "overall_index": 127.35,
       "route_indices": {
@@ -933,7 +942,104 @@
         "BOM-NAG": 200.0427
       },
       "data_status": "REAL_PRODUCTION_OBSERVATIONS"
+    },
+    {
+      "day": 11,
+      "date": "2026-10-20",
+      "observation_count": 7350,
+      "route_count": 71,
+      "sample_routes": [
+        "AMD-BLR",
+        "AMD-BOM",
+        "AMD-DEL",
+        "ATQ-DEL",
+        "BBI-DEL",
+        "BLR-BBI",
+        "BLR-BOM",
+        "BLR-CCU",
+        "BLR-COK",
+        "BLR-DEL"
+      ],
+      "collection_sources": [
+        "google_flights"
+      ],
+      "mean_fare_inr": 11401.17,
+      "median_fare_inr": 9248.0,
+      "geometric_mean_inr": 9248.0,
+      "min_fare_inr": 3499.0,
+      "max_fare_inr": 172110.0,
+      "route_median_fares": {
+        "DEL-BOM": 7992.26,
+        "BLR-DEL": 11836.74,
+        "BLR-BOM": 7381.89,
+        "DEL-HYD": 10877.76,
+        "DEL-PNQ": 10106.37
+      },
+      "overall_index": 123.33,
+      "route_indices": {
+        "DEL-BOM": 121.9118,
+        "BLR-DEL": 111.8154,
+        "BLR-BOM": 73.071,
+        "DEL-HYD": 140.5765,
+        "DEL-PNQ": 111.9493,
+        "DEL-CCU": 114.0502,
+        "AMD-DEL": 128.2975,
+        "MAA-DEL": 122.5386,
+        "HYD-BOM": 118.624,
+        "DEL-SXR": 104.6983,
+        "BLR-CCU": 96.2381,
+        "MAA-BOM": 139.5957,
+        "BLR-HYD": 125.8238,
+        "AMD-BOM": 96.6925,
+        "CCU-BOM": 97.0598,
+        "BLR-PNQ": 109.9138,
+        "GOI-DEL": 108.459,
+        "MAA-HYD": 171.7177,
+        "DEL-GAU": 110.1029,
+        "BLR-COK": 190.229,
+        "DEL-LKO": 134.0101,
+        "GOI-BOM": 82.7164,
+        "BLR-MAA": 118.019,
+        "DEL-PAT": 154.7382,
+        "JAI-BOM": 111.6208,
+        "ATQ-DEL": 104.2898,
+        "COK-BOM": 118.0527,
+        "HYD-CCU": 142.3415,
+        "BBI-DEL": 101.9944,
+        "BLR-GOI": 170.0885,
+        "GAU-CCU": 191.7283,
+        "GOX-BOM": 85.1495,
+        "IXB-DEL": 119.6723,
+        "DEL-COK": 132.1835,
+        "MAA-CCU": 100.2824,
+        "DEL-GOX": 121.6654,
+        "LKO-BOM": 128.0234,
+        "DEL-IXR": 171.7595,
+        "GOI-HYD": 111.7928,
+        "AMD-BLR": 94.6044,
+        "DEL-IDR": 179.9118,
+        "IXC-DEL": 144.268,
+        "DEL-IXL": 95.9078,
+        "MAA-CJB": 162.62,
+        "BLR-TRV": 201.1866,
+        "HYD-VTZ": 156.799,
+        "BLR-BBI": 85.6586,
+        "DEL-VNS": 143.7794,
+        "IXA-CCU": 125.5452,
+        "DEL-RPR": 148.615,
+        "BOM-VNS": 135.8345,
+        "BLR-VNS": 114.1682,
+        "BLR-GAU": 113.44,
+        "BLR-LKO": 119.8984,
+        "CJB-BOM": 129.9136,
+        "IDR-BOM": 135.3848,
+        "BLR-JAI": 124.5213,
+        "HYD-TIR": 153.2337,
+        "HYD-COK": 261.5985,
+        "BOM-NAG": 160.8665
+      },
+      "data_status": "REAL_PRODUCTION_OBSERVATIONS"
     }
   ],
-  "last_updated": "2026-10-19T16:41:56.547950+00:00"
+  "last_updated": "2026-10-20T09:13:27.657709+00:00"
 }
