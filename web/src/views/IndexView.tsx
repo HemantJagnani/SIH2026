@@ -1068,23 +1068,25 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   // Dynamically compute matrix median, mean and observation count without hardcoded fallbacks
   const { liveMatrixMedian, liveMatrixMean, liveMatrixObservations } = useMemo(() => {
     if (matrixCells.length === 0) {
-      return { liveMatrixMedian: 8308, liveMatrixMean: 9479, liveMatrixObservations: 12212 };
+      const fallbackFare = indexData?.all_india_weighted_fare_inr ? Math.round(indexData.all_india_weighted_fare_inr) : 0;
+      const fallbackObs = coverage?.total_raw_observations || 0;
+      return { liveMatrixMedian: fallbackFare, liveMatrixMean: fallbackFare, liveMatrixObservations: fallbackObs };
     }
     const fares = matrixCells
       .map((c) => c.geometric_mean_inr || c.mean_fare_inr || c.median_fare_inr)
       .filter((v): v is number => v != null && v > 0)
       .sort((a, b) => a - b);
     const sumFares = fares.reduce((a, b) => a + b, 0);
-    const mean = fares.length ? sumFares / fares.length : 9479;
+    const mean = fares.length ? sumFares / fares.length : (fares[0] || 0);
     const mid = Math.floor(fares.length / 2);
     const median = fares.length % 2 !== 0 ? fares[mid] : (fares[mid - 1] + fares[mid]) / 2;
     const totalObs = matrixCells.reduce((acc, c) => acc + (c.observation_count || 0), 0);
     return {
       liveMatrixMedian: Math.round(median),
       liveMatrixMean: Math.round(mean),
-      liveMatrixObservations: totalObs || 12212,
+      liveMatrixObservations: totalObs || coverage?.total_raw_observations || 0,
     };
-  }, [matrixCells]);
+  }, [matrixCells, indexData, coverage]);
 
   return (
     <div className="page">
@@ -1110,7 +1112,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               </span>{' '}(2024&nbsp;=&nbsp;100).
             </h1>
             <div className="font-num text-secondary" style={{ fontSize: '13px' }}>
-              {(coverage?.total_raw_observations || (selectedRealDate === '2026-10-06' ? 9676 : selectedRealDate === '2026-09-27' ? 12212 : 10000)).toLocaleString('en-IN')} verified quotes&nbsp;&nbsp;
+              {(coverage?.total_raw_observations || liveMatrixObservations || (realBacktest?.daily_series?.find(p => p.date === selectedRealDate)?.observation_count) || (indexData ? 7380 : 0)).toLocaleString('en-IN')} verified quotes&nbsp;&nbsp;
               {coverage?.routes_with_data_count || 60} routes&nbsp;&nbsp;
               {selectedRealDate || latestRealDate}
               {(selectedRealDate === latestRealDate || !selectedRealDate) && (
@@ -1956,10 +1958,10 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
               <div style={{ border: '1px solid var(--contour)', padding: '12px 14px', background: 'var(--vellum)' }}>
                 <div style={{ fontSize: '11px', color: 'var(--ink-2)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Median Fare</div>
                 <div className="font-num" style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ink)', marginTop: '4px' }}>
-                  ₹{(realBacktest?.daily_series?.find(p => p.date === selectedRealDate) || realBacktest?.daily_series?.[0])?.median_fare_inr?.toLocaleString('en-IN') ?? (selectedRealDate === '2026-10-06' ? '7,695' : '6,960')}
+                  ₹{(realBacktest?.daily_series?.find(p => p.date === selectedRealDate) || realBacktest?.daily_series?.[0])?.median_fare_inr?.toLocaleString('en-IN') ?? (liveMatrixMedian ? liveMatrixMedian.toLocaleString('en-IN') : '—')}
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--ink-2)', marginTop: '2px' }}>
-                  Mean: ₹{(realBacktest?.daily_series?.find(p => p.date === selectedRealDate) || realBacktest?.daily_series?.[0])?.mean_fare_inr?.toLocaleString('en-IN', { maximumFractionDigits: 0 }) ?? (selectedRealDate === '2026-10-06' ? '9,066' : '8,864')}
+                  Mean: ₹{(realBacktest?.daily_series?.find(p => p.date === selectedRealDate) || realBacktest?.daily_series?.[0])?.mean_fare_inr?.toLocaleString('en-IN', { maximumFractionDigits: 0 }) ?? (liveMatrixMean ? liveMatrixMean.toLocaleString('en-IN') : '—')}
                 </div>
               </div>
             </div>

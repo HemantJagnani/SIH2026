@@ -636,7 +636,7 @@ export const api = {
     try {
       const lc = await api.getLeadCurves(route);
       return [{
-        obs_date: '2026-09-22',
+        obs_date: (lc as any).date || '2026-10-21',
         is_synthetic: false,
         points: lc.curve_points.map(p => ({
           lead_days: p.lead_days,

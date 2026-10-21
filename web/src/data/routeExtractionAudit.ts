@@ -112,7 +112,7 @@ function pseudoRand(seed: number): number {
   return x - Math.floor(x);
 }
 
-export function getRouteAuditData(routeId: string, runDate = '2026-09-27'): RouteAuditData {
+export function getRouteAuditData(routeId: string, runDate = '2026-10-21'): RouteAuditData {
   const [origCode, destCode] = routeId.split('-');
   const routeMeta = DGCA_TOP60_ROUTES.find(
     (r) => r.route_id === routeId || (r.origin_code === origCode && r.destination_code === destCode)
