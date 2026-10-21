@@ -362,6 +362,7 @@ import {
   MOSPI_CPI_EXPENDITURE_WEIGHT,
 } from './data/dgcaTop60';
 import REAL_BACKTEST_FALLBACK from './data/real_backtest_fallback.json';
+import { type RouteAuditData, getRouteAuditData } from './data/routeExtractionAudit';
 
 export interface Methodology {
   base_value: number;
@@ -501,6 +502,19 @@ export const api = {
 
   getAvailableDates: async (): Promise<{ latest_date: string; available_dates: string[]; count: number }> => {
     return fetchWithCache<{ latest_date: string; available_dates: string[]; count: number }>(`${BASE}/v1/available-dates`, 30_000);
+  },
+
+  getRouteAudit: async (route: string, collection_date?: string): Promise<RouteAuditData> => {
+    const q = new URLSearchParams({ route });
+    if (collection_date && collection_date !== 'latest') {
+      q.set('collection_date', collection_date);
+    }
+    const url = `${BASE}/v1/route-audit?${q.toString()}`;
+    try {
+      return await fetchWithCache<RouteAuditData>(url, 60_000);
+    } catch {
+      return getRouteAuditData(route, collection_date || 'latest');
+    }
   },
 
   observations: async (): Promise<Observation[]> => {

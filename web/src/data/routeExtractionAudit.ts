@@ -67,6 +67,8 @@ export interface RouteAuditData {
   route_weight: number;
   annual_passenger_volume: number;
   scrape_date: string;
+  collection_date?: string;
+  extraction_cycle?: string;
   total_observations: number;
   sources_summary: {
     source: string;
@@ -78,7 +80,8 @@ export interface RouteAuditData {
   flights: ExtractedFlight[];
   horizons: HorizonAuditSummary[];
   benchmark_price_today: number;
-  benchmark_price_yesterday: number;
+  benchmark_price_yesterday?: number;
+  benchmark_price_cy2024?: number;
   elementary_jevons_link: number;
   chained_index: number;
   national_index_contribution: number;

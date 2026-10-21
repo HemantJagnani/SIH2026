@@ -981,6 +981,7 @@ export default function BacktestView() {
       {/* Route Data Extraction & Pipeline Audit Modal */}
       <RouteDataAuditModal
         routeId={auditModalRoute}
+        selectedDate={hoveredPoint?.date || realData?.summary?.date_range?.end || '2026-10-21'}
         onClose={() => setAuditModalRoute(null)}
       />
     </div>

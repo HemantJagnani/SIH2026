@@ -2655,6 +2655,7 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
       {/* Route Data Extraction & Pipeline Calculation Audit Modal */}
       <RouteDataAuditModal
         routeId={auditModalRoute}
+        selectedDate={selectedRealDate || selectedDate || undefined}
         onClose={() => setAuditModalRoute(null)}
       />
     </div>
