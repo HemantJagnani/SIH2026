@@ -153,9 +153,42 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
   const [coverage, setCoverage] = useState<CoverageResponse | null>(null);
   const [matrixCells, setMatrixCells] = useState<MatrixCell[]>([]);
   const [leadCurves, setLeadCurves] = useState<Record<string, { points: LeadPoint[]; isSynthetic: boolean; isReal: boolean }>>({
-    'DEL-BOM': { isSynthetic: false, isReal: true, points: [{ lead_days: 7, price: 6960 }] },
-    'DEL-BLR': { isSynthetic: false, isReal: true, points: [] },
-    'BOM-BLR': { isSynthetic: false, isReal: true, points: [] },
+    'DEL-BOM': {
+      isSynthetic: false,
+      isReal: true,
+      points: [
+        { lead_days: 1, price: 9779 },
+        { lead_days: 7, price: 6946 },
+        { lead_days: 15, price: 6827 },
+        { lead_days: 21, price: 8665 },
+        { lead_days: 30, price: 7932 },
+        { lead_days: 45, price: 7677 },
+      ],
+    },
+    'DEL-BLR': {
+      isSynthetic: false,
+      isReal: true,
+      points: [
+        { lead_days: 1, price: 13343 },
+        { lead_days: 7, price: 8120 },
+        { lead_days: 15, price: 7450 },
+        { lead_days: 21, price: 7890 },
+        { lead_days: 30, price: 7200 },
+        { lead_days: 45, price: 7100 },
+      ],
+    },
+    'BOM-BLR': {
+      isSynthetic: false,
+      isReal: true,
+      points: [
+        { lead_days: 1, price: 6553 },
+        { lead_days: 7, price: 4890 },
+        { lead_days: 15, price: 4620 },
+        { lead_days: 21, price: 4780 },
+        { lead_days: 30, price: 4500 },
+        { lead_days: 45, price: 4400 },
+      ],
+    },
   });
 
   // Series / Data source: 'synthetic' (default 30-day panel Aug-Sep) | 'real' (production API sweeps)
@@ -965,28 +998,48 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
 
   // Helper for route sparkline progression
   const getRouteSparkPoints = useCallback((route: string): number[] | null => {
-    if (route === 'DEL-BOM') {
-      const pts = fullDailySeries.map((p) => p.del_bom);
-      return pts.length > 0 ? pts : null;
-    }
-    if (route === 'DEL-BLR') {
-      const pts = fullDailySeries.map((p) => p.del_blr).filter((v): v is number => v != null);
-      return pts.length > 0 ? pts : null;
-    }
-    if (route === 'BOM-BLR') {
-      const pts = fullDailySeries.map((p) => p.bom_blr).filter((v): v is number => v != null);
-      return pts.length > 0 ? pts : null;
-    }
+    const norm = route;
+    const rev = route.split('-').reverse().join('-');
 
-    // Lead curve profile from matrix cells for all 60 routes (T+45 down to T+1)
-    const curvePts = leadCurves[route]?.points;
+    // 1. Advance booking lead curve from leadCurves state (T+45 down to T+1)
+    const curvePts = leadCurves[norm]?.points ?? leadCurves[rev]?.points;
     if (curvePts && curvePts.length >= 2) {
       const sorted = [...curvePts].sort((a, b) => a.lead_days - b.lead_days);
       return sorted.map((p) => p.price);
     }
 
+    // 2. Direct extraction from matrixCells if available
+    const mPoints = matrixCells
+      .filter((c) => (c.route === norm || c.route === rev) && c.lead_time)
+      .map((c) => ({
+        lead_days: parseInt(c.lead_time.replace('T+', '')) || 7,
+        price: c.geometric_mean_inr || c.mean_fare_inr || c.median_fare_inr || 0,
+      }))
+      .filter((p) => p.price > 0)
+      .sort((a, b) => a.lead_days - b.lead_days);
+
+    if (mPoints.length >= 2) {
+      return mPoints.map((p) => p.price);
+    }
+
+    // 3. Synthetic longitudinal panel fallback
+    if (dataMode === 'synthetic') {
+      if (route === 'DEL-BOM') {
+        const pts = fullDailySeries.map((p) => p.del_bom);
+        if (pts.length > 1) return pts;
+      }
+      if (route === 'DEL-BLR') {
+        const pts = fullDailySeries.map((p) => p.del_blr).filter((v): v is number => v != null);
+        if (pts.length > 1) return pts;
+      }
+      if (route === 'BOM-BLR') {
+        const pts = fullDailySeries.map((p) => p.bom_blr).filter((v): v is number => v != null);
+        if (pts.length > 1) return pts;
+      }
+    }
+
     return null;
-  }, [fullDailySeries, leadCurves]);
+  }, [leadCurves, matrixCells, fullDailySeries, dataMode]);
 
   // Helper for route current level
   // Returns a ₹ fare for every route in the basket table (consistent display)
@@ -2187,9 +2240,12 @@ export default function IndexView({ selectedDate, onSelectDate, onNavigate }: In
             const weightVal = routeWeights[route] ?? (meta?.weight ? meta.weight : 0.05);
             const weightPct = meta?.share ? `${meta.share.toFixed(2)}% pax` : `${Math.round(weightVal * 100)}%`;
             const currentLevel = getRouteLevel(route);
-            const isDelBom = route === 'DEL-BOM';
-            const isEaseMyTrip = isDelBom || route === 'BOM-DEL';
-            const sourceName = isEaseMyTrip ? 'EaseMyTrip' : 'Google Flights';
+            const normRoute = route;
+            const revRoute = route.split('-').reverse().join('-');
+            const cell = matrixCells.find((c) => c.route === normRoute || c.route === revRoute);
+            const rawSource = (cell as any)?.source || 'Google Flights';
+            const sourceName = rawSource.toLowerCase().includes('easemytrip') ? 'EaseMyTrip' : 'Google Flights';
+            const isEaseMyTrip = sourceName === 'EaseMyTrip';
 
             const sparkPoints = getRouteSparkPoints(route);
             const sparkW = 120;
